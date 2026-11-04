@@ -92,8 +92,7 @@ Drafts until the team agrees (`interface_questions.md` Q-13 to Q-21). Full defin
 manifest in IMPLEMENTATION_NOTES section 5, trace records in section 6.3, API in
 section 3. **The code still implements the v1 contracts until Stage 2.**
 
-Poll evidence (draft: v1 fields plus `poll_id`, without `remediations_used`; Q-04, Q-05,
-Q-09, Q-14 still open):
+Poll evidence (draft: v1 fields plus `poll_id`, without `remediations_used`; see Q-14):
 ```json
 {"session_id": "session-001", "poll_id": "q-01", "objective_id": "seg-01",
  "question_id": "q-01", "snapshot_time": "2026-10-22T18:30:40Z",
@@ -102,7 +101,7 @@ Q-09, Q-14 still open):
 ```
 
 Student question (draft: v1 fields; retrieval needs the lesson, so a `lesson_id` is
-proposed; Q-06, Q-07 still open):
+proposed; see Q-19):
 ```json
 {"session_id": "session-001", "event_id": "evt-123", "lesson_id": "dbt-basics-01",
  "anonymous_learner_id": "learner-017", "objective_id": "seg-01",
@@ -179,7 +178,8 @@ matches, `ruff check`, `ruff format --check`, `scripts/check_secrets.sh`, and no
 ## Working across sessions
 
 - At the start of a session: read this file, the latest part of `note.md`, and the
-  current stage in `docs/v2/STAGES.md`.
+  current stage in `docs/v2/STAGES.md`. v1 docs are archived in `docs/v1/`; read them
+  only for history or the Stage 4 baseline (`docs/v1/note_v1.md`).
 - While working: log changes to the plan or design, deviations from this file, findings
   from docs or probes, and open questions in `note.md` (`- YYYY-MM-DD [type] text`;
   types `change`, `decision`, `finding`, `todo`, `question`, `result`).

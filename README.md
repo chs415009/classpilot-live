@@ -26,7 +26,7 @@ exploratory (small, synthetic data).
 | `docs/v2/ANALYSIS.md` | v1 reuse map and repository decision |
 | `note.md` | Dev log: changes, findings, results per stage |
 | `interface_questions.md` | Interface items to agree with the team |
-| `docs/v1/` | v1 design, diagrams, and Stage 4 Cortex results |
+| `docs/v1/` | v1 archive: design, dev log, interface items, diagrams, Stage 4 Cortex results |
 
 ## Setup
 

@@ -16,9 +16,8 @@ decisions log); `Q-nn` are items in `interface_questions.md`.
 | Generators are split into mock (6) and one live deck run (7). | Content review needs a live run, but the retry and fallback logic does not. |
 | The service API (8) comes after the pipeline runs from the CLI. | The endpoints are thin wrappers. Their shapes are a `[team]` item anyway. |
 
-No dates: the plan aims for completeness, not a deadline. The trial expiry date (read
-in Stage 0) decides whether Stage 9 moves earlier, before 7 and 8, so the compile runs
-while credits are available.
+No dates: the plan aims for completeness, not a deadline. You decide when each stage
+runs.
 
 ## Rules that apply to every stage
 
@@ -78,9 +77,8 @@ Tasks:
 - Archive v1: `docs/v1/CLAUDE_v1.md`, `ARCHITECTURE_v1.html`, `DEMO_OVERVIEW_v1.html`,
   and `docs/v1/results/` (Stage 4 Cortex eval JSONs, mode 2 and mode 3).
 - `note.md`: copy (redacted) and add a dated v2 `change` entry.
-- `interface_questions.md`: add the items in IMPLEMENTATION_NOTES section 12. Mark Q-02
-  dropped. Update Q-05, Q-06, Q-09 for v2. Mark Q-08 resolved by the trace records.
-  Note that the report needs Q-12.
+- `interface_questions.md`: add the items in IMPLEMENTATION_NOTES section 12. Archive
+  the v1 items (Q-01 to Q-12) in `docs/v1/`; they are not carried into v2.
 - New `CLAUDE.md`: goal, architecture, hard rules (the project rules, the replacement
   for the v1 Snowflake rule, account portability, public-repo rules), scope, folder
   layout, the stage list from this file, and dev setup (including ruff).
@@ -100,7 +98,6 @@ Human review:
 - Repo visibility (private for now) and the full `git ls-files` list before the push.
 - New `CLAUDE.md`, the note.md entry, and the interface_questions changes.
 - The placeholder replacements (is anything account-specific left?).
-- Read the trial expiry date in Snowsight (no credits) and tell me.
 Live Snowflake usage: none
 Done when: the new repo has a green v1 under `classpilot`, ruff passes, the secret
 check passes on tree and history, the v2 docs are in place, and you have approved the
@@ -113,7 +110,7 @@ Goal: Settle the facts the design depends on (DSPy ↔ Cortex route, vision mode
 image-page idea, document parsing, search filter, cost per call) with small scripts,
 before code is built on them.
 Depends on: Stage 0; approval to add `dspy` (and `PyJWT` if Route A needs it; and
-`pymupdf` early if the vision probe needs a text layer); the trial date.
+`pymupdf` early if the vision probe needs a text layer).
 Tasks:
 - Docs check (no credits). Record each finding with a link and date in note.md:
   - current `dspy.LM` and `dspy.BaseLM` API
@@ -196,7 +193,7 @@ Tasks:
   - `prompt_version` = `uncompiled-v1` until Stage 9
   - none of the removed fields (scenario key, assignment key, max reteach,
     matches-expected, support score, is-approved, token counts)
-- Decision log (Q-12, draft): every decision with its text (question, answer, sources,
+- Decision log (draft): every decision with its text (question, answer, sources,
   escalation reason, explain text), as JSONL.
 - Delete the misconception map file, remediations file, protected questions, the
   mode-2 code, and their tests.
@@ -268,7 +265,7 @@ Automated checks:
   - claim records equal the Guardian's claims
 Human review:
 - Signatures and the full instruction text inside them.
-- The parity comparison against the Stage 4 baseline in note.md:
+- The parity comparison against the Stage 4 baseline in `docs/v1/note_v1.md`:
   - eval: 11/11 actions, recall 1.0, 0 let through, 1.82 calls per question,
     answered questions 4.4–7.6 s
   - guardian-eval: 8/8 caught, 0 false fails
@@ -558,7 +555,7 @@ and wait for my approval before starting the next stage.
 Goal: Build a labeled eval set of 40–60 questions on the v2 lesson plus 30–40 Guardian
 cases you label, compile the three live modules with small `BootstrapFewShot` runs, and
 compare them with the uncompiled baseline.
-Depends on: Stages 3 and 5; the trial date (this stage may move before 7 and 8).
+Depends on: Stages 3 and 5.
 Tasks:
 - Expand `eval/` to 40–60 questions with a train/dev split. Include the 6 "tempting"
   questions deferred in Stage 4.

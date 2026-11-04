@@ -38,8 +38,8 @@ agreement with Sai / Yaksha. The stage plan is in `STAGES.md`.
   The Analyst still classifies `assignment_like`.
 - `misconception_map.json`, `remediations.json` as hand-written files;
   `remediation_limit` / `no_mapping` escalation reasons (Path A no longer escalates).
-- 2-agent mode and the `AGENT_MODE` toggle. v1 mode-2 numbers stay in `note.md` and
-  `docs/v1/results/`.
+- 2-agent mode and the `AGENT_MODE` toggle. v1 mode-2 numbers stay in `docs/v1/note_v1.md`
+  and `docs/v1/results/`.
 - Explanation for the correct answer (only the correct option is revealed).
 
 ### New
@@ -49,7 +49,7 @@ agreement with Sai / Yaksha. The stage plan is in `STAGES.md`.
 - Generators: segments, scripts, poll placement, polls with misconceptions,
   explanations (remediations).
 - Prep-time Guardian check with one feedback retry.
-- Decision log with text (Q-12) and the post-class report endpoint.
+- Decision log with text and the post-class report endpoint.
 
 ---
 
@@ -303,7 +303,7 @@ Rules:
   `low_confidence`, `unsupported`, `llm_error`.
 - Retrieval filtered by `lesson_id`.
 - Every decision is also written to the decision log with its text (question, answer,
-  citations, escalation reason) for the report (Q-12).
+  citations, escalation reason) for the report.
 
 ### 6.3 Trace records for the team data model **[team: field names with Yaksha]**
 
@@ -329,8 +329,8 @@ Values:
 - Prompt version = the id of the compiled DSPy program (or `uncompiled-v1`); it feeds
   `DIM_PROMPT`, which is SCD2.
 
-This resolves Q-08 (claims in the trace). Q-12 (decisions stored with their text) is
-needed by the report (section 8).
+Decisions are also stored with their text in the decision log (section 6.2), which the
+report needs (section 8).
 
 ---
 
@@ -442,9 +442,8 @@ Approval: each live stage is approved once at its start, based on its estimated 
 calls. Inside that stage, runs may go up to 1.5× the estimate without asking again;
 beyond that, stop and ask.
 
-**[verify] Trial expiry date in Snowsight** (account opened ~2026-10-20; if 30 days,
-it ends before the semester does). Read it in Stage 0; it decides when live stages can
-run. A move to another account is possible later (section 2.1).
+Timing: the user decides when live stages run; the plan does not depend on dates or the
+trial expiry. A move to another account is possible later (section 2.1).
 
 ---
 
@@ -460,8 +459,8 @@ Dev: `ruff` (lint + format). Test: `httpx` (FastAPI `TestClient`). Possibly `PyJ
 ## 11. Plan
 
 Replaced by `docs/v2/STAGES.md`: ordered stages, each ending with something runnable,
-with no week dates. Plan for completeness, not a deadline. The trial expiry date decides
-whether the eval/compile stage moves earlier.
+with no week dates. Plan for completeness, not a deadline. The user decides when each
+stage runs.
 
 ---
 
@@ -486,8 +485,8 @@ whether the eval/compile stage moves earlier.
   - live endpoints: Q&A and poll result (Sai)
   - report endpoint and the report data source (decision log + traces)
   - trace records for the star schema (section 6.3; Yaksha)
-- `interface_questions.md` existing items: Q-02 dropped; Q-05, Q-06, Q-09 updated for v2;
-  Q-08 resolved by section 6.3; Q-12 needed by the report.
+- v1 interface items (Q-01 to Q-12) are archived in `docs/v1/interface_questions_v1.md`
+  and not carried into v2; v2 items start at Q-13.
 - `ARCHITECTURE.html` / `DEMO_OVERVIEW.html`: redraw for v2.
 
 ---
@@ -579,3 +578,8 @@ Open points from the plan update, decided:
   Stage 8 endpoint adds a (`session_id`, `poll_id`) guard; otherwise skipped.
 - 2026-11-04 "Login user" in the account-specific list is a placeholder in committed
   files; the service user and other object names stay configurable defaults.
+- 2026-11-04 All v1 documents are archived in `docs/v1/` (design, dev log, interface
+  items, diagrams, results). v1 interface items Q-01 to Q-12 are ignored for v2; v2 items
+  start at Q-13. This replaces the earlier "update Q-05, Q-06, Q-09" entry.
+- 2026-11-04 No date-driven planning: the user decides when each stage runs. The trial
+  expiry no longer affects the plan or the stage order.

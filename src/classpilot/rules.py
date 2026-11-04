@@ -37,9 +37,7 @@ def check_poll_threshold(
 
     top_option = max(wrong_counts, key=lambda option: wrong_counts[option])
     share = wrong_counts[top_option] / evidence.answers_received
-    triggered = (
-        evidence.answers_received >= min_responses and share >= wrong_ratio_threshold
-    )
+    triggered = evidence.answers_received >= min_responses and share >= wrong_ratio_threshold
     return ThresholdResult(triggered, top_option, share)
 
 

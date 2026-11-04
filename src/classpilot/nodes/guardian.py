@@ -44,7 +44,11 @@ def run_guardian(
     prompt = PROMPT.format(
         chunks=chunk_lines, question=json.dumps(question_text), answer=json.dumps(answer_text)
     )
-    payload = {"question_text": question_text, "answer_text": answer_text, "cited_chunks": cited_chunks}
+    payload = {
+        "question_text": question_text,
+        "answer_text": answer_text,
+        "cited_chunks": cited_chunks,
+    }
     start = time.perf_counter()
     try:
         raw = call_llm(llm, "guardian", prompt, payload, timeout_s)

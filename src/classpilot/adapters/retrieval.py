@@ -6,7 +6,6 @@ from typing import Protocol
 from classpilot.settings import Settings
 from classpilot.text import coverage
 
-
 SEARCH_SERVICE = "LESSON_SEARCH"
 
 
@@ -68,7 +67,9 @@ class CortexSearchRetriever:
 
     def search(self, query: str, top_k: int) -> list[RetrievedChunk]:
         try:
-            response = self.service.search(query=query, columns=["CHUNK_ID", "CHUNK_TEXT"], limit=top_k)
+            response = self.service.search(
+                query=query, columns=["CHUNK_ID", "CHUNK_TEXT"], limit=top_k
+            )
         except Exception as exc:
             raise RetrievalError(f"Cortex Search failed: {exc}") from exc
         return [

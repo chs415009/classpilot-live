@@ -21,7 +21,9 @@ Reply with JSON only:
 {{"category": "in_scope|out_of_scope|assignment_like", "objective_id": "<id or null>", "reason": "<one sentence>"}}"""
 
 
-def run_analyst(question_text: str, objectives: list[dict], llm: LLMClient, timeout_s: float) -> NodeResult:
+def run_analyst(
+    question_text: str, objectives: list[dict], llm: LLMClient, timeout_s: float
+) -> NodeResult:
     objective_lines = "\n".join(f"- {o['objective_id']}: {o['title']}" for o in objectives)
     prompt = PROMPT.format(objectives=objective_lines, question=json.dumps(question_text))
     payload = {"question_text": question_text, "objectives": objectives}

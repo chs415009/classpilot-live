@@ -104,7 +104,12 @@ def run_eval(agent_mode: int, trace_path: Path | None = None) -> dict:
                 "details": details,
             }
         )
-    return {"agent_mode": agent_mode, "backend": settings.backend, "summary": summarize(rows), "rows": rows}
+    return {
+        "agent_mode": agent_mode,
+        "backend": settings.backend,
+        "summary": summarize(rows),
+        "rows": rows,
+    }
 
 
 def run_guardian_eval() -> dict:
@@ -120,7 +125,11 @@ def run_guardian_eval() -> dict:
     for case in cases:
         cited = [chunks[i] for i in case["cited_chunk_ids"]]
         result = run_guardian(
-            case["question_text"], case["answer_text"], cited, deps.llm, settings.llm.timeout_seconds
+            case["question_text"],
+            case["answer_text"],
+            cited,
+            deps.llm,
+            settings.llm.timeout_seconds,
         )
         check = rules.check_guardian(result.raw, case["cited_chunk_ids"])
         verdict = {True: "pass", False: "fail", None: "error"}[check.passed]
@@ -161,7 +170,9 @@ def summarize(rows: list[dict]) -> dict:
         "correct_action": sum(r["action"] == r["expected_action"] for r in rows),
         "should_escalate": len(should_escalate),
         "escalated": len(escalated_ok),
-        "escalation_recall": round(len(escalated_ok) / len(should_escalate), 2) if should_escalate else None,
+        "escalation_recall": round(len(escalated_ok) / len(should_escalate), 2)
+        if should_escalate
+        else None,
         "unsupported_let_through": sum(r["action"] == "answer" for r in should_escalate),
         "false_escalations": sum(r["action"] == "escalate" for r in should_answer),
         "llm_calls_total": sum(r["llm_calls"] for r in rows),

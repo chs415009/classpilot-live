@@ -5,7 +5,12 @@ import pytest
 
 from classpilot.adapters import make_adapters
 from classpilot.adapters.llm import CortexLLM, LLMError, MockLLM, call_llm, response_format
-from classpilot.adapters.retrieval import CortexSearchRetriever, MockRetriever, RetrievalError, RetrievedChunk
+from classpilot.adapters.retrieval import (
+    CortexSearchRetriever,
+    MockRetriever,
+    RetrievalError,
+    RetrievedChunk,
+)
 from classpilot.contracts import AnalystOutput, GuardianOutput, ResponderOutput
 from classpilot.settings import Settings
 
@@ -122,7 +127,8 @@ def test_cortex_llm_needs_a_model():
 
 
 @pytest.mark.parametrize(
-    ("task", "model"), [("analyst", AnalystOutput), ("responder", ResponderOutput), ("guardian", GuardianOutput)]
+    ("task", "model"),
+    [("analyst", AnalystOutput), ("responder", ResponderOutput), ("guardian", GuardianOutput)],
 )
 def test_response_format_matches_contract(task, model):
     schema = response_format(task)["schema"]
@@ -146,7 +152,11 @@ class FakeSearchService:
 def test_cortex_search_maps_rows_and_cosine_score():
     service = FakeSearchService(
         [
-            {"CHUNK_ID": "chunk-01", "CHUNK_TEXT": "Bronze keeps raw data.", "@scores": {"cosine_similarity": 0.72715}},
+            {
+                "CHUNK_ID": "chunk-01",
+                "CHUNK_TEXT": "Bronze keeps raw data.",
+                "@scores": {"cosine_similarity": 0.72715},
+            },
             {"CHUNK_ID": "chunk-02", "CHUNK_TEXT": "Silver holds cleaned data."},
         ]
     )
@@ -155,7 +165,11 @@ def test_cortex_search_maps_rows_and_cosine_score():
         RetrievedChunk("chunk-01", "Bronze keeps raw data.", 0.727),
         RetrievedChunk("chunk-02", "Silver holds cleaned data.", 0.0),
     ]
-    assert service.kwargs == {"query": "why bronze", "columns": ["CHUNK_ID", "CHUNK_TEXT"], "limit": 2}
+    assert service.kwargs == {
+        "query": "why bronze",
+        "columns": ["CHUNK_ID", "CHUNK_TEXT"],
+        "limit": 2,
+    }
 
 
 def test_cortex_search_error_raises_retrieval_error():

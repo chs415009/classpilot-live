@@ -11,7 +11,9 @@ def analyst(text, content, llm=None):
 
 
 def responder(text, content, llm=None):
-    return run_responder(text, MockRetriever(content.chunks), llm or MockLLM(), top_k=3, timeout_s=2)
+    return run_responder(
+        text, MockRetriever(content.chunks), llm or MockLLM(), top_k=3, timeout_s=2
+    )
 
 
 # ---------- analyst ----------
@@ -41,7 +43,9 @@ def test_analyst_reports_llm_error(content):
 
 
 def test_analyst_timeout(content):
-    result = run_analyst("Why Bronze?", content.objectives, MockLLM(delays={"analyst": 0.5}), timeout_s=0.1)
+    result = run_analyst(
+        "Why Bronze?", content.objectives, MockLLM(delays={"analyst": 0.5}), timeout_s=0.1
+    )
     assert result.raw is None
     assert "timed out" in result.error
 
@@ -65,7 +69,11 @@ def test_responder_low_confidence_when_not_covered(content):
 
 def test_responder_timeout(content):
     result = run_responder(
-        "What does ref() do?", MockRetriever(content.chunks), MockLLM(delays={"responder": 0.5}), 3, 0.1
+        "What does ref() do?",
+        MockRetriever(content.chunks),
+        MockLLM(delays={"responder": 0.5}),
+        3,
+        0.1,
     )
     assert result.raw is None
     assert "timed out" in result.error
@@ -96,7 +104,9 @@ def test_guardian_passes_supported_answer(content):
 
 def test_guardian_fails_unsupported_sentence(content):
     chunk = content.chunks[0]
-    answer = "The Bronze layer stores raw data. Kafka streams are merged automatically with no setup."
+    answer = (
+        "The Bronze layer stores raw data. Kafka streams are merged automatically with no setup."
+    )
     result = run_guardian("Kafka?", answer, [chunk], MockLLM(), timeout_s=2)
     assert GuardianOutput.model_validate(result.raw).verdict == "fail"
 
@@ -109,8 +119,12 @@ def test_guardian_fails_code_answer(content):
 
 def test_guardian_lists_claims_with_support(content):
     chunk = content.chunks[0]
-    answer = "The Bronze layer stores raw data. Kafka streams are merged automatically with no setup."
-    output = GuardianOutput.model_validate(run_guardian("Kafka?", answer, [chunk], MockLLM(), timeout_s=2).raw)
+    answer = (
+        "The Bronze layer stores raw data. Kafka streams are merged automatically with no setup."
+    )
+    output = GuardianOutput.model_validate(
+        run_guardian("Kafka?", answer, [chunk], MockLLM(), timeout_s=2).raw
+    )
     assert [c.chunk_id for c in output.claims] == ["chunk-01", None]
 
 

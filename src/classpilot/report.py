@@ -99,7 +99,9 @@ def build_report(
             three = run_scenario(path, 3, trace_path=None)
             if on_result:
                 on_result(three)
-            mode_cells = f"<td class='mode'>{_mode_cell(two)}</td><td class='mode'>{_mode_cell(three)}</td>"
+            mode_cells = (
+                f"<td class='mode'>{_mode_cell(two)}</td><td class='mode'>{_mode_cell(three)}</td>"
+            )
         rows.append(
             f"<tr><td>{_scenario_cell(two, _input_text(two))}</td>"
             f"<td>{_expected_cell(two['expected'])}</td>{mode_cells}</tr>"
@@ -121,7 +123,7 @@ Expected values were written for the mock backend, so a real model can differ.
 <span class="bad">red</span> = wrong action.</div>
 <div class="table-wrap"><table>
 <tr><th>Scenario</th><th>Expected</th><th>2-agent mode</th><th>3-agent mode (+ Guardian)</th></tr>
-{''.join(rows)}
+{"".join(rows)}
 </table></div>
 </main></body></html>
 """

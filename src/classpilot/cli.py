@@ -1,10 +1,10 @@
 """Command line entry point.
 
-  python -m classpilot.cli run scenarios/01_poll_reteach.json [--mode 2|3]
-  python -m classpilot.cli run-all [--mode 2|3]
-  python -m classpilot.cli eval --mode 2|3
-  python -m classpilot.cli guardian-eval
-  python -m classpilot.cli report
+python -m classpilot.cli run scenarios/01_poll_reteach.json [--mode 2|3]
+python -m classpilot.cli run-all [--mode 2|3]
+python -m classpilot.cli eval --mode 2|3
+python -m classpilot.cli guardian-eval
+python -m classpilot.cli report
 """
 
 import argparse
@@ -19,10 +19,14 @@ def print_scenario(result: dict) -> None:
     status = "OK " if result["matches_expected"] else "MISMATCH"
     decision = result["decision"]
     print(f"[{status}] {result['file']}: {result['name']}")
-    print(f"  action={decision['action']} reason={decision['escalation_reason']} "
-          f"remediation={decision['remediation_id']} confidence={decision['confidence']}")
-    print(f"  nodes={result['trace']['nodes_run']} llm_calls={result['trace']['llm_calls']} "
-          f"latency_ms={result['trace']['latency_ms']}")
+    print(
+        f"  action={decision['action']} reason={decision['escalation_reason']} "
+        f"remediation={decision['remediation_id']} confidence={decision['confidence']}"
+    )
+    print(
+        f"  nodes={result['trace']['nodes_run']} llm_calls={result['trace']['llm_calls']} "
+        f"latency_ms={result['trace']['latency_ms']}"
+    )
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -39,9 +43,13 @@ def main(argv: list[str] | None = None) -> None:
     eval_cmd = sub.add_parser("eval", help="run eval/test_questions.json")
     eval_cmd.add_argument("--mode", type=int, choices=[2, 3], default=3)
 
-    sub.add_parser("guardian-eval", help="run eval/guardian_cases.json straight through the Guardian")
+    sub.add_parser(
+        "guardian-eval", help="run eval/guardian_cases.json straight through the Guardian"
+    )
 
-    sub.add_parser("report", help="run all scenarios live in mode 2 and 3, write outputs/report.html")
+    sub.add_parser(
+        "report", help="run all scenarios live in mode 2 and 3, write outputs/report.html"
+    )
 
     args = parser.parse_args(argv)
 
@@ -64,8 +72,17 @@ def main(argv: list[str] | None = None) -> None:
         out = OUTPUT_DIR / f"guardian_eval_{result['backend']}.json"
         out.write_text(json.dumps(result, indent=2))
         for row in result["rows"]:
-            status = "OK " if row["verdict"] == row["expected"] else "MISS" if row["expected"] == "fail" else "FALSE FAIL"
-            print(f"[{status}] {row['id']} expected={row['expected']} got={row['verdict']}: {row['reason']}")
+            status = (
+                "OK "
+                if row["verdict"] == row["expected"]
+                else "MISS"
+                if row["expected"] == "fail"
+                else "FALSE FAIL"
+            )
+            print(
+                f"[{status}] {row['id']} expected={row['expected']} "
+                f"got={row['verdict']}: {row['reason']}"
+            )
         print(json.dumps(result["summary"], indent=2))
         print(f"wrote {out}")
     elif args.command == "report":

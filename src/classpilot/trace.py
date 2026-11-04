@@ -1,7 +1,7 @@
 """Write one JSONL trace record per decision (later loaded into Bronze by the pipeline)."""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from classpilot.contracts import Trace
@@ -15,7 +15,7 @@ def new_decision_id() -> str:
 
 
 def utc_now() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def write_trace(trace: Trace, path: Path = DEFAULT_TRACE_PATH) -> None:

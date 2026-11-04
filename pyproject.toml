@@ -10,7 +10,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest"]
+dev = ["pytest", "ruff"]
 # Only for scripts/ and BACKEND=cortex. Tests and mock mode do not need it.
 # snowflake-core = Cortex Search Python API. Do not add Snowpark or snowflake-ml-python:
 # they require connector < 5.
@@ -25,3 +25,17 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+# pycodestyle errors, pyflakes, import sorting, bugbear, pyupgrade
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.ruff.lint.per-file-ignores]
+# LLM prompt text must stay byte-identical to the Stage 4 baseline, and report.py holds
+# CSS/HTML strings. Both are replaced in later v2 stages (DSPy signatures, new report).
+"src/classpilot/nodes/*.py" = ["E501"]
+"src/classpilot/report.py" = ["E501"]

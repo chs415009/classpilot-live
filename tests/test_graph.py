@@ -20,7 +20,12 @@ def test_poll_reteach_uses_no_llm(deps, make_evidence):
     assert decision.remediation_id == "R-03"
     assert trace.llm_calls == 0
     assert trace.agent_mode is None
-    assert trace.nodes_run == ["threshold_check", "misconception_lookup", "remediation_limit_check", "poll_decision"]
+    assert trace.nodes_run == [
+        "threshold_check",
+        "misconception_lookup",
+        "remediation_limit_check",
+        "poll_decision",
+    ]
 
 
 def test_poll_unmapped_option_escalates(deps, make_evidence):
@@ -32,7 +37,9 @@ def test_poll_unmapped_option_escalates(deps, make_evidence):
 
 
 def test_question_answer_has_citations_and_trace(deps, make_question):
-    decision, trace = run_question(make_question("Why do we keep raw data in Bronze if it has errors?"), deps, 2)
+    decision, trace = run_question(
+        make_question("Why do we keep raw data in Bronze if it has errors?"), deps, 2
+    )
     assert decision.action == "answer"
     assert decision.citations == ["chunk-01"]
     assert decision.escalation_reason is None
@@ -43,7 +50,9 @@ def test_question_answer_has_citations_and_trace(deps, make_question):
 
 
 def test_protected_question_makes_no_llm_call(deps, make_question):
-    question = make_question("Can you write the dbt model that deduplicates the orders table for Assignment 1?")
+    question = make_question(
+        "Can you write the dbt model that deduplicates the orders table for Assignment 1?"
+    )
     decision, trace = run_question(question, deps, 2)
     assert decision.escalation_reason == "assignment_like"
     assert trace.llm_calls == 0
@@ -61,7 +70,9 @@ def test_details_keep_raw_node_outputs(deps, make_question):
 
 def test_mode_3_skips_guardian_when_escalation_is_certain(deps, make_question):
     # Mock responder gives low confidence for an uncovered question.
-    decision, trace = run_question(make_question("How does dbt handle snapshots for slowly changing dimensions?"), deps, 3)
+    decision, trace = run_question(
+        make_question("How does dbt handle snapshots for slowly changing dimensions?"), deps, 3
+    )
     assert decision.action == "escalate"
     assert "guardian" not in trace.nodes_run
     assert trace.nodes_run[-1] == "validator"
@@ -133,7 +144,9 @@ def test_report_runs_every_scenario(tmp_path):
 
     seen = []
     html = build_report(tmp_path / "report.html", on_result=seen.append).read_text()
-    question_files = [p for p in scenario_files() if json.loads(p.read_text())["path"] == "question"]
+    question_files = [
+        p for p in scenario_files() if json.loads(p.read_text())["path"] == "question"
+    ]
     assert len(seen) == len(scenario_files()) + len(question_files)
     assert all(p.name in html for p in scenario_files())
     assert "3-agent mode" in html
@@ -145,8 +158,13 @@ def test_report_status_colors():
     escalated = {"decision": {"action": "escalate"}}
     assert _status_css({**escalated, "matches_expected": True, "expected": {}}) == "ok"
     reason_differs = {"action": "escalate", "escalation_reason": "unsupported"}
-    assert _status_css({**escalated, "matches_expected": False, "expected": reason_differs}) == "warn"
-    assert _status_css({**escalated, "matches_expected": False, "expected": {"action": "answer"}}) == "bad"
+    assert (
+        _status_css({**escalated, "matches_expected": False, "expected": reason_differs}) == "warn"
+    )
+    assert (
+        _status_css({**escalated, "matches_expected": False, "expected": {"action": "answer"}})
+        == "bad"
+    )
 
 
 def test_write_trace_appends_jsonl(tmp_path, deps, make_question):

@@ -1,7 +1,7 @@
 """Stage 2 connection smoke test. Reads .env, runs trivial queries, prints results.
 
-    python scripts/smoke_test.py            # connection + context + chunk count
-    python scripts/smoke_test.py --search   # also query the Cortex Search service
+python scripts/smoke_test.py            # connection + context + chunk count
+python scripts/smoke_test.py --search   # also query the Cortex Search service
 """
 
 import argparse
@@ -31,7 +31,7 @@ def main() -> None:
             " CURRENT_WAREHOUSE(), CURRENT_DATABASE(), CURRENT_SCHEMA()"
         ).fetchone()
         labels = ["account", "region", "user", "role", "warehouse", "database", "schema"]
-        for label, value in zip(labels, row):
+        for label, value in zip(labels, row, strict=True):
             print(f"{label:>10}: {value}")
 
         count = cur.execute("SELECT COUNT(*) FROM LESSON_CHUNKS").fetchone()[0]

@@ -263,7 +263,10 @@ def build_question_graph(deps: Deps, agent_mode: int):
 
 
 def run_question(
-    question: StudentQuestion, deps: Deps, agent_mode: int | None = None, details: dict | None = None
+    question: StudentQuestion,
+    deps: Deps,
+    agent_mode: int | None = None,
+    details: dict | None = None,
 ) -> tuple[Decision, Trace]:
     """`details`, if given, is filled with the raw node outputs (for eval only, not the trace)."""
     mode = agent_mode or deps.settings.agent_mode

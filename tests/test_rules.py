@@ -1,7 +1,12 @@
 from classpilot import rules
 
 GOOD_ANALYST = {"category": "in_scope", "objective_id": "objective-02", "reason": "x"}
-GOOD_RESPONSE = {"answer_text": "Bronze keeps raw data.", "citations": ["chunk-01"], "confidence": 0.9, "grounded": True}
+GOOD_RESPONSE = {
+    "answer_text": "Bronze keeps raw data.",
+    "citations": ["chunk-01"],
+    "confidence": 0.9,
+    "grounded": True,
+}
 
 
 def validate(**overrides):
@@ -157,7 +162,10 @@ def test_validator_guardian_in_mode_3():
 
 def test_validator_self_check_also_in_mode_3():
     raw = {**GOOD_RESPONSE, "grounded": False}
-    assert validate(agent_mode=3, responder_raw=raw, guardian_raw=guardian()).escalation_reason == "unsupported"
+    assert (
+        validate(agent_mode=3, responder_raw=raw, guardian_raw=guardian()).escalation_reason
+        == "unsupported"
+    )
 
 
 def test_check_guardian_passes_when_every_claim_is_supported():

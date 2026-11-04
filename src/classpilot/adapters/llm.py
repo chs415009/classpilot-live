@@ -143,7 +143,9 @@ class MockLLM:
         elif question_coverage >= 0.3:
             # Simulated failure mode: invent a sentence about the uncovered words.
             missing = sorted(set(content_words(question)) - set(content_words(all_text)))
-            answer += f" For {' and '.join(missing)}, the same approach works without any extra setup."
+            answer += (
+                f" For {' and '.join(missing)}, the same approach works without any extra setup."
+            )
             confidence = 0.85
         else:
             confidence = question_coverage
@@ -162,7 +164,11 @@ class MockLLM:
         claims = []
         for sentence in split_sentences(answer):
             support = next(
-                (c["chunk_id"] for c in payload["cited_chunks"] if coverage(sentence, c["text"]) >= 0.6),
+                (
+                    c["chunk_id"]
+                    for c in payload["cited_chunks"]
+                    if coverage(sentence, c["text"]) >= 0.6
+                ),
                 None,
             )
             claims.append({"claim": sentence, "chunk_id": support})
@@ -262,7 +268,9 @@ class CortexLLM:
         params = (self.model, prompt, json.dumps(response_format(task)))
         cursor = self.connection.cursor()
         try:
-            row = cursor.execute(COMPLETE_SQL, params, timeout=max(1, int(self.timeout_s))).fetchone()
+            row = cursor.execute(
+                COMPLETE_SQL, params, timeout=max(1, int(self.timeout_s))
+            ).fetchone()
         except Exception as exc:
             raise LLMError(f"{task}: Cortex call failed: {exc}") from exc
         finally:

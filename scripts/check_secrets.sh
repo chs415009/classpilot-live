@@ -57,6 +57,7 @@ if [ "${1:-}" = "--history" ] && git rev-parse --verify -q HEAD >/dev/null; then
   report "secrets or account-specific values in history" < <(
     git log -p --all --format='commit %H%n%B' -- . ":(exclude)$SELF" \
       | $GREP -vE '^(-| |@@|diff --git|index )' \
+      | sed 's/^+//' \
       | $GREP -nIE "${ARGS[@]}")
   report "commit emails that are not a noreply address (public on push)" < <(
     git log --all --format='%H author=%ae committer=%ce' \

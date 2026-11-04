@@ -434,7 +434,7 @@ Rough estimate: $160–460 total. Largest items: DSPy compiling and warehouse up
 
 Controls: develop in mock mode; cheap model for iteration; DSPy cache on; small
 compiles first; resource monitor on the warehouse; suspend search services when idle
-(including the v1 `LESSON_SEARCH`); check `CORTEX_FUNCTIONS_QUERY_USAGE_HISTORY` and
+(including the v1 `LESSON_SEARCH`); check `CORTEX_AI_FUNCTIONS_USAGE_HISTORY` and
 `WAREHOUSE_METERING_HISTORY` after every live stage. Re-estimate after Stage 1 from
 real usage.
 

@@ -123,7 +123,7 @@ Tasks:
   - `dspy.Refine`
   - DSPy's test LM (`DummyLM` or its current name)
 - Cost calibration: read what the v1 Stage 3/4 runs actually cost from
-  `CORTEX_FUNCTIONS_QUERY_USAGE_HISTORY` and `WAREHOUSE_METERING_HISTORY`.
+  `CORTEX_AI_FUNCTIONS_USAGE_HISTORY` and `WAREHOUSE_METERING_HISTORY`.
 - Probe Route A: `dspy.LM("snowflake/<model>")`, one Analyst-style structured call.
 - Probe Route B: a minimal custom `dspy.BaseLM` over the existing `AI_COMPLETE`
   adapter, same call.

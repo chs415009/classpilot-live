@@ -7,6 +7,8 @@ dependencies = [
     "langgraph",
     "pydantic>=2",
     "pyyaml",
+    # DSPy 3.4 custom-engine API; forward()-style custom LMs are removed in 3.5.
+    "dspy>=3.4.1,<3.5",
 ]
 
 [project.optional-dependencies]

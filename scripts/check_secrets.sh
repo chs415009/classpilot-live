@@ -59,9 +59,12 @@ if [ "${1:-}" = "--history" ] && git rev-parse --verify -q HEAD >/dev/null; then
       | $GREP -vE '^(-| |@@|diff --git|index )' \
       | sed 's/^+//' \
       | $GREP -nIE "${ARGS[@]}")
-  report "commit emails that are not a noreply address (public on push)" < <(
-    git log --all --format='%H author=%ae committer=%ce' \
-      | $GREP -vE "author=[^ ]*($ALLOW)[^ ]* committer=[^ ]*($ALLOW)")
+  # Allowed: noreply addresses and the repo owner's own git email (public by choice,
+  # 2026-11-04). Read from git config so the address is not written into the repo.
+  OWNER=$(git config user.email | sed 's/[.[\*^$+?(){}|]/\\&/g')
+  COMMIT_ALLOW="$ALLOW${OWNER:+|^$OWNER\$}"
+  report "commit emails that are not allowed (public on push)" < <(
+    git log --all --format='%ae%n%ce' | sort -u | $GREP -vE "$COMMIT_ALLOW")
 fi
 
 if [ $status -eq 0 ]; then echo "check_secrets: clean"; fi

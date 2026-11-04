@@ -46,6 +46,9 @@ decision), `docs/v2/STAGES.md` (stage plan). v1 rules and contracts: `docs/v1/CL
 - 2026-11-04 [question] Git author email of the commits is a personal address, which is
   public once pushed. Use a GitHub noreply address for this repo? The `--history` mode of
   the secret check fails until this is decided.
+  -> [decision] User: keep the personal git email (public by choice). The history check
+  allows the address from `git config user.email` (not written into the repo) plus
+  noreply addresses.
 - 2026-11-04 [change] User: all v1 docs are archived and v1 interface items are ignored.
   The v1 dev log moved to `docs/v1/note_v1.md` and v1 items Q-01 to Q-12 to
   `docs/v1/interface_questions_v1.md`. `interface_questions.md` keeps only v2 items
@@ -54,4 +57,3 @@ decision), `docs/v2/STAGES.md` (stage plan). v1 rules and contracts: `docs/v1/CL
 - 2026-11-04 [change] User: no date-driven planning; the user decides when stages run.
   Removed the trial-expiry check from Stage 0 and the trial-date dependency of Stages 1
   and 9.
-

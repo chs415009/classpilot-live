@@ -1,0 +1,14 @@
+{
+  "name": "Low confidence -> fallback escalate",
+  "description": "About dbt, so in scope, but no approved chunk covers snapshots. Responder confidence is below 0.70, so the validator escalates.",
+  "path": "question",
+  "expected": {"action": "escalate", "escalation_reason": "low_confidence"},
+  "input": {
+    "session_id": "session-001",
+    "event_id": "evt-127",
+    "anonymous_learner_id": "learner-020",
+    "objective_id": "objective-03",
+    "question_text": "How does dbt handle snapshots for slowly changing dimensions?",
+    "submitted_at": "2026-10-22T18:35:30Z"
+  }
+}

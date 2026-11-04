@@ -1,0 +1,14 @@
+{
+  "name": "In-scope question -> answer with citations",
+  "description": "A question covered by approved chunk-01. The responder answers from it and cites it.",
+  "path": "question",
+  "expected": {"action": "answer"},
+  "input": {
+    "session_id": "session-001",
+    "event_id": "evt-123",
+    "anonymous_learner_id": "learner-017",
+    "objective_id": "objective-02",
+    "question_text": "Why do we keep raw data in Bronze if it has errors?",
+    "submitted_at": "2026-10-22T18:31:05Z"
+  }
+}

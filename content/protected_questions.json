@@ -1,0 +1,14 @@
+[
+  {
+    "protected_id": "A1-Q2",
+    "text": "Write the dbt model that deduplicates the orders table using ref() for Assignment 1."
+  },
+  {
+    "protected_id": "A1-Q4",
+    "text": "Which three dbt tests should be added to the customers model in Assignment 1, and why?"
+  },
+  {
+    "protected_id": "A2-Q1",
+    "text": "Design the Gold layer table for daily revenue per store for Assignment 2."
+  }
+]

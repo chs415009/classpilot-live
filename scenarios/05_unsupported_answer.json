@@ -1,0 +1,14 @@
+{
+  "name": "Partly covered question -> unsupported answer (compare modes)",
+  "description": "Chunks cover Bronze but not Kafka streaming. The mock responder fills the gap with an unsupported sentence and says it is grounded. Run with --mode 2 (lets it through) and --mode 3 (Guardian catches it).",
+  "path": "question",
+  "expected": {"action": "escalate", "escalation_reason": "unsupported"},
+  "input": {
+    "session_id": "session-001",
+    "event_id": "evt-128",
+    "anonymous_learner_id": "learner-009",
+    "objective_id": "objective-02",
+    "question_text": "How does the Bronze layer handle streaming data from Kafka?",
+    "submitted_at": "2026-10-22T18:36:45Z"
+  }
+}

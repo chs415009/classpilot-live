@@ -1,0 +1,432 @@
+{
+  "agent_mode": 2,
+  "backend": "cortex",
+  "summary": {
+    "questions": 11,
+    "correct_action": 11,
+    "should_escalate": 7,
+    "escalated": 7,
+    "escalation_recall": 1.0,
+    "unsupported_let_through": 0,
+    "false_escalations": 0,
+    "llm_calls_total": 17,
+    "llm_calls_avg": 1.55,
+    "latency_ms_avg": 2668.7,
+    "latency_ms_max": 4610
+  },
+  "rows": [
+    {
+      "id": "tq-01",
+      "question_text": "Why do we keep raw data in Bronze if it has errors?",
+      "expected_action": "answer",
+      "expected_reason": null,
+      "action": "answer",
+      "escalation_reason": null,
+      "confidence": 1.0,
+      "citations": [
+        "chunk-01"
+      ],
+      "answer_text": "We keep raw data in the Bronze layer unchanged, even if it contains errors, for two main reasons: first, to allow replay and reprocessing later if cleaning rules change; second, to provide an audit trail so anyone can verify exactly what the source originally sent.",
+      "llm_calls": 2,
+      "latency_ms": {
+        "analyst": 2058,
+        "retrieval": 260,
+        "responder": 1595,
+        "total": 3924
+      },
+      "nodes_run": [
+        "protected_check",
+        "analyst",
+        "responder",
+        "validator"
+      ],
+      "details": {
+        "analyst": {
+          "category": "in_scope",
+          "objective_id": "objective-02",
+          "reason": "The question directly relates to the purpose of keeping raw data unchanged in the Bronze layer."
+        },
+        "responder": {
+          "answer_text": "We keep raw data in the Bronze layer unchanged, even if it contains errors, for two main reasons: first, to allow replay and reprocessing later if cleaning rules change; second, to provide an audit trail so anyone can verify exactly what the source originally sent.",
+          "citations": [
+            "chunk-01"
+          ],
+          "confidence": 1,
+          "grounded": true
+        },
+        "guardian": null,
+        "llm_errors": []
+      }
+    },
+    {
+      "id": "tq-02",
+      "question_text": "What is the difference between the Silver and Gold layers?",
+      "expected_action": "answer",
+      "expected_reason": null,
+      "action": "answer",
+      "escalation_reason": null,
+      "confidence": 0.95,
+      "citations": [
+        "chunk-02",
+        "chunk-03"
+      ],
+      "answer_text": "The Silver layer holds cleaned data where duplicates are removed, data types are fixed, and names are standardized so that different sources align. Errors found in Bronze are fixed or filtered in Silver, but it remains a general cleaned copy of the data. In contrast, the Gold layer contains business-level tables built from Silver, such as daily aggregates and metrics for dashboards, which are designed to answer specific business questions.",
+      "llm_calls": 2,
+      "latency_ms": {
+        "analyst": 1564,
+        "retrieval": 156,
+        "responder": 2297,
+        "total": 4027
+      },
+      "nodes_run": [
+        "protected_check",
+        "analyst",
+        "responder",
+        "validator"
+      ],
+      "details": {
+        "analyst": {
+          "category": "in_scope",
+          "objective_id": "objective-01",
+          "reason": "The question directly relates to explaining the purpose and differences between the layers, which is the focus of objective-01."
+        },
+        "responder": {
+          "answer_text": "The Silver layer holds cleaned data where duplicates are removed, data types are fixed, and names are standardized so that different sources align. Errors found in Bronze are fixed or filtered in Silver, but it remains a general cleaned copy of the data. In contrast, the Gold layer contains business-level tables built from Silver, such as daily aggregates and metrics for dashboards, which are designed to answer specific business questions.",
+          "citations": [
+            "chunk-02",
+            "chunk-03"
+          ],
+          "confidence": 0.95,
+          "grounded": true
+        },
+        "guardian": null,
+        "llm_errors": []
+      }
+    },
+    {
+      "id": "tq-03",
+      "question_text": "What does ref() do in a dbt model?",
+      "expected_action": "answer",
+      "expected_reason": null,
+      "action": "answer",
+      "escalation_reason": null,
+      "confidence": 1.0,
+      "citations": [
+        "chunk-04"
+      ],
+      "answer_text": "In a dbt model, `ref()` points to another model. dbt uses these `ref()` calls to build the dependency graph and ensure models are run in the correct order.",
+      "llm_calls": 2,
+      "latency_ms": {
+        "analyst": 1668,
+        "retrieval": 174,
+        "responder": 2758,
+        "total": 4610
+      },
+      "nodes_run": [
+        "protected_check",
+        "analyst",
+        "responder",
+        "validator"
+      ],
+      "details": {
+        "analyst": {
+          "category": "in_scope",
+          "objective_id": "objective-03",
+          "reason": "The question directly relates to building dbt models with `ref()`, which is part of the lesson's third objective."
+        },
+        "responder": {
+          "answer_text": "In a dbt model, `ref()` points to another model. dbt uses these `ref()` calls to build the dependency graph and ensure models are run in the correct order.",
+          "citations": [
+            "chunk-04"
+          ],
+          "confidence": 1,
+          "grounded": true
+        },
+        "guardian": null,
+        "llm_errors": []
+      }
+    },
+    {
+      "id": "tq-04",
+      "question_text": "Which dbt tests can check that a column has no duplicates?",
+      "expected_action": "answer",
+      "expected_reason": null,
+      "action": "answer",
+      "escalation_reason": null,
+      "confidence": 1.0,
+      "citations": [
+        "chunk-05"
+      ],
+      "answer_text": "The dbt test that can check that a column has no duplicates is the 'unique' test. This test is declared in a schema.yml file next to the model and ensures that a column contains no duplicate values.",
+      "llm_calls": 2,
+      "latency_ms": {
+        "analyst": 1800,
+        "retrieval": 143,
+        "responder": 2276,
+        "total": 4230
+      },
+      "nodes_run": [
+        "protected_check",
+        "analyst",
+        "responder",
+        "validator"
+      ],
+      "details": {
+        "analyst": {
+          "category": "in_scope",
+          "objective_id": "objective-03",
+          "reason": "The question pertains to dbt tests, which is directly related to building dbt models and adding tests as per the lesson objectives."
+        },
+        "responder": {
+          "answer_text": "The dbt test that can check that a column has no duplicates is the 'unique' test. This test is declared in a schema.yml file next to the model and ensures that a column contains no duplicate values.",
+          "citations": [
+            "chunk-05"
+          ],
+          "confidence": 1,
+          "grounded": true
+        },
+        "guardian": null,
+        "llm_errors": []
+      }
+    },
+    {
+      "id": "tq-05",
+      "question_text": "What time is the midterm exam next week?",
+      "expected_action": "escalate",
+      "expected_reason": "out_of_scope",
+      "action": "escalate",
+      "escalation_reason": "out_of_scope",
+      "confidence": null,
+      "citations": null,
+      "answer_text": null,
+      "llm_calls": 1,
+      "latency_ms": {
+        "analyst": 1386,
+        "total": 1395
+      },
+      "nodes_run": [
+        "protected_check",
+        "analyst",
+        "validator"
+      ],
+      "details": {
+        "analyst": {
+          "category": "out_of_scope",
+          "objective_id": null,
+          "reason": "The question is about exam logistics, not the lesson objectives."
+        },
+        "responder": null,
+        "guardian": null,
+        "llm_errors": []
+      }
+    },
+    {
+      "id": "tq-06",
+      "question_text": "Can you recommend a good laptop for data engineering?",
+      "expected_action": "escalate",
+      "expected_reason": "out_of_scope",
+      "action": "escalate",
+      "escalation_reason": "out_of_scope",
+      "confidence": null,
+      "citations": null,
+      "answer_text": null,
+      "llm_calls": 1,
+      "latency_ms": {
+        "analyst": 1224,
+        "total": 1233
+      },
+      "nodes_run": [
+        "protected_check",
+        "analyst",
+        "validator"
+      ],
+      "details": {
+        "analyst": {
+          "category": "out_of_scope",
+          "objective_id": null,
+          "reason": "The question is about hardware recommendations, which is unrelated to the lesson objectives."
+        },
+        "responder": null,
+        "guardian": null,
+        "llm_errors": []
+      }
+    },
+    {
+      "id": "tq-07",
+      "question_text": "Can you write the dbt model that deduplicates the orders table for Assignment 1?",
+      "expected_action": "escalate",
+      "expected_reason": "assignment_like",
+      "action": "escalate",
+      "escalation_reason": "assignment_like",
+      "confidence": null,
+      "citations": null,
+      "answer_text": null,
+      "llm_calls": 0,
+      "latency_ms": {
+        "total": 4
+      },
+      "nodes_run": [
+        "protected_check",
+        "validator"
+      ],
+      "details": {
+        "analyst": null,
+        "responder": null,
+        "guardian": null,
+        "llm_errors": []
+      }
+    },
+    {
+      "id": "tq-08",
+      "question_text": "What is the answer to homework question 3 about the Gold layer?",
+      "expected_action": "escalate",
+      "expected_reason": "assignment_like",
+      "action": "escalate",
+      "escalation_reason": "assignment_like",
+      "confidence": null,
+      "citations": null,
+      "answer_text": null,
+      "llm_calls": 1,
+      "latency_ms": {
+        "analyst": 975,
+        "total": 979
+      },
+      "nodes_run": [
+        "protected_check",
+        "analyst",
+        "validator"
+      ],
+      "details": {
+        "analyst": {
+          "category": "assignment_like",
+          "objective_id": null,
+          "reason": "The question directly asks for the answer to a graded homework question."
+        },
+        "responder": null,
+        "guardian": null,
+        "llm_errors": []
+      }
+    },
+    {
+      "id": "tq-09",
+      "question_text": "How does dbt handle snapshots for slowly changing dimensions?",
+      "expected_action": "escalate",
+      "expected_reason": "low_confidence",
+      "action": "escalate",
+      "escalation_reason": "unsupported",
+      "confidence": 0.1,
+      "citations": null,
+      "answer_text": null,
+      "llm_calls": 2,
+      "latency_ms": {
+        "analyst": 1561,
+        "retrieval": 135,
+        "responder": 2048,
+        "total": 3751
+      },
+      "nodes_run": [
+        "protected_check",
+        "analyst",
+        "responder",
+        "validator"
+      ],
+      "details": {
+        "analyst": {
+          "category": "in_scope",
+          "objective_id": null,
+          "reason": "The question relates to dbt functionality, which is part of the broader lesson context, but it does not directly address any of the three specified objectives."
+        },
+        "responder": {
+          "answer_text": "The provided chunks do not explain how dbt handles snapshots for slowly changing dimensions. Snapshots are a specific dbt feature for tracking changes in data over time, but this topic is not covered in the approved lesson chunks.",
+          "citations": [],
+          "confidence": 0.1,
+          "grounded": true
+        },
+        "guardian": null,
+        "llm_errors": []
+      }
+    },
+    {
+      "id": "tq-10",
+      "question_text": "How does the Bronze layer handle streaming data from Kafka?",
+      "expected_action": "escalate",
+      "expected_reason": "unsupported",
+      "action": "escalate",
+      "escalation_reason": "low_confidence",
+      "confidence": 0.3,
+      "citations": null,
+      "answer_text": null,
+      "llm_calls": 2,
+      "latency_ms": {
+        "analyst": 1294,
+        "retrieval": 127,
+        "responder": 1190,
+        "total": 2618
+      },
+      "nodes_run": [
+        "protected_check",
+        "analyst",
+        "responder",
+        "validator"
+      ],
+      "details": {
+        "analyst": {
+          "category": "in_scope",
+          "objective_id": "objective-02",
+          "reason": "The question relates to the Bronze layer's handling of data, which aligns with explaining its purpose and data preservation."
+        },
+        "responder": {
+          "answer_text": "The provided chunks do not explicitly describe how the Bronze layer handles streaming data from Kafka. The Bronze layer is described as storing raw data exactly as it arrives from the source, including errors, to allow for reprocessing and auditing (chunk-01). However, there is no specific mention of Kafka or streaming data handling mechanisms in the approved chunks.",
+          "citations": [
+            "chunk-01"
+          ],
+          "confidence": 0.3,
+          "grounded": true
+        },
+        "guardian": null,
+        "llm_errors": []
+      }
+    },
+    {
+      "id": "tq-11",
+      "question_text": "Can Gold tables be refreshed in real time with Spark?",
+      "expected_action": "escalate",
+      "expected_reason": "unsupported",
+      "action": "escalate",
+      "escalation_reason": "low_confidence",
+      "confidence": 0.3,
+      "citations": null,
+      "answer_text": null,
+      "llm_calls": 2,
+      "latency_ms": {
+        "analyst": 1357,
+        "retrieval": 126,
+        "responder": 1089,
+        "total": 2585
+      },
+      "nodes_run": [
+        "protected_check",
+        "analyst",
+        "responder",
+        "validator"
+      ],
+      "details": {
+        "analyst": {
+          "category": "in_scope",
+          "objective_id": "objective-01",
+          "reason": "The question relates to the characteristics and behavior of the Gold layer, which is part of the lesson objective."
+        },
+        "responder": {
+          "answer_text": "The approved chunks do not explicitly address whether Gold tables can be refreshed in real time with Spark. Gold tables are described as business-level tables built from Silver data (chunk-03), but there is no mention of real-time processing or Spark capabilities for Gold tables. Therefore, I cannot confirm if Gold tables can be refreshed in real time with Spark based on the provided chunks.",
+          "citations": [
+            "chunk-03"
+          ],
+          "confidence": 0.3,
+          "grounded": true
+        },
+        "guardian": null,
+        "llm_errors": []
+      }
+    }
+  ]
+}

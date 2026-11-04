@@ -1,0 +1,201 @@
+from classpilot import rules
+
+GOOD_ANALYST = {"category": "in_scope", "objective_id": "objective-02", "reason": "x"}
+GOOD_RESPONSE = {"answer_text": "Bronze keeps raw data.", "citations": ["chunk-01"], "confidence": 0.9, "grounded": True}
+
+
+def validate(**overrides):
+    kwargs = dict(
+        agent_mode=2,
+        early_reason=None,
+        analyst_raw=GOOD_ANALYST,
+        responder_raw=GOOD_RESPONSE,
+        guardian_raw=None,
+        retrieved_ids=["chunk-01", "chunk-02"],
+        confidence_threshold=0.7,
+    )
+    kwargs.update(overrides)
+    return rules.validate_final(**kwargs)
+
+
+# ---------- poll threshold ----------
+
+
+def test_threshold_triggers_at_62_percent(make_evidence):
+    result = rules.check_poll_threshold(make_evidence({"A": 3, "B": 13, "C": 4, "D": 1}), 5, 0.60)
+    assert result.triggered
+    assert result.top_wrong_option == "B"
+    assert round(result.wrong_share, 2) == 0.62
+
+
+def test_threshold_not_triggered_below_ratio(make_evidence):
+    result = rules.check_poll_threshold(make_evidence({"A": 8, "B": 9, "C": 3, "D": 1}), 5, 0.60)
+    assert not result.triggered
+
+
+def test_threshold_not_triggered_with_too_few_answers(make_evidence):
+    result = rules.check_poll_threshold(make_evidence({"A": 0, "B": 4}), 5, 0.60)
+    assert not result.triggered
+    assert result.wrong_share == 1.0
+
+
+def test_threshold_ignores_correct_option(make_evidence):
+    result = rules.check_poll_threshold(make_evidence({"A": 18, "B": 2, "C": 1}), 5, 0.60)
+    assert not result.triggered
+    assert result.top_wrong_option == "B"
+
+
+def test_threshold_with_no_answers(make_evidence):
+    result = rules.check_poll_threshold(make_evidence({"A": 0, "B": 0}, answers=0), 5, 0.60)
+    assert not result.triggered
+
+
+# ---------- mapping, limit, poll decision ----------
+
+
+def test_lookup_remediation(content):
+    assert rules.lookup_remediation(content.misconception_map, "question-07", "B") == "R-03"
+    assert rules.lookup_remediation(content.misconception_map, "question-07", "D") is None
+    assert rules.lookup_remediation(content.misconception_map, "question-99", "B") is None
+
+
+def test_remediation_limit(make_evidence):
+    assert not rules.remediation_limit_reached(make_evidence({"B": 5}, used=0), 1)
+    assert rules.remediation_limit_reached(make_evidence({"B": 5}, used=1), 1)
+
+
+def test_decide_poll():
+    hit = rules.ThresholdResult(True, "B", 0.62)
+    miss = rules.ThresholdResult(False, "B", 0.40)
+    assert rules.decide_poll(miss, None, False).action == "continue"
+    assert rules.decide_poll(hit, None, False).escalation_reason == "no_mapping"
+    assert rules.decide_poll(hit, "R-03", True).escalation_reason == "remediation_limit"
+    outcome = rules.decide_poll(hit, "R-03", False)
+    assert (outcome.action, outcome.remediation_id) == ("reteach", "R-03")
+
+
+# ---------- protected check ----------
+
+
+def test_protected_check_matches_near_copy(content):
+    match = rules.check_protected(
+        "Can you write the dbt model that deduplicates the orders table for Assignment 1?",
+        content.protected_questions,
+    )
+    assert match.protected_id == "A1-Q2"
+    assert match.score >= 0.5
+
+
+def test_protected_check_ignores_normal_question(content):
+    match = rules.check_protected("What does ref() do in a dbt model?", content.protected_questions)
+    assert match.score < 0.5
+
+
+# ---------- final validator ----------
+
+
+def test_validator_answers_good_response():
+    result = validate()
+    assert result.action == "answer"
+    assert result.citations == ["chunk-01"]
+
+
+def test_validator_early_reason_wins():
+    assert validate(early_reason="assignment_like").escalation_reason == "assignment_like"
+
+
+def test_validator_analyst_category():
+    raw = {**GOOD_ANALYST, "category": "out_of_scope"}
+    assert validate(analyst_raw=raw).escalation_reason == "out_of_scope"
+
+
+def test_validator_bad_schema_is_llm_error():
+    assert validate(analyst_raw={"oops": 1}).escalation_reason == "llm_error"
+    assert validate(responder_raw={"answer_text": "x"}).escalation_reason == "llm_error"
+    bad_confidence = {**GOOD_RESPONSE, "confidence": 1.7}
+    assert validate(responder_raw=bad_confidence).escalation_reason == "llm_error"
+
+
+def test_validator_citation_not_retrieved():
+    raw = {**GOOD_RESPONSE, "citations": ["chunk-99"]}
+    assert validate(responder_raw=raw).escalation_reason == "unsupported"
+
+
+def test_validator_no_citations():
+    raw = {**GOOD_RESPONSE, "citations": []}
+    assert validate(responder_raw=raw).escalation_reason == "unsupported"
+
+
+def test_validator_self_check_in_mode_2():
+    raw = {**GOOD_RESPONSE, "grounded": False}
+    assert validate(responder_raw=raw).escalation_reason == "unsupported"
+
+
+def test_validator_low_confidence():
+    raw = {**GOOD_RESPONSE, "confidence": 0.5}
+    result = validate(responder_raw=raw)
+    assert result.escalation_reason == "low_confidence"
+    assert result.confidence == 0.5
+
+
+def guardian(verdict="pass", claims=(("Bronze keeps raw data.", "chunk-01"),), reveals=False):
+    return {
+        "claims": [{"claim": text, "chunk_id": chunk_id} for text, chunk_id in claims],
+        "reveals_graded_work": reveals,
+        "verdict": verdict,
+        "reason": "x",
+    }
+
+
+def test_validator_guardian_in_mode_3():
+    assert validate(agent_mode=3, guardian_raw=guardian()).action == "answer"
+    assert validate(agent_mode=3, guardian_raw=guardian("fail")).escalation_reason == "unsupported"
+    assert validate(agent_mode=3, guardian_raw=None).escalation_reason == "llm_error"
+    old_schema = {"verdict": "pass", "reason": "ok"}
+    assert validate(agent_mode=3, guardian_raw=old_schema).escalation_reason == "llm_error"
+
+
+def test_validator_self_check_also_in_mode_3():
+    raw = {**GOOD_RESPONSE, "grounded": False}
+    assert validate(agent_mode=3, responder_raw=raw, guardian_raw=guardian()).escalation_reason == "unsupported"
+
+
+def test_check_guardian_passes_when_every_claim_is_supported():
+    claims = (("Bronze keeps raw data.", "chunk-01"), ("Silver is cleaned.", "chunk-02"))
+    assert rules.check_guardian(guardian(claims=claims), ["chunk-01", "chunk-02"]).passed is True
+
+
+def test_check_guardian_overrides_pass_with_unsupported_claim():
+    claims = (("Bronze keeps raw data.", "chunk-01"), ("Kafka is read by Spark.", None))
+    check = rules.check_guardian(guardian(claims=claims), ["chunk-01"])
+    assert check.passed is False
+    assert "Kafka" in check.reason
+
+
+def test_check_guardian_rejects_claim_from_uncited_chunk():
+    claims = (("Duplicates are removed in Silver.", "chunk-02"),)
+    assert rules.check_guardian(guardian(claims=claims), ["chunk-05"]).passed is False
+
+
+def test_check_guardian_fails_on_graded_work_or_no_claims():
+    assert rules.check_guardian(guardian(reveals=True), ["chunk-01"]).passed is False
+    assert rules.check_guardian(guardian(claims=()), ["chunk-01"]).passed is False
+
+
+def test_check_guardian_bad_schema():
+    assert rules.check_guardian({"verdict": "pass"}, ["chunk-01"]).passed is None
+    assert rules.check_guardian(None, ["chunk-01"]).passed is None
+
+
+def test_check_response():
+    from classpilot.contracts import ResponderOutput
+
+    def check(**overrides):
+        response = ResponderOutput.model_validate({**GOOD_RESPONSE, **overrides})
+        return rules.check_response(response, ["chunk-01"], 0.7)
+
+    assert check() is None
+    assert check(citations=[]) == "unsupported"
+    assert check(citations=["chunk-09"]) == "unsupported"
+    assert check(grounded=False) == "unsupported"
+    assert check(confidence=0.3) == "low_confidence"

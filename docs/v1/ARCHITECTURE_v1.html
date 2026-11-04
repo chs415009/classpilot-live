@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ClassPilot Agent Architecture</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600;700&display=swap">
+<style>
+/* Layout: one reading column; each diagram sits in its own scroll box so the page never scrolls sideways.
+   Encoding repeats across all three diagrams: grey = rule (code), violet = LLM, blue = Snowflake, dashed = teammate's part. */
+:root {
+  --bg: #f5f7fa;
+  --surface: #ffffff;
+  --fg: #1b2330;
+  --muted: #5b6678;
+  --line: #d6dce5;
+  --line-strong: #a9b3c2;
+  --rule-fill: #eceff4;
+  --llm: #5a49d1;
+  --llm-fill: #eeebfc;
+  --sf: #1d6aab;
+  --sf-fill: #e4eef8;
+  --esc: #8f5500;
+  --esc-fill: #fbefdb;
+  --ok: #1c7444;
+  --ok-fill: #e2f2e8;
+  --sans: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11151c; --surface: #171c25; --fg: #e5e9ef; --muted: #98a2b3;
+    --line: #2b3340; --line-strong: #4a5464; --rule-fill: #1e242e;
+    --llm: #ab9fff; --llm-fill: #251f44; --sf: #6fb1ea; --sf-fill: #14273a;
+    --esc: #e8b35e; --esc-fill: #33260e; --ok: #6fd39a; --ok-fill: #132f1f;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11151c; --surface: #171c25; --fg: #e5e9ef; --muted: #98a2b3;
+  --line: #2b3340; --line-strong: #4a5464; --rule-fill: #1e242e;
+  --llm: #ab9fff; --llm-fill: #251f44; --sf: #6fb1ea; --sf-fill: #14273a;
+  --esc: #e8b35e; --esc-fill: #33260e; --ok: #6fd39a; --ok-fill: #132f1f;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font: 15px/1.55 var(--sans);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 40px 72px;
+}
+main { max-width: 1000px; margin: 0 auto; display: grid; gap: 44px; }
+header { display: grid; gap: 10px; }
+h1 { font-size: 30px; line-height: 1.15; margin: 0; font-weight: 700; text-wrap: balance; }
+h2 { font-size: 19px; margin: 0; font-weight: 700; text-wrap: balance; }
+p { margin: 0; max-width: 68ch; }
+.meta { font: 12.5px/1.5 var(--mono); color: var(--muted); }
+.lede { color: var(--muted); }
+section { display: grid; gap: 14px; min-width: 0; }
+.eyebrow { font: 600 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+
+.legend { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 13px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 7px; }
+.sw { width: 18px; height: 12px; border-radius: 3px; border: 1.5px solid; display: inline-block; }
+.sw.rule { background: var(--rule-fill); border-color: var(--line-strong); }
+.sw.llm { background: var(--llm-fill); border-color: var(--llm); }
+.sw.sf { background: var(--sf-fill); border-color: var(--sf); }
+.sw.team { background: transparent; border: 1.5px dashed var(--muted); }
+.sw.esc { background: var(--esc-fill); border-color: var(--esc); border-radius: 8px; }
+.sw.ok { background: var(--ok-fill); border-color: var(--ok); border-radius: 8px; }
+
+figure { margin: 0; display: grid; gap: 10px; min-width: 0; }
+.scroll { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
+.scroll svg { display: block; width: 100%; height: auto; min-width: 760px; }
+figcaption { font-size: 13.5px; color: var(--muted); max-width: 80ch; }
+
+/* SVG parts, all themed through tokens */
+.d text { fill: var(--fg); }
+.d .t { font: 600 13px var(--sans); }
+.d .m { font: 600 12px var(--mono); }
+.d .s { font: 11px var(--sans); fill: var(--muted); }
+.d .lbl { font: 11px var(--sans); fill: var(--muted); }
+.d .grp { font: 600 11px var(--mono); letter-spacing: .06em; fill: var(--muted); }
+.b-rule { fill: var(--rule-fill); stroke: var(--line-strong); stroke-width: 1.2; }
+.b-llm { fill: var(--llm-fill); stroke: var(--llm); stroke-width: 1.4; }
+.b-sf { fill: var(--sf-fill); stroke: var(--sf); stroke-width: 1.4; }
+.b-file { fill: var(--surface); stroke: var(--line-strong); stroke-width: 1.2; }
+.b-team { fill: none; stroke: var(--muted); stroke-width: 1.3; stroke-dasharray: 5 4; }
+.b-group { fill: none; stroke: var(--line-strong); stroke-width: 1.2; }
+.b-sfgroup { fill: none; stroke: var(--sf); stroke-width: 1.2; }
+.p-esc { fill: var(--esc-fill); stroke: var(--esc); stroke-width: 1.2; }
+.p-ok { fill: var(--ok-fill); stroke: var(--ok); stroke-width: 1.2; }
+.p-neutral { fill: var(--rule-fill); stroke: var(--line-strong); stroke-width: 1.2; }
+.d .tx-esc { fill: var(--esc); font: 600 11.5px var(--sans); }
+.d .tx-ok { fill: var(--ok); font: 600 11.5px var(--sans); }
+.d .tx-neutral { fill: var(--fg); font: 600 11.5px var(--sans); }
+.e { stroke: var(--muted); stroke-width: 1.4; fill: none; }
+.e-dash { stroke-dasharray: 5 4; }
+.e-sf { stroke: var(--sf); }
+.ah { fill: var(--muted); }
+.ah-sf { fill: var(--sf); }
+
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; min-width: 0; display: grid; gap: 8px; align-content: start; }
+.panel h3 { margin: 0; font-size: 14.5px; }
+dl { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; font-size: 13.5px; }
+dt { color: var(--muted); }
+dd { margin: 0; min-width: 0; }
+code { font: 12.5px var(--mono); overflow-wrap: anywhere; }
+ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; font-size: 13.5px; }
+.table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+th, td { text-align: left; padding: 9px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 600 11px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+tr:last-child td { border-bottom: none; }
+td:first-child { white-space: nowrap; }
+.tag { font: 600 11px var(--mono); padding: 1px 6px; border-radius: 4px; background: var(--rule-fill); color: var(--muted); white-space: nowrap; }
+@media (max-width: 520px) { h1 { font-size: 25px; } dl { grid-template-columns: 1fr; gap: 2px; } dd { margin-bottom: 6px; } }
+</style>
+</head>
+<body>
+<main>
+
+<header>
+  <div class="eyebrow">ClassPilot Live · agent part</div>
+  <h1>ClassPilot Agent Architecture</h1>
+  <p class="lede">The agent part of ClassPilot Live, as built so far. It takes live class evidence as JSON, decides between continue, reteach, answer and escalate, and writes one trace per decision. Today the input comes from mock JSON files; the front end, backend and data pipeline belong to teammates.</p>
+  <div class="meta">Status 2026-10-22 · Stage 4 done · default agent mode 3 · backend mock or Snowflake Cortex · 85 tests (all mock)</div>
+  <div class="legend" aria-label="Legend">
+    <span><i class="sw rule"></i>rule (code)</span>
+    <span><i class="sw llm"></i>LLM call</span>
+    <span><i class="sw sf"></i>Snowflake</span>
+    <span><i class="sw team"></i>teammate's part</span>
+    <span><i class="sw ok"></i>outcome</span>
+    <span><i class="sw esc"></i>escalate to professor</span>
+  </div>
+</header>
+
+<!-- ============ 1. System context ============ -->
+<section>
+  <div class="eyebrow">1 · Components</div>
+  <h2>Who talks to whom</h2>
+  <figure>
+    <div class="scroll">
+      <svg class="d" viewBox="0 0 960 380" role="img" aria-label="The backend sends poll snapshots and student questions to the agent. Only the question path calls Snowflake, for LLM calls and Cortex Search. The agent returns a decision to the backend and writes traces for the data pipeline.">
+        <defs>
+          <marker id="ar1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker>
+          <marker id="ar1sf" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah-sf" d="M0,0 L10,5 L0,10 z"/></marker>
+        </defs>
+
+        <!-- teammate: backend + front end -->
+        <rect class="b-team" x="20" y="70" width="180" height="120" rx="8"/>
+        <text class="t" x="110" y="118" text-anchor="middle">Backend + Redis</text>
+        <text class="s" x="110" y="136" text-anchor="middle">live counts and events</text>
+        <text class="s" x="110" y="152" text-anchor="middle">teammate</text>
+
+        <rect class="b-team" x="20" y="250" width="180" height="60" rx="8"/>
+        <text class="t" x="110" y="275" text-anchor="middle">Front end</text>
+        <text class="s" x="110" y="293" text-anchor="middle">students' phones · teammate</text>
+
+        <line class="e" x1="90" y1="250" x2="90" y2="192" marker-end="url(#ar1)"/>
+        <text class="lbl" x="84" y="226" text-anchor="end">submit</text>
+        <line class="e" x1="130" y1="192" x2="130" y2="250" marker-end="url(#ar1)"/>
+        <text class="lbl" x="136" y="226">reply</text>
+
+        <!-- agent container -->
+        <rect class="b-group" x="280" y="20" width="400" height="340" rx="10"/>
+        <text class="grp" x="300" y="42">AGENT · THIS FOLDER</text>
+
+        <rect class="b-rule" x="300" y="56" width="360" height="56" rx="7"/>
+        <text class="t" x="480" y="79" text-anchor="middle">Path A · poll trigger</text>
+        <text class="s" x="480" y="97" text-anchor="middle">rules only · 0 LLM calls</text>
+
+        <rect class="b-llm" x="300" y="128" width="360" height="56" rx="7"/>
+        <text class="t" x="480" y="151" text-anchor="middle">Path B · student question</text>
+        <text class="s" x="480" y="169" text-anchor="middle">LangGraph · Analyst, Responder, Guardian + rules</text>
+
+        <rect class="b-file" x="300" y="206" width="360" height="56" rx="7"/>
+        <text class="t" x="480" y="229" text-anchor="middle">content/ · approved JSON, read by both paths</text>
+        <text class="s" x="480" y="247" text-anchor="middle">objectives · misconception map · remediations · protected list</text>
+
+        <rect class="b-file" x="300" y="284" width="360" height="56" rx="7"/>
+        <text class="t" x="480" y="307" text-anchor="middle">Decision + Trace</text>
+        <text class="s" x="480" y="325" text-anchor="middle">decision returned · trace → outputs/traces.jsonl</text>
+
+        <!-- backend -> agent -->
+        <line class="e" x1="200" y1="84" x2="298" y2="84" marker-end="url(#ar1)"/>
+        <text class="lbl" x="249" y="77" text-anchor="middle">poll snapshot</text>
+        <line class="e" x1="200" y1="156" x2="298" y2="156" marker-end="url(#ar1)"/>
+        <text class="lbl" x="249" y="149" text-anchor="middle">question</text>
+
+        <!-- decision -> backend -->
+        <polyline class="e" points="300,312 236,312 236,176 202,176" marker-end="url(#ar1)"/>
+        <text class="lbl" x="242" y="262">decision</text>
+
+        <!-- snowflake -->
+        <rect class="b-sfgroup" x="760" y="20" width="180" height="200" rx="10"/>
+        <text class="grp" x="776" y="42">SNOWFLAKE</text>
+
+        <rect class="b-sf" x="776" y="56" width="148" height="56" rx="7"/>
+        <text class="m" x="850" y="79" text-anchor="middle">AI_COMPLETE</text>
+        <text class="s" x="850" y="97" text-anchor="middle">mistral-large3</text>
+
+        <rect class="b-sf" x="776" y="128" width="148" height="76" rx="7"/>
+        <text class="t" x="850" y="151" text-anchor="middle">Cortex Search</text>
+        <text class="s" x="850" y="169" text-anchor="middle">LESSON_SEARCH over</text>
+        <text class="s" x="850" y="185" text-anchor="middle">LESSON_CHUNKS · 5 rows</text>
+
+        <polyline class="e e-sf" points="660,146 712,146 712,84 774,84" marker-end="url(#ar1sf)"/>
+        <text class="lbl" x="718" y="77">LLM calls</text>
+        <line class="e e-sf" x1="660" y1="166" x2="774" y2="166" marker-end="url(#ar1sf)"/>
+        <text class="lbl" x="738" y="159" text-anchor="middle">search</text>
+
+        <!-- pipeline -->
+        <rect class="b-team" x="760" y="276" width="180" height="72" rx="8"/>
+        <text class="t" x="850" y="300" text-anchor="middle">Data pipeline</text>
+        <text class="s" x="850" y="318" text-anchor="middle">Bronze → Silver → Gold</text>
+        <text class="s" x="850" y="334" text-anchor="middle">teammate</text>
+        <line class="e" x1="660" y1="312" x2="758" y2="312" marker-end="url(#ar1)"/>
+        <text class="lbl" x="709" y="305" text-anchor="middle">trace JSONL</text>
+      </svg>
+    </div>
+    <figcaption>Only Path B reaches Snowflake, and only for two things: LLM calls and a search over the approved lesson chunks. Live data never goes into Snowflake from the agent; it arrives as input. Today the dashed parts are replaced by files in <code>scenarios/</code> and the CLI.</figcaption>
+  </figure>
+</section>
+
+<!-- ============ 2. Path A ============ -->
+<section>
+  <div class="eyebrow">2 · Path A</div>
+  <h2>Poll trigger: a lookup, no LLM</h2>
+  <figure>
+    <div class="scroll">
+      <svg class="d" viewBox="0 0 972 200" role="img" aria-label="Poll evidence goes through three rule checks. Each check can stop the flow with continue or escalate. If all pass, the agent returns reteach with a pre-approved remediation id.">
+        <defs>
+          <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker>
+        </defs>
+
+        <rect class="b-file" x="8" y="40" width="130" height="56" rx="7"/>
+        <text class="t" x="73" y="63" text-anchor="middle">Poll evidence</text>
+        <text class="s" x="73" y="81" text-anchor="middle">option_counts snapshot</text>
+
+        <rect class="b-rule" x="178" y="40" width="172" height="56" rx="7"/>
+        <text class="m" x="264" y="63" text-anchor="middle">threshold_check</text>
+        <text class="s" x="264" y="81" text-anchor="middle">≥5 answers, top wrong ≥60%</text>
+
+        <rect class="b-rule" x="390" y="40" width="172" height="56" rx="7"/>
+        <text class="m" x="476" y="63" text-anchor="middle">misconception_lookup</text>
+        <text class="s" x="476" y="81" text-anchor="middle">question + option → R-xx</text>
+
+        <rect class="b-rule" x="602" y="40" width="172" height="56" rx="7"/>
+        <text class="m" x="688" y="63" text-anchor="middle">remediation_limit_check</text>
+        <text class="s" x="688" y="81" text-anchor="middle">max 1 per objective</text>
+
+        <rect class="p-ok" x="814" y="44" width="150" height="48" rx="24"/>
+        <text class="tx-ok" x="889" y="64" text-anchor="middle">reteach</text>
+        <text class="s" x="889" y="80" text-anchor="middle">remediation_id R-03</text>
+
+        <line class="e" x1="138" y1="68" x2="176" y2="68" marker-end="url(#ar2)"/>
+        <line class="e" x1="350" y1="68" x2="388" y2="68" marker-end="url(#ar2)"/>
+        <text class="lbl" x="369" y="60" text-anchor="middle">yes</text>
+        <line class="e" x1="562" y1="68" x2="600" y2="68" marker-end="url(#ar2)"/>
+        <text class="lbl" x="581" y="60" text-anchor="middle">found</text>
+        <line class="e" x1="774" y1="68" x2="812" y2="68" marker-end="url(#ar2)"/>
+        <text class="lbl" x="793" y="60" text-anchor="middle">ok</text>
+
+        <line class="e" x1="264" y1="96" x2="264" y2="148" marker-end="url(#ar2)"/>
+        <text class="lbl" x="270" y="126">not triggered</text>
+        <rect class="p-neutral" x="169" y="150" width="190" height="34" rx="17"/>
+        <text class="tx-neutral" x="264" y="171" text-anchor="middle">continue</text>
+
+        <line class="e" x1="476" y1="96" x2="476" y2="148" marker-end="url(#ar2)"/>
+        <text class="lbl" x="482" y="126">no mapping</text>
+        <rect class="p-esc" x="381" y="150" width="190" height="34" rx="17"/>
+        <text class="tx-esc" x="476" y="171" text-anchor="middle">escalate · no_mapping</text>
+
+        <line class="e" x1="688" y1="96" x2="688" y2="148" marker-end="url(#ar2)"/>
+        <text class="lbl" x="694" y="126">limit reached</text>
+        <rect class="p-esc" x="593" y="150" width="190" height="34" rx="17"/>
+        <text class="tx-esc" x="688" y="171" text-anchor="middle">escalate · remediation_limit</text>
+      </svg>
+    </div>
+    <figcaption>Every step is a rule, so every branch makes 0 LLM calls. The reteach content is the professor's pre-approved script in <code>content/remediations.json</code>; the agent returns only its id. Agent mode does not affect this path.</figcaption>
+  </figure>
+</section>
+
+<!-- ============ 3. Path B ============ -->
+<section>
+  <div class="eyebrow">3 · Path B</div>
+  <h2>Student question: rules around three LLM calls</h2>
+  <figure>
+    <div class="scroll">
+      <svg class="d" viewBox="0 0 940 680" role="img" aria-label="A student question passes a protected-question rule, the Analyst LLM, the Responder with Cortex Search, a response check, the Guardian LLM in mode 3, and the final validator. Each step can escalate. Mode 2 skips the Guardian.">
+        <defs>
+          <marker id="ar3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker>
+        </defs>
+
+        <!-- spine -->
+        <rect class="b-file" x="60" y="20" width="300" height="52" rx="7"/>
+        <text class="t" x="210" y="42" text-anchor="middle">Student question</text>
+        <text class="s" x="210" y="60" text-anchor="middle">question JSON from the backend</text>
+
+        <rect class="b-rule" x="60" y="106" width="300" height="52" rx="7"/>
+        <text class="m" x="210" y="128" text-anchor="middle">protected_check</text>
+        <text class="s" x="210" y="146" text-anchor="middle">similarity to assignment list ≥ 0.5</text>
+
+        <rect class="b-llm" x="60" y="192" width="300" height="52" rx="7"/>
+        <text class="t" x="210" y="214" text-anchor="middle">Analyst · LLM</text>
+        <text class="s" x="210" y="232" text-anchor="middle">in_scope · out_of_scope · assignment_like</text>
+
+        <rect class="b-llm" x="60" y="278" width="300" height="52" rx="7"/>
+        <text class="t" x="210" y="300" text-anchor="middle">Responder · Cortex Search + LLM</text>
+        <text class="s" x="210" y="318" text-anchor="middle">top 3 chunks → answer, citations, confidence</text>
+
+        <rect class="b-rule" x="60" y="364" width="300" height="52" rx="7"/>
+        <text class="m" x="210" y="386" text-anchor="middle">check_response</text>
+        <text class="s" x="210" y="404" text-anchor="middle">cited · grounded · confidence ≥ 0.70</text>
+
+        <rect class="b-llm" x="60" y="450" width="300" height="52" rx="7"/>
+        <text class="t" x="210" y="472" text-anchor="middle">Guardian · LLM · mode 3</text>
+        <text class="s" x="210" y="490" text-anchor="middle">each claim → supporting chunk, or null</text>
+
+        <rect class="b-rule" x="60" y="536" width="300" height="52" rx="7"/>
+        <text class="m" x="210" y="558" text-anchor="middle">validator + check_guardian</text>
+        <text class="s" x="210" y="576" text-anchor="middle">the only place the final call is made</text>
+
+        <rect class="p-ok" x="60" y="622" width="300" height="40" rx="20"/>
+        <text class="tx-ok" x="210" y="646" text-anchor="middle">answer · text + citations + confidence</text>
+
+        <line class="e" x1="210" y1="72" x2="210" y2="104" marker-end="url(#ar3)"/>
+        <line class="e" x1="210" y1="158" x2="210" y2="190" marker-end="url(#ar3)"/>
+        <line class="e" x1="210" y1="244" x2="210" y2="276" marker-end="url(#ar3)"/>
+        <line class="e" x1="210" y1="330" x2="210" y2="362" marker-end="url(#ar3)"/>
+        <line class="e" x1="210" y1="416" x2="210" y2="448" marker-end="url(#ar3)"/>
+        <line class="e" x1="210" y1="502" x2="210" y2="534" marker-end="url(#ar3)"/>
+        <line class="e" x1="210" y1="588" x2="210" y2="620" marker-end="url(#ar3)"/>
+
+        <!-- mode 2 bypass -->
+        <polyline class="e e-dash" points="60,398 30,398 30,554 58,554" marker-end="url(#ar3)"/>
+        <text class="lbl" x="22" y="476" text-anchor="middle" transform="rotate(-90 22 476)">mode 2: no Guardian</text>
+
+        <!-- exits -->
+        <line class="e" x1="360" y1="132" x2="518" y2="132" marker-end="url(#ar3)"/>
+        <text class="lbl" x="440" y="124" text-anchor="middle">score ≥ 0.5</text>
+        <rect class="p-esc" x="520" y="114" width="400" height="36" rx="18"/>
+        <text class="tx-esc" x="720" y="136" text-anchor="middle">escalate · assignment_like · no LLM call</text>
+
+        <line class="e" x1="360" y1="218" x2="518" y2="218" marker-end="url(#ar3)"/>
+        <text class="lbl" x="440" y="210" text-anchor="middle">not in_scope</text>
+        <rect class="p-esc" x="520" y="200" width="400" height="36" rx="18"/>
+        <text class="tx-esc" x="720" y="222" text-anchor="middle">escalate · out_of_scope or assignment_like</text>
+
+        <line class="e" x1="360" y1="304" x2="518" y2="304" marker-end="url(#ar3)"/>
+        <text class="lbl" x="440" y="296" text-anchor="middle">timeout or error</text>
+        <rect class="p-esc" x="520" y="286" width="400" height="36" rx="18"/>
+        <text class="tx-esc" x="720" y="308" text-anchor="middle">escalate · llm_error (same for every LLM node)</text>
+
+        <line class="e" x1="360" y1="390" x2="518" y2="390" marker-end="url(#ar3)"/>
+        <text class="lbl" x="440" y="382" text-anchor="middle">a check fails</text>
+        <rect class="p-esc" x="520" y="372" width="400" height="36" rx="18"/>
+        <text class="tx-esc" x="720" y="394" text-anchor="middle">escalate · unsupported or low_confidence</text>
+
+        <text class="s" x="520" y="472">Sees only the question, the answer and the cited chunks.</text>
+        <text class="s" x="520" y="488">Skipped when check_response already escalates.</text>
+
+        <line class="e" x1="360" y1="562" x2="518" y2="562" marker-end="url(#ar3)"/>
+        <text class="lbl" x="440" y="554" text-anchor="middle">a claim unsupported</text>
+        <rect class="p-esc" x="520" y="544" width="400" height="36" rx="18"/>
+        <text class="tx-esc" x="720" y="566" text-anchor="middle">escalate · unsupported</text>
+      </svg>
+    </div>
+    <figcaption>LLM nodes only produce content: a category, a drafted answer, a list of claims. Every pass or escalate call is made by a rule. In mode 2 the grounding check is only the Responder's own <code>grounded</code> flag; mode 3 adds the Guardian, an independent call whose claim list is checked by code.</figcaption>
+  </figure>
+</section>
+
+<!-- ============ 4. Snowflake + outputs ============ -->
+<section>
+  <div class="eyebrow">4 · Backing services and outputs</div>
+  <h2>What runs where</h2>
+  <div class="grid2">
+    <div class="panel">
+      <h3>Snowflake (set up in Stage 2)</h3>
+      <dl>
+        <dt>Account</dt><dd>Trial, <account region>. LLMs use cross-region inference.</dd>
+        <dt>Access</dt><dd>Service user <code>CLASSPILOT_AGENT_SVC</code>, key pair; role <code>CLASSPILOT_AGENT_ROLE</code></dd>
+        <dt>Compute</dt><dd><code>CLASSPILOT_WH</code>, XS, suspends after 60 s</dd>
+        <dt>Content</dt><dd><code>CLASSPILOT_DEMO.AGENT.LESSON_CHUNKS</code>, 5 approved chunks loaded from <code>content/lesson_chunks.json</code></dd>
+        <dt>Search</dt><dd><code>LESSON_SEARCH</code>, embeds and indexes the chunks; the agent asks for the top 3</dd>
+        <dt>LLM</dt><dd><code>AI_COMPLETE</code>, mistral-large3, temperature 0, JSON-schema replies, 10 s timeout</dd>
+      </dl>
+    </div>
+    <div class="panel">
+      <h3>Outputs</h3>
+      <dl>
+        <dt>Decision</dt><dd>Returned by <code>run_poll</code> / <code>run_question</code>; the backend will use it. Not written to a file yet.</dd>
+        <dt>Trace</dt><dd>One JSONL line per decision in <code>outputs/traces.jsonl</code>, for Bronze</dd>
+        <dt>Report</dt><dd><code>outputs/report.html</code>, a live run of every scenario in mode 2 and 3</dd>
+        <dt>Eval</dt><dd><code>outputs/eval_*.json</code>, <code>guardian_eval_*.json</code>, for dev-time quality checks</dd>
+      </dl>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 5. Repo map ============ -->
+<section>
+  <div class="eyebrow">5 · Repo map</div>
+  <h2>Where each piece lives</h2>
+  <div class="table-wrap">
+    <table>
+      <tr><th>Folder</th><th>Role</th></tr>
+      <tr><td><code>content/</code></td><td>The professor's approved material: lesson chunks, poll questions, misconception map, remediations, protected assignment list</td></tr>
+      <tr><td><code>scenarios/</code></td><td>9 mock inputs standing in for the backend, each with its expected result</td></tr>
+      <tr><td><code>eval/</code></td><td>11 labeled questions (mode 2 vs 3) and 12 hand-written Guardian cases</td></tr>
+      <tr><td><code>config/</code></td><td><code>settings.yaml</code>: thresholds, agent mode, model, timeout</td></tr>
+      <tr><td><code>src/agents_demo/</code></td><td><code>graph.py</code> flows · <code>rules.py</code> all decisions · <code>nodes/</code> the three LLM prompts · <code>adapters/</code> mock and Cortex backends · <code>cli.py</code>, <code>report.py</code></td></tr>
+      <tr><td><code>tests/</code></td><td>85 pytest tests, mock adapters only, never call Snowflake</td></tr>
+      <tr><td><code>sql/</code>, <code>scripts/</code></td><td>Snowflake setup scripts, chunk loader, connection smoke test</td></tr>
+      <tr><td><code>outputs/</code></td><td>Traces, report and eval results (gitignored, regenerated on each run)</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- ============ 6. Open ============ -->
+<section>
+  <div class="eyebrow">6 · Not settled yet</div>
+  <h2>Open before integration</h2>
+  <div class="panel">
+    <ul>
+      <li><span class="tag">Q-12</span> Decisions are not stored, so the pipeline would get traces without the reason or the answer text.</li>
+      <li><span class="tag">Q-08</span> Whether traces keep error details, the Guardian's reason and rejected drafts.</li>
+      <li><span class="tag">Q-09</span> Poll evidence has no event id; traces use <code>question_id@snapshot_time</code>.</li>
+      <li><span class="tag">Q-11</span> Students wait about 4.5 to 7.5 s for an answer; the front end needs a waiting state and a longer timeout.</li>
+      <li>How the backend calls the agent (import vs. an HTTP service) is not decided.</li>
+      <li>Model choice and threshold tuning are deferred to a later quality pass.</li>
+    </ul>
+    <p class="meta">Full list: interface_questions.md · history: note.md</p>
+  </div>
+</section>
+
+</main>
+</body>
+</html>

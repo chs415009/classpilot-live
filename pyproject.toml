@@ -1,0 +1,27 @@
+[project]
+name = "classpilot-live"
+version = "0.2.0.dev0"
+description = "ClassPilot Live: prep service, parse layer, and live agents (LangGraph + Snowflake Cortex, mock mode for development)"
+requires-python = ">=3.12"
+dependencies = [
+    "langgraph",
+    "pydantic>=2",
+    "pyyaml",
+]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+# Only for scripts/ and BACKEND=cortex. Tests and mock mode do not need it.
+# snowflake-core = Cortex Search Python API. Do not add Snowpark or snowflake-ml-python:
+# they require connector < 5.
+snowflake = ["snowflake-connector-python>=5", "snowflake-core>=1.13"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

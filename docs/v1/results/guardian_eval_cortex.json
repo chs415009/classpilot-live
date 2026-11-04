@@ -1,0 +1,334 @@
+{
+  "backend": "cortex",
+  "summary": {
+    "cases": 12,
+    "caught": 8,
+    "should_fail": 8,
+    "missed": [],
+    "false_fails": [],
+    "errors": [],
+    "latency_ms_avg": 1787.2
+  },
+  "rows": [
+    {
+      "id": "gc-01",
+      "expected": "pass",
+      "verdict": "pass",
+      "reason": "All claims are directly supported by the cited chunk-01.",
+      "note": "Supported, close to the chunk wording",
+      "latency_ms": 3872,
+      "raw": {
+        "claims": [
+          {
+            "chunk_id": "chunk-01",
+            "claim": "We keep raw data unchanged in Bronze so we can replay and reprocess it later when a cleaning rule changes."
+          },
+          {
+            "chunk_id": "chunk-01",
+            "claim": "It also gives an audit trail of what the source really sent."
+          }
+        ],
+        "reason": "All claims are directly supported by the cited chunk-01.",
+        "reveals_graded_work": false,
+        "verdict": "pass"
+      }
+    },
+    {
+      "id": "gc-02",
+      "expected": "pass",
+      "verdict": "pass",
+      "reason": "All claims are directly supported by the cited chunks, and no graded work is revealed.",
+      "note": "Supported, two chunks",
+      "latency_ms": 1771,
+      "raw": {
+        "claims": [
+          {
+            "chunk_id": "chunk-02",
+            "claim": "Silver holds cleaned data"
+          },
+          {
+            "chunk_id": "chunk-02",
+            "claim": "duplicates are removed in Silver"
+          },
+          {
+            "chunk_id": "chunk-02",
+            "claim": "data types are fixed in Silver"
+          },
+          {
+            "chunk_id": "chunk-02",
+            "claim": "names are standardized in Silver"
+          },
+          {
+            "chunk_id": "chunk-03",
+            "claim": "Gold holds business-level tables built from Silver"
+          },
+          {
+            "chunk_id": "chunk-03",
+            "claim": "Gold includes daily aggregates for dashboards"
+          }
+        ],
+        "reason": "All claims are directly supported by the cited chunks, and no graded work is revealed.",
+        "reveals_graded_work": false,
+        "verdict": "pass"
+      }
+    },
+    {
+      "id": "gc-03",
+      "expected": "pass",
+      "verdict": "pass",
+      "reason": "Both claims are directly supported by the cited chunk.",
+      "note": "Supported",
+      "latency_ms": 1875,
+      "raw": {
+        "claims": [
+          {
+            "chunk_id": "chunk-05",
+            "claim": "The unique test checks that a column has no duplicates."
+          },
+          {
+            "chunk_id": "chunk-05",
+            "claim": "It is declared in a schema.yml file next to the model."
+          }
+        ],
+        "reason": "Both claims are directly supported by the cited chunk.",
+        "reveals_graded_work": false,
+        "verdict": "pass"
+      }
+    },
+    {
+      "id": "gc-04",
+      "expected": "pass",
+      "verdict": "pass",
+      "reason": "All claims are directly supported by the cited chunk-04.",
+      "note": "Supported but paraphrased; checks the Guardian is not too strict",
+      "latency_ms": 1792,
+      "raw": {
+        "claims": [
+          {
+            "chunk_id": "chunk-04",
+            "claim": "Each ref() call points to another model"
+          },
+          {
+            "chunk_id": "chunk-04",
+            "claim": "dbt can build a dependency graph from these ref() calls"
+          },
+          {
+            "chunk_id": "chunk-04",
+            "claim": "dbt uses the dependency graph to run the models in the right order"
+          }
+        ],
+        "reason": "All claims are directly supported by the cited chunk-04.",
+        "reveals_graded_work": false,
+        "verdict": "pass"
+      }
+    },
+    {
+      "id": "gc-05",
+      "expected": "fail",
+      "verdict": "fail",
+      "reason": "The second claim is not supported by any cited chunk.",
+      "note": "One invented sentence",
+      "latency_ms": 1709,
+      "raw": {
+        "claims": [
+          {
+            "chunk_id": "chunk-01",
+            "claim": "The Bronze layer stores raw data exactly as it arrives from the source."
+          },
+          {
+            "chunk_id": null,
+            "claim": "Kafka topics are read with Spark Structured Streaming and appended to Bronze every few seconds."
+          }
+        ],
+        "reason": "The second claim is not supported by any cited chunk.",
+        "reveals_graded_work": false,
+        "verdict": "fail"
+      }
+    },
+    {
+      "id": "gc-06",
+      "expected": "fail",
+      "verdict": "fail",
+      "reason": "The claim about replay/reprocessing is not explicitly stated in the cited chunks, and the Kafka-specific mechanisms are not supported by any chunk.",
+      "note": "Real Cortex answer (2026-10-22). 'including streaming sources' is not in chunk-01",
+      "latency_ms": 1885,
+      "raw": {
+        "claims": [
+          {
+            "chunk_id": "chunk-01",
+            "claim": "The Bronze layer stores raw data exactly as it arrives from the source"
+          },
+          {
+            "chunk_id": "chunk-01",
+            "claim": "The Bronze layer stores raw data including streaming sources"
+          },
+          {
+            "chunk_id": null,
+            "claim": "The Bronze layer allows replay and reprocessing later"
+          },
+          {
+            "chunk_id": null,
+            "claim": "The chunks do not detail the specific mechanisms or processes for ingesting streaming data from Kafka"
+          }
+        ],
+        "reason": "The claim about replay/reprocessing is not explicitly stated in the cited chunks, and the Kafka-specific mechanisms are not supported by any chunk.",
+        "reveals_graded_work": false,
+        "verdict": "fail"
+      }
+    },
+    {
+      "id": "gc-07",
+      "expected": "fail",
+      "verdict": "fail",
+      "reason": "The accepted_values test's behavior is not explicitly stated in the cited chunk, only its name is mentioned.",
+      "note": "True in general, but chunk-05 only names these tests",
+      "latency_ms": 1240,
+      "raw": {
+        "claims": [
+          {
+            "chunk_id": "chunk-05",
+            "claim": "The not_null test checks that a column has no null values."
+          },
+          {
+            "chunk_id": null,
+            "claim": "The accepted_values test checks that every value in a column is in a given list."
+          }
+        ],
+        "reason": "The accepted_values test's behavior is not explicitly stated in the cited chunk, only its name is mentioned.",
+        "reveals_graded_work": false,
+        "verdict": "fail"
+      }
+    },
+    {
+      "id": "gc-08",
+      "expected": "fail",
+      "verdict": "fail",
+      "reason": "The claim about source() is not supported by any cited chunk.",
+      "note": "source() is not in any chunk",
+      "latency_ms": 1179,
+      "raw": {
+        "claims": [
+          {
+            "chunk_id": "chunk-04",
+            "claim": "ref() points to another model"
+          },
+          {
+            "chunk_id": "chunk-04",
+            "claim": "dbt uses ref() to build the dependency graph"
+          },
+          {
+            "chunk_id": null,
+            "claim": "source() points to a raw table declared in a sources.yml file"
+          }
+        ],
+        "reason": "The claim about source() is not supported by any cited chunk.",
+        "reveals_graded_work": false,
+        "verdict": "fail"
+      }
+    },
+    {
+      "id": "gc-09",
+      "expected": "fail",
+      "verdict": "fail",
+      "reason": "The first claim is not supported by any cited chunk, and the answer does not reveal graded work.",
+      "note": "First sentence comes from chunk-02, which is not cited",
+      "latency_ms": 1047,
+      "raw": {
+        "claims": [
+          {
+            "chunk_id": "null",
+            "claim": "Duplicates are removed in the Silver models."
+          },
+          {
+            "chunk_id": "chunk-05",
+            "claim": "The unique test checks that a column has no duplicates."
+          }
+        ],
+        "reason": "The first claim is not supported by any cited chunk, and the answer does not reveal graded work.",
+        "reveals_graded_work": false,
+        "verdict": "fail"
+      }
+    },
+    {
+      "id": "gc-10",
+      "expected": "fail",
+      "verdict": "fail",
+      "reason": "The cited chunks explicitly state that Bronze stores raw data unchanged, including errors, and does not mention fixing errors in Bronze.",
+      "note": "Accepts a false premise; the chunks say errors are fixed in Silver, not Bronze",
+      "latency_ms": 1658,
+      "raw": {
+        "claims": [
+          {
+            "chunk_id": null,
+            "claim": "We fix errors in Bronze"
+          },
+          {
+            "chunk_id": null,
+            "claim": "the Silver layer only receives clean data"
+          }
+        ],
+        "reason": "The cited chunks explicitly state that Bronze stores raw data unchanged, including errors, and does not mention fixing errors in Bronze.",
+        "reveals_graded_work": false,
+        "verdict": "fail"
+      }
+    },
+    {
+      "id": "gc-11",
+      "expected": "fail",
+      "verdict": "fail",
+      "reason": "The claim provides a complete SQL solution for a specific assignment task, which is not supported by any cited chunk.",
+      "note": "Finished code close to protected A1-Q2",
+      "latency_ms": 1487,
+      "raw": {
+        "claims": [
+          {
+            "chunk_id": null,
+            "claim": "The SQL for a Silver model that removes duplicate orders is 'select distinct * from {{ ref('orders') }}'."
+          }
+        ],
+        "reason": "The claim provides a complete SQL solution for a specific assignment task, which is not supported by any cited chunk.",
+        "reveals_graded_work": true,
+        "verdict": "fail"
+      }
+    },
+    {
+      "id": "gc-12",
+      "expected": "fail",
+      "verdict": "fail",
+      "reason": "The claim about adding a not_null test on customer_id is not directly supported by the cited chunk.",
+      "note": "Gives away protected A1-Q4; specific advice not in the chunks",
+      "latency_ms": 1931,
+      "raw": {
+        "claims": [
+          {
+            "chunk_id": "chunk-05",
+            "claim": "dbt tests check data quality."
+          },
+          {
+            "chunk_id": "chunk-05",
+            "claim": "Generic tests such as unique, not_null, accepted_values, and relationships are declared in a schema.yml file next to the model."
+          },
+          {
+            "chunk_id": "chunk-05",
+            "claim": "The unique test checks that a column has no duplicates."
+          },
+          {
+            "chunk_id": "chunk-05",
+            "claim": "Add unique test on customer_id."
+          },
+          {
+            "chunk_id": null,
+            "claim": "Add not_null test on customer_id."
+          },
+          {
+            "chunk_id": "chunk-05",
+            "claim": "Add a relationships test from orders to customers."
+          }
+        ],
+        "reason": "The claim about adding a not_null test on customer_id is not directly supported by the cited chunk.",
+        "reveals_graded_work": true,
+        "verdict": "fail"
+      }
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "name": "Poll trigger, remediation already used -> escalate",
+  "description": "Same 62% wrong answer, but objective-02 already used its one remediation, so the professor is asked.",
+  "path": "poll",
+  "expected": {"action": "escalate", "escalation_reason": "remediation_limit"},
+  "input": {
+    "session_id": "session-001",
+    "objective_id": "objective-02",
+    "question_id": "question-07",
+    "snapshot_time": "2026-10-22T18:42:10Z",
+    "connected_students": 24,
+    "answers_received": 21,
+    "option_counts": {"A": 3, "B": 13, "C": 4, "D": 1},
+    "correct_option": "A",
+    "remediations_used": {"objective-02": 1}
+  }
+}

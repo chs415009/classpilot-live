@@ -1,0 +1,21 @@
+# Thresholds and switches for the agent demo.
+# Env vars AGENT_MODE and BACKEND override the values below.
+
+agent_mode: 3          # 3 = Analyst + Responder + Guardian (default), 2 = no Guardian
+backend: mock          # mock | cortex
+
+poll:
+  min_responses: 5
+  wrong_ratio_threshold: 0.60
+  max_remediations_per_objective: 1
+
+question:
+  protected_similarity_threshold: 0.5   # >= this -> escalate, no LLM call
+  confidence_threshold: 0.70            # responder confidence below this -> escalate
+  retrieval_top_k: 3
+
+llm:
+  # Cortex AI_COMPLETE model (reached via cross-region inference from <account region>).
+  # Also tested: llama3.3-70b, claude-haiku-4-5. Not used in mock mode.
+  model: mistral-large3
+  timeout_seconds: 10

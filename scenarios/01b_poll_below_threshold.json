@@ -1,0 +1,17 @@
+{
+  "name": "Poll below threshold -> continue",
+  "description": "Top wrong option B has 9 of 21 (43%), under the 60% threshold, so the lesson continues.",
+  "path": "poll",
+  "expected": {"action": "continue"},
+  "input": {
+    "session_id": "session-001",
+    "objective_id": "objective-02",
+    "question_id": "question-07",
+    "snapshot_time": "2026-10-22T18:30:40Z",
+    "connected_students": 24,
+    "answers_received": 21,
+    "option_counts": {"A": 8, "B": 9, "C": 3, "D": 1},
+    "correct_option": "A",
+    "remediations_used": {"objective-02": 0}
+  }
+}

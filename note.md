@@ -57,3 +57,16 @@ decision), `docs/v2/STAGES.md` (stage plan). v1 rules and contracts: `docs/v1/CL
 - 2026-11-04 [change] User: no date-driven planning; the user decides when stages run.
   Removed the trial-expiry check from Stage 0 and the trial-date dependency of Stages 1
   and 9.
+- 2026-11-04 [result] Stage 0 accepted by the user. Checks: pytest 85 passed (also with
+  network connections blocked), `run-all` 9/9 OK, ruff check + format clean,
+  `check_secrets.sh --history` clean, no forbidden files tracked.
+- 2026-11-04 [decision] User: the repo is public from the start (teammates need to read
+  it). Created and pushed https://github.com/chs415009/classpilot-live after the
+  secret check passed.
+
+## Stage 1: Live probes for `[verify]` items
+
+- 2026-11-04 [decision] User started Stage 1. Approval covers the `dspy` dependency and
+  the stage estimate (about 15-25 LLM calls, limit about 38). `PyJWT` / early `pymupdf`
+  only if needed, asked separately. Probe SQL is shown before it runs.
+

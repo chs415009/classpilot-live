@@ -73,7 +73,8 @@ Tasks:
     archive, `docs/v2/`, `README.md`, `.env.example`, `config/settings.yaml` comments,
     and `sql/` → placeholders
   - SQL object names become variables set at the top of each script, so the scripts
-    can be rerun on a new account
+    can be rerun on a new account (deferred to Stage 5: the docs do not confirm
+    `IDENTIFIER($var)` for every statement used; see note.md 2026-11-04)
 - Archive v1: `docs/v1/CLAUDE_v1.md`, `ARCHITECTURE_v1.html`, `DEMO_OVERVIEW_v1.html`,
   and `docs/v1/results/` (Stage 4 Cortex eval JSONs, mode 2 and mode 3).
 - `note.md`: copy (redacted) and add a dated v2 `change` entry.
@@ -332,7 +333,8 @@ of slides and references get a vision `AI_COMPLETE` description. The results bec
 stable chunks in `LESSON_CHUNKS_V2` with a `lesson_id`-filtered search service.
 Depends on: Stages 1 and 4; draft table names (`[team]`, Yaksha).
 Tasks:
-- SQL (parameterized object names, shown before running):
+- SQL (parameterized object names, shown before running). First check with a small
+  probe which statements accept `IDENTIFIER($var)` (deferred from Stage 0):
   - stage `@RAW_MATERIALS` with a directory table
   - `RAW_FILES`, `PARSED_PAGES`
   - `LESSON_CHUNKS_V2` with change tracking

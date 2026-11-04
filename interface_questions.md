@@ -1,11 +1,11 @@
 # Interface questions for the team
 
 Things to discuss when the three parts (front end + live state, data pipeline, agent)
-agree on the real interfaces. The contracts in `CLAUDE.md` are the agent demo's draft,
+agree on the real interfaces. The contracts in `CLAUDE.md` and `docs/v2/IMPLEMENTATION_NOTES.md` are drafts,
 not a team agreement yet.
 
 Each item records:
-1. **Current approach**: what the agent demo does now.
+1. **Current approach**: what the agent side does now (v1 items) or proposes (v2 items).
 2. **Why change**: the problem or cost with the current approach.
 3. **Suggested direction**: a proposal to discuss, not a decision.
 
@@ -29,7 +29,8 @@ Status: `open` (not discussed yet), `agreed` (decision written under the item),
   the error detail in the trace (see Q-08).
 
 ## Q-02 Protected assignment list: required or optional?
-- **Status:** open · **Area:** content input · **Affects:** professor workflow, agent · **Raised:** 2026-10-21
+- **Status:** dropped (2026-11-04) · **Area:** content input · **Affects:** professor workflow, agent · **Raised:** 2026-10-21
+- **v2 (2026-11-04):** The protected-question check and its list are removed (future work). The Analyst still classifies `assignment_like`.
 - **Current approach:** Two layers catch "give me the assignment answer" questions:
   (1) a rule compares the question with `content/protected_questions.json` (the
   assignment prompts) and escalates without an LLM call; (2) the Question Analyst (LLM)
@@ -63,6 +64,7 @@ Status: `open` (not discussed yet), `agreed` (decision written under the item),
 
 ## Q-05 Poll input: `connected_students` is not used
 - **Status:** open · **Area:** poll input · **Affects:** front end / backend, pipeline · **Raised:** 2026-10-21
+- **v2 (2026-11-04):** Still not used by the poll rule, but the post-class report shows attendance, and `FACT_POLL_EVIDENCE` lists connected students as optional (pending Yaksha). Suggested: keep it in poll evidence so the trace can carry it; decide with Yaksha whether the model takes it from the trace or from live-state events.
 - **Current approach:** Sent in poll evidence, not used by any rule.
 - **Why change:** Fields nobody uses tend to go stale.
 - **Suggested direction:** Drop it from the agent input, unless the professor summary
@@ -71,6 +73,7 @@ Status: `open` (not discussed yet), `agreed` (decision written under the item),
 
 ## Q-06 Question input: `objective_id` is not used
 - **Status:** open · **Area:** question input · **Affects:** front end / backend · **Raised:** 2026-10-21
+- **v2 (2026-11-04):** In v2 the objective id is the segment id, and the front end knows which segment is playing. Suggested: rename to `segment_id` and pass it to the Analyst as a hint; the run record (`FACT_PIPELINE_RUN`) also wants a segment id.
 - **Current approach:** The student question carries an optional `objective_id`, but
   the question path ignores it; the Question Analyst decides the objective itself.
 - **Why change:** Either it is dead data, or it is useful context we are throwing away.
@@ -89,7 +92,8 @@ Status: `open` (not discussed yet), `agreed` (decision written under the item),
   The pipeline joins agent traces to events on `event_id`.
 
 ## Q-08 Trace does not keep the reasons behind a decision
-- **Status:** open · **Area:** trace output · **Affects:** pipeline, professor summary · **Raised:** 2026-10-21 (Stage 3)
+- **Status:** resolved by design (2026-11-04), field names open in Q-21 · **Area:** trace output · **Affects:** pipeline, professor summary · **Raised:** 2026-10-21 (Stage 3)
+- **v2 (2026-11-04):** The v2 trace carries node, LLM-call, retrieval, and claim records (IMPLEMENTATION_NOTES 6.3), including the error count and each Guardian claim with its support. The drafted answer text goes into the decision log (Q-12).
 - **Current approach:** The trace records nodes run, call count, chunk ids, and
   latency. Not stored: the error message, the Guardian's verdict reason, and the
   drafted answer that was rejected.
@@ -102,6 +106,7 @@ Status: `open` (not discussed yet), `agreed` (decision written under the item),
 
 ## Q-09 Poll path has no event id
 - **Status:** open · **Area:** poll input, trace output · **Affects:** front end / backend, pipeline · **Raised:** 2026-10-20 (Stage 1)
+- **v2 (2026-11-04):** Poll evidence gains `poll_id`, and every decision gets a run id in the trace. Suggested: `input_ref` for a poll = `<session_id>/<poll_id>` (one decision per poll), so no snapshot time is needed. Still open whether the backend also sends its own event id.
 - **Current approach:** Poll evidence has no event id, so the trace uses
   `input_ref = "<question_id>@<snapshot_time>"` and `agent_mode = null`.
 - **Why change:** The pipeline has to join on a made-up string instead of a real key.
@@ -112,6 +117,7 @@ Status: `open` (not discussed yet), `agreed` (decision written under the item),
 
 ## Q-10 Where LLM calls are processed (data residency)
 - **Status:** open · **Area:** Snowflake account setting · **Affects:** whole team, professor · **Raised:** 2026-10-21 (Stage 2)
+- **v2 (2026-11-04):** Han-Sheng: cross-region inference is acceptable for now; a move to an account in a region where the models run natively may come later, so the code stays account-portable. Still to confirm with the team before real student data.
 - **Current approach:** The account is in <account region> and no LLM runs there, so
   calls use cross-region inference. The account default is
   `CORTEX_ENABLED_CROSS_REGION = ANY_REGION`, so prompts (lesson text and student
@@ -140,6 +146,7 @@ Status: `open` (not discussed yet), `agreed` (decision written under the item),
 
 ## Q-12 Decisions are not stored; the trace alone misses what was decided
 - **Status:** open · **Area:** decision + trace output · **Affects:** pipeline, professor summary, front end / backend · **Raised:** 2026-10-22 (Stage 4)
+- **v2 (2026-11-04):** Needed by the post-class report: question and answer text come from the agent's own decision log (option (a), JSONL), because the Gold tables hold only hashes and counts. The trace stays the only source for Yaksha's model (Q-21).
 - **Current approach:** Each run makes two records. The **decision** (action,
   `escalation_reason`, `remediation_id`, `answer_text`, `citations`, `confidence`,
   `session_id`) is returned and printed but never written to a file. The **trace** is
@@ -157,3 +164,63 @@ Status: `open` (not discussed yet), `agreed` (decision written under the item),
   to load, but the trace and the decision contract then overlap.
   Agent side leans to (a). Decide together with Q-08 (extra trace fields) and Q-09
   (poll key), since all three set the Bronze schema for agent output.
+
+---
+
+## v2 items (raised 2026-11-04)
+
+Drafts from `docs/v2/IMPLEMENTATION_NOTES.md`. The code still follows v1 until Stage 2.
+
+## Q-13 Manifest format and versioning
+- **Status:** open · **Area:** manifest · **Affects:** front end (Sai), pipeline (Yaksha) · **Raised:** 2026-11-04
+- **Current approach:** The team's existing manifest structure, with only `new` / `changed` fields (IMPLEMENTATION_NOTES section 5): `params`, `slides` keyed by system slide ids `<source>-p<NN>`, `correct_option`, `known_wrong` for every wrong option, remediations of type `tts_explanation` with `text`, `show_slide`, chunk-id `citations`, and a `status` per item. No correct-answer explanation and no `quality` field (the report counts statuses).
+- **Why change:** The team structure had no generated content, no status, and human-chosen ids.
+- **Suggested direction:** Agree the `new` / `changed` fields. Dropped polls stay in `questions` with `status: "dropped"`; `active_poll` points to another question or is `null`, and the front end reads only `active_poll`. Decide whether the manifest needs a version number.
+
+## Q-14 Poll path: action values, evidence fields, explain payload
+- **Status:** open · **Area:** poll input, decision output · **Affects:** front end / backend (Sai), pipeline · **Raised:** 2026-11-04
+- **Current approach (draft):** Actions `explain` / `reveal` replace `reteach` / `continue`. Poll evidence adds `poll_id` and drops `remediations_used`. On `explain`, the decision returns the option, the misconception and remediation ids, the remediation `text`, and `show_slide`; on `reveal`, the correct option.
+- **Why change:** v2 has no remediation branches or limits; the front end needs the text and slide to play.
+- **Suggested direction:** Agree the field names. Each poll triggers at most once: the backend calls the rule once per poll (an endpoint guard on (`session_id`, `poll_id`) may be added in Stage 8 if trivial).
+
+## Q-15 Removed decision values
+- **Status:** open · **Area:** decision output · **Affects:** front end, pipeline (accepted values) · **Raised:** 2026-11-04
+- **Current approach (draft):** `remediation_limit` and `no_mapping` escalation reasons and the decision field `remediation_id` are removed. The 5 remaining reasons are `out_of_scope`, `assignment_like`, `low_confidence`, `unsupported`, `llm_error`.
+- **Why change:** Path A no longer escalates.
+- **Suggested direction:** Update dbt `accepted_values` tests and front-end handling.
+
+## Q-16 What escalation means in class, and where escalated questions go
+- **Status:** open · **Area:** decision output · **Affects:** front end (Sai), professor · **Raised:** 2026-11-04
+- **Current approach (draft):** Escalate = the student sees "saved for the professor"; the question is stored in the agent's decision log and appears, grouped, in the post-class report.
+- **Why change:** In v1 escalation meant handing the question to a live professor, who is not there in v2.
+- **Suggested direction:** Agree the student-facing message and that the decision log is the store.
+
+## Q-17 Table names for parse output
+- **Status:** open · **Area:** Snowflake tables · **Affects:** pipeline (Yaksha) · **Raised:** 2026-11-04
+- **Current approach (draft):** The prep service writes stage `@RAW_MATERIALS`, `RAW_FILES`, `PARSED_PAGES`, and `LESSON_CHUNKS_V2` (key `lesson_id` + `chunk_id`; chunks of a file shared across lessons are copied per lesson). Generated content stays in the manifest; prep runs are not written to the data model.
+- **Why change:** Names must not clash with Yaksha's Bronze/Silver/Gold models.
+- **Suggested direction:** Agree names and schema; Yaksha's dbt does not build these tables.
+
+## Q-18 Prep service API and slide image delivery
+- **Status:** open · **Area:** HTTP API · **Affects:** front end (Sai) · **Raised:** 2026-11-04
+- **Current approach (draft):** Endpoints in IMPLEMENTATION_NOTES section 3 (lessons, files, process, jobs, manifest, slides by slide id). Slide PNGs and the manifest are served from the prep service's local disk; job state is in memory.
+- **Why change:** New service; nothing agreed yet.
+- **Suggested direction:** Agree request/response shapes, the upload size limit, and the CORS origin.
+
+## Q-19 Live endpoints: student question and poll result
+- **Status:** open · **Area:** HTTP API · **Affects:** front end / backend (Sai) · **Raised:** 2026-11-04
+- **Current approach (draft):** `POST /questions` (one question → answer or escalate decision) and `POST /polls/result` (poll evidence → explain / reveal), both on the agent service. The poll rule is a plain function; no LLM in the poll path.
+- **Why change:** v1 had no HTTP interface.
+- **Suggested direction:** Agree paths, payloads, and timeouts (see Q-11 for the wait time). The question payload needs the lesson for the retrieval filter: proposed `lesson_id` in the question (or the agent maps `session_id` to a lesson).
+
+## Q-20 Post-class report: trigger and data source
+- **Status:** open · **Area:** HTTP API, report · **Affects:** front end / backend (Sai), pipeline (Yaksha) · **Raised:** 2026-11-04
+- **Current approach (draft):** Sai's backend calls `POST /sessions/{id}/report` at session end; `GET /sessions/{id}/report` returns the HTML page; a CLI command does the same. Inputs: the agent's decision log (text), traces, poll evidence, manifest status values. No LLM summary.
+- **Why change:** The report reads text that Yaksha's Gold tables do not hold.
+- **Suggested direction:** Agree the endpoint and that the report does not read Gold tables.
+
+## Q-21 Trace records for the star schema
+- **Status:** open · **Area:** trace output · **Affects:** pipeline (Yaksha) · **Raised:** 2026-11-04
+- **Current approach (draft):** Trace JSONL with run, node, LLM-call, retrieval, claim, and poll-evidence records (IMPLEMENTATION_NOTES 6.3). Removed: scenario key, assignment key, max reteach, matches-expected count, support score, is-approved, token counts. `BATCH` = one class session; prompt version = compiled DSPy program id or `uncompiled-v1`.
+- **Why change:** The trace is the only source of Yaksha's model.
+- **Suggested direction:** Agree exact field names and record types; Stage 2 implements them as drafts with a contract test.

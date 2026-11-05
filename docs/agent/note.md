@@ -274,9 +274,16 @@ is no longer updated)
   `CLASSPILOT_WH` 0.1757 (20:00 UTC hour: inventory, re-chunk, run 1) + 0.1339 (21:00
   hour: run 2, checks) = 0.31 credits, about 4x Stage 5, since AI_COMPLETE keeps the
   warehouse up for the whole run (4-5 min each); search embedding 0.0003, serving
-  0.0000. AI credits (query 1) not yet read.
+  0.0000. AI credits: run 2 alone 82 AI_COMPLETE (mistral-large3) = 0.0532 credits,
+  about 0.00065 per call (prep prompts carry several chunks; live calls were
+  0.0002-0.0004). Run 1 was cut off by the query bound (see the next entry); at the
+  same rate about 0.05, so Stage 7 AI cost is about 0.10 credits against 0.31 for the
+  warehouse.
+- 2026-11-05 [finding] `CORTEX_AI_FUNCTIONS_USAGE_HISTORY.START_TIME` behaves as an
+  hourly bucket: a bound inside the hour drops that hour's calls. Cost queries bound
+  by whole hours (`sql/probes/stage7_cost_reading.sql` fixed).
 
-## Stage 8: Service API (prep and live endpoints)
+## Stage 8: Service API (prep and live endpoints) — accepted 2026-11-05
 
 - 2026-11-05 [decision] User approved `fastapi`, `uvicorn`, `python-multipart` (and
   `httpx` for tests). Agent side: lessons on disk under `outputs/service`, jobs and the

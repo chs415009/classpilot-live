@@ -8,13 +8,15 @@
 
 USE ROLE ACCOUNTADMIN;
 
--- 1. AI function credits since the run started, per function and model.
+-- 1. AI function credits since the run started, per function and model. START_TIME is
+--    the start of an hourly bucket, so the bound is the hour (20:00 UTC; Stage 5 ran in
+--    the 19:00 hour, the inventory made no AI calls). With 20:50 only run 2 was counted.
 SELECT FUNCTION_NAME,
        MODEL_NAME,
        COUNT(DISTINCT QUERY_ID)            AS queries,
        ROUND(SUM(CREDITS), 4)              AS ai_credits
 FROM SNOWFLAKE.ACCOUNT_USAGE.CORTEX_AI_FUNCTIONS_USAGE_HISTORY
-WHERE START_TIME >= '2026-11-05 20:50:00 +00:00'
+WHERE START_TIME >= '2026-11-05 20:00:00 +00:00'
 GROUP BY 1, 2
 ORDER BY 1, 2;
 

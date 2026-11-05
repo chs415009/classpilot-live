@@ -322,3 +322,13 @@ patterns from `main`.
 - 2026-11-04 [decision] User confirmed: (a) Route B for all LLM calls on this account
   (DSPy custom engine over `AI_COMPLETE`); (b) vision `claude-haiku-4-5`, live Q&A text
   model `mistral-large3` for now.
+- 2026-11-04 [result] Teardown (approved SQL, agent role): `REMOVE @PROBE_STAGE` (5 files),
+  `DROP STAGE PROBE_STAGE`, `ALTER CORTEX SEARCH SERVICE LESSON_SEARCH SUSPEND`. Checked:
+  no stages left; `LESSON_SEARCH` indexing and serving `SUSPENDED`. Stage 3 asks before
+  `RESUME`.
+- 2026-11-04 [decision] User chose option A: the repo is **MIT** licensed (`LICENSE`,
+  copyright chs415009) and Stage 4 uses **pypdfium2** (Apache/BSD) instead of PyMuPDF
+  (AGPL-3.0). PyMuPDF stays only for the Stage 1 probe scripts and is removed from the
+  dependencies in Stage 4. Stage 4 must reproduce the image-area signal with pypdfium2
+  page objects.
+

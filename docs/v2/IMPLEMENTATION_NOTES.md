@@ -57,7 +57,7 @@ agreement with Sai / Yaksha. The stage plan is in `STAGES.md`.
 
 ```
 Front end (Sai) ──HTTP──> Prep service (FastAPI, mine)
-                             ├─ convert (LibreOffice, PyMuPDF, python-pptx)   [local]
+                             ├─ convert (LibreOffice, pypdfium2, python-pptx) [local]
                              ├─ PUT to stage                                  [Snowflake]
                              ├─ parse (AI_PARSE_DOCUMENT; AI_COMPLETE+image
                              │         for image pages only)                  [Snowflake]
@@ -131,8 +131,8 @@ Implementation notes:
 
 | Input | Steps |
 |---|---|
-| PPTX | python-pptx → per-slide text + speaker notes; LibreOffice (headless) → PDF; PyMuPDF → PNG per page |
-| PDF slides | PyMuPDF → per-page text layer + PNG per page (no notes) |
+| PPTX | python-pptx → per-slide text + speaker notes; LibreOffice (headless) → PDF; pypdfium2 → PNG per page |
+| PDF slides | pypdfium2 → per-page text layer + PNG per page (no notes) |
 | PDF / DOCX references | Upload as is |
 
 - LibreOffice must be installed on the machine running the prep service.
@@ -349,7 +349,13 @@ report needs (section 8).
 - **Route A:** `dspy.LM("snowflake/<model>")` via LiteLLM → Cortex REST API.
   Auth: key-pair JWT (`SNOWFLAKE_JWT`, `SNOWFLAKE_ACCOUNT_ID`) or PAT (`pat/` prefix;
   needs network policy). May not need a warehouse → cheaper. **[verify]**
-- **Route B:** custom `dspy.BaseLM` wrapping the existing `AI_COMPLETE` adapter.
+- **Route B:** a DSPy custom engine (`complete(Request) -> Response`, DSPy 3.4) wrapping
+  the existing `AI_COMPLETE` connection. (`BaseLM.forward()` is deprecated in 3.4 and
+  removed in 3.5.)
+- **Result (Stage 1, current account):** Route A is blocked (REST returns 003001 "account
+  not allowed"); **Route B is used.** Timeouts use `STATEMENT_TIMEOUT_IN_SECONDS` (the
+  connector's per-query `timeout=` did not cancel `AI_COMPLETE`). Live Q&A sets
+  `num_retries=0`. Details in `note.md`, Stage 1.
 - Check: models available on REST from the current account; whether DSPy's JSON/Chat
   adapter output is reliable with mistral-large3; malformed output still maps to
   `llm_error`.
@@ -450,7 +456,8 @@ trial expiry. A move to another account is possible later (section 2.1).
 ## 10. New dependencies (ask before adding)
 
 Python: `dspy`, `litellm` (via dspy), `fastapi`, `uvicorn`, `python-multipart`,
-`python-pptx`, `pymupdf`. System: LibreOffice (headless).
+`python-pptx`, `pypdfium2` (not `pymupdf`: AGPL-3.0; the repo is MIT). System: LibreOffice
+(headless).
 Dev: `ruff` (lint + format). Test: `httpx` (FastAPI `TestClient`). Possibly `PyJWT`
 (Route A key-pair JWT). Each is proposed when the stage that needs it starts.
 
@@ -583,3 +590,15 @@ Open points from the plan update, decided:
   start at Q-13. This replaces the earlier "update Q-05, Q-06, Q-09" entry.
 - 2026-11-04 No date-driven planning: the user decides when each stage runs. The trial
   expiry no longer affects the plan or the stage order.
+
+Stage 1 (live probes) decisions:
+- 2026-11-04 Route B for all LLM calls on the current account: DSPy custom engine over
+  `AI_COMPLETE`; Cortex REST is blocked for this account (003001).
+- 2026-11-04 Models: vision `claude-haiku-4-5` (about 0.0017 credits and 3 s per slide);
+  live Q&A `mistral-large3` for now (about 0.0002 credits per call).
+- 2026-11-04 LLM timeouts are enforced server-side with `STATEMENT_TIMEOUT_IN_SECONDS`;
+  DSPy `num_retries=0` for live calls.
+- 2026-11-04 Repo license MIT; PDF handling with pypdfium2 instead of PyMuPDF (AGPL-3.0).
+- 2026-11-04 Cost readings use `CORTEX_AI_FUNCTIONS_USAGE_HISTORY` (the old
+  `CORTEX_FUNCTIONS_QUERY_USAGE_HISTORY` is no longer updated).
+

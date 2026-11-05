@@ -285,11 +285,12 @@ Goal: A PPTX or PDF deck and PDF/DOCX references become per-page text, notes, PN
 an image-page flag on the local machine, with file hashes, system slide ids, and a
 slide/page alignment check.
 Depends on: Stage 0 (and Stage 1's image-page findings); approval of `python-pptx` and
-`pymupdf`; LibreOffice installed.
+`pypdfium2` (not PyMuPDF: AGPL-3.0, repo is MIT); LibreOffice installed.
 Tasks:
 - `prep/convert.py`:
-  - PPTX: python-pptx text and notes, LibreOffice → PDF, PyMuPDF → PNG.
-  - PDF slides: PyMuPDF text layer and PNG.
+  - PPTX: python-pptx text and notes, LibreOffice → PDF, pypdfium2 → PNG.
+  - PDF slides: pypdfium2 text layer and PNG.
+  - Remove `pymupdf` from the dependencies (Stage 1 probes only).
   - References: PDF pages get a PNG and an image-page flag. DOCX is passed through.
 - Slide ids `<source>-p<NN>`.
 - Alignment check: the PPTX slide count must equal the PDF page count, and per-page text

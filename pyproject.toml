@@ -2,6 +2,7 @@
 name = "classpilot-live"
 version = "0.2.0.dev0"
 description = "ClassPilot Live: prep service, parse layer, and live agents (LangGraph + Snowflake Cortex, mock mode for development)"
+license = "MIT"
 requires-python = ">=3.12"
 dependencies = [
     "langgraph",
@@ -9,7 +10,8 @@ dependencies = [
     "pyyaml",
     # DSPy 3.4 custom-engine API; forward()-style custom LMs are removed in 3.5.
     "dspy>=3.4.1,<3.5",
-    # PDF page rendering and text layer (slides, references).
+    # PDF page rendering and text layer, used by the Stage 1 probes only. AGPL-3.0:
+    # replaced by pypdfium2 (Apache/BSD) in Stage 4 to keep the repo MIT (2026-11-04).
     "pymupdf",
 ]
 

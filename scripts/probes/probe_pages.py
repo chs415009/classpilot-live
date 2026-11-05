@@ -1,5 +1,8 @@
 """Offline: page count, text layer, and image-page signals for the slide PDF (PyMuPDF),
-plus PNG rendering of every page to outputs/probes/slides/ (gitignored)."""
+plus PNG rendering of every page to outputs/probes/slides/ (gitignored).
+
+History only: needs `pip install pymupdf` (AGPL-3.0, removed from the project
+dependencies in Stage 4) and the Stage 1 materials file `materials/L1_slide.pdf`."""
 
 import json
 

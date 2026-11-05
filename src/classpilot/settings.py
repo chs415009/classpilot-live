@@ -28,11 +28,35 @@ class LLMSettings(BaseModel):
     timeout_seconds: float = 10
 
 
+class ImagePageSettings(BaseModel):
+    # Areas are fractions of the page, after removing objects every page shares
+    # (template drawings, logos). Stage 1: image area >= 0.10 found the image slides.
+    image_area: float = 0.10  # >= this -> image
+    drawing_area: float = 0.30  # >= this -> image (diagrams made of shapes)
+    unsure_image_area: float = 0.02  # >= this -> unsure
+    unsure_drawing_area: float = 0.10  # >= this -> unsure
+    min_text_chars: int = 10  # fewer text-layer chars -> unsure (maybe text as outlines)
+
+
+class ParseSettings(BaseModel):
+    # Local conversion (prep/convert.py). LibreOffice runs in Docker, never on the host.
+    libreoffice_image: str = "classpilot-libreoffice:1"
+    libreoffice_timeout_seconds: float = 180
+    render_scale: float = 2.0  # 144 dpi
+    min_render_scale: float = 0.5
+    png_max_bytes: int = 3_750_000  # Cortex image limit for Claude models is 3.75 MB
+    # Alignment: share of a slide's python-pptx words found on its PDF page.
+    alignment_min_overlap: float = 0.6
+    alignment_min_words: int = 3  # slides with fewer words are not compared
+    image_page: ImagePageSettings = ImagePageSettings()
+
+
 class Settings(BaseModel):
     backend: Literal["mock", "cortex"] = "mock"
     poll: PollSettings = PollSettings()
     question: QuestionSettings = QuestionSettings()
     llm: LLMSettings = LLMSettings()
+    parse: ParseSettings = ParseSettings()
 
 
 def _deep_merge(base: dict, extra: dict) -> dict:

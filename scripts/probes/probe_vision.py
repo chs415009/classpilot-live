@@ -1,6 +1,9 @@
 """Vision probe (live, 6 AI_COMPLETE calls): 3 slide PNGs (text-only, image, mixed) x 2
 models, single-file AI_COMPLETE with the slide's text layer in the prompt. Structured
-output is not available with images, so the reply is parsed as JSON in code."""
+output is not available with images, so the reply is parsed as JSON in code.
+
+History only: needs `pip install pymupdf` (AGPL-3.0, removed from the project
+dependencies in Stage 4) and the Stage 1 materials file `materials/L1_slide.pdf`."""
 
 import json
 import os

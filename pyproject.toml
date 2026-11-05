@@ -10,9 +10,10 @@ dependencies = [
     "pyyaml",
     # DSPy 3.4 custom-engine API; forward()-style custom LMs are removed in 3.5.
     "dspy>=3.4.1,<3.5",
-    # PDF page rendering and text layer, used by the Stage 1 probes only. AGPL-3.0:
-    # replaced by pypdfium2 (Apache/BSD) in Stage 4 to keep the repo MIT (2026-11-04).
-    "pymupdf",
+    # Parse layer, local step (Stage 4). Not PyMuPDF: AGPL-3.0, and the repo is MIT.
+    "python-pptx>=1.0",  # slide text and speaker notes
+    "pypdfium2>=5",      # PDF text layer, page objects, PNG rendering
+    "pillow>=10",        # PNG encoding and downscaling, fixture images
 ]
 
 [project.optional-dependencies]

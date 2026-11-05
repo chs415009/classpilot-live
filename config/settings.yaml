@@ -17,3 +17,20 @@ llm:
   # Also tested: llama3.3-70b, claude-haiku-4-5. Not used in mock mode.
   model: mistral-large3
   timeout_seconds: 10
+
+parse:
+  # Local conversion before upload (prep convert). LibreOffice runs in Docker only:
+  # build the image with scripts/libreoffice/build.sh.
+  libreoffice_image: classpilot-libreoffice:1
+  libreoffice_timeout_seconds: 180
+  render_scale: 2.0          # PNG at 144 dpi; lowered until the PNG fits png_max_bytes
+  min_render_scale: 0.5
+  png_max_bytes: 3750000     # Cortex image limit for Claude models (3.75 MB)
+  alignment_min_overlap: 0.6 # share of a slide's words that must appear on its PDF page
+  alignment_min_words: 3
+  image_page:                # areas: fraction of the page, shared template objects removed
+    image_area: 0.10         # -> image
+    drawing_area: 0.30       # -> image
+    unsure_image_area: 0.02  # -> unsure (unsure pages go to vision)
+    unsure_drawing_area: 0.10
+    min_text_chars: 10

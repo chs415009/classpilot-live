@@ -13,7 +13,7 @@ from classpilot.live.poll import run_poll
 from classpilot.live.question_graph import Deps, run_question
 from classpilot.nodes.guardian import run_guardian
 from classpilot.settings import PROJECT_ROOT, Settings, load_settings
-from classpilot.trace import DEFAULT_TRACE_PATH, write_trace
+from classpilot.trace import DEFAULT_DECISION_LOG_PATH, DEFAULT_TRACE_PATH, write_run
 
 SCENARIO_DIR = PROJECT_ROOT / "scenarios"
 EVAL_PATH = PROJECT_ROOT / "eval" / "test_questions.json"
@@ -32,7 +32,12 @@ def make_deps(settings: Settings, content: Content, mock_overrides: dict | None 
     return Deps(settings, content, llm, retriever)
 
 
-def run_scenario(path: Path, trace_path: Path | None = DEFAULT_TRACE_PATH) -> dict:
+def run_scenario(
+    path: Path,
+    trace_path: Path | None = DEFAULT_TRACE_PATH,
+    log_path: Path = DEFAULT_DECISION_LOG_PATH,
+) -> dict:
+    """Run one scenario file. `trace_path=None` writes neither traces nor the decision log."""
     scenario = json.loads(Path(path).read_text())
     settings = load_settings(overrides=scenario.get("settings_overrides"))
     content = load_content()
@@ -40,19 +45,19 @@ def run_scenario(path: Path, trace_path: Path | None = DEFAULT_TRACE_PATH) -> di
 
     if scenario["path"] == "poll":
         evidence = PollEvidence.model_validate(scenario["input"])
-        decision, trace = run_poll(evidence, content.manifest, settings.backend)
+        output = run_poll(evidence, content.manifest, settings.backend)
     else:
         question = StudentQuestion.model_validate(scenario["input"])
-        decision, trace = run_question(question, deps)
+        output = run_question(question, deps)
 
     if trace_path is not None:
-        write_trace(trace, trace_path)
+        write_run(output, trace_path, log_path)
 
     expected = scenario.get("expected", {})
-    actual = decision.model_dump()
+    actual = output.decision.model_dump()
     matches = all(actual.get(key) == value for key, value in expected.items())
     excluded = set(scenario.get("expected_retrieved_excludes", []))
-    matches = matches and not excluded & set(trace.retrieved_chunk_ids)
+    matches = matches and not excluded & set(output.retrieved_chunk_ids)
     return {
         "file": Path(path).name,
         "name": scenario["name"],
@@ -61,7 +66,9 @@ def run_scenario(path: Path, trace_path: Path | None = DEFAULT_TRACE_PATH) -> di
         "expected": expected,
         "matches_expected": matches,
         "decision": actual,
-        "trace": trace.model_dump(),
+        "trace": output.summary(),
+        "records": [r.model_dump() for r in output.records],
+        "decision_log": output.log.model_dump(),
     }
 
 
@@ -69,13 +76,14 @@ def scenario_files() -> list[Path]:
     return sorted(SCENARIO_DIR.glob("*.json"))
 
 
-def run_eval(trace_path: Path | None = None) -> dict:
+def run_eval(trace_path: Path | None = None, log_path: Path | None = None) -> dict:
     settings = load_settings()
     content = load_content()
     deps = make_deps(settings, content)
     questions = json.loads(EVAL_PATH.read_text())
-    if trace_path is not None and trace_path.exists():
-        trace_path.unlink()
+    for out in (trace_path, log_path):
+        if out is not None and out.exists():
+            out.unlink()
 
     rows = []
     for item in questions:
@@ -89,9 +97,10 @@ def run_eval(trace_path: Path | None = None) -> dict:
             submitted_at="2026-10-22T00:00:00Z",
         )
         details: dict = {}
-        decision, trace = run_question(question, deps, details)
-        if trace_path is not None:
-            write_trace(trace, trace_path)
+        output = run_question(question, deps, details)
+        decision = output.decision
+        if trace_path is not None and log_path is not None:
+            write_run(output, trace_path, log_path)
         rows.append(
             {
                 "id": item["id"],
@@ -103,9 +112,9 @@ def run_eval(trace_path: Path | None = None) -> dict:
                 "confidence": decision.confidence,
                 "citations": decision.citations,
                 "answer_text": decision.answer_text,
-                "llm_calls": trace.llm_calls,
-                "latency_ms": trace.latency_ms,
-                "nodes_run": trace.nodes_run,
+                "llm_calls": output.llm_calls,
+                "latency_ms": output.latency_ms,
+                "nodes_run": output.nodes_run,
                 "details": details,
             }
         )

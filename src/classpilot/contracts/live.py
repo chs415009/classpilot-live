@@ -69,18 +69,6 @@ class Decision(BaseModel):
     confidence: float | None = None
 
 
-class Trace(BaseModel):
-    decision_id: str
-    input_ref: str
-    nodes_run: list[str]
-    llm_calls: int
-    retrieved_chunk_ids: list[str]
-    latency_ms: dict[str, int]
-    backend: Backend
-    action: Action
-    created_at: str
-
-
 # ---------- LLM node outputs (checked by the final validator) ----------
 
 

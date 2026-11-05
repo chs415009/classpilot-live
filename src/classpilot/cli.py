@@ -50,14 +50,17 @@ def main(argv: list[str] | None = None) -> None:
 
     if args.command == "run":
         result = run_scenario(args.scenario)
-        print(json.dumps({"decision": result["decision"], "trace": result["trace"]}, indent=2))
+        print(json.dumps({key: result[key] for key in ("decision", "records")}, indent=2))
         print("matches expected:", result["matches_expected"])
     elif args.command == "run-all":
         for path in scenario_files():
             print_scenario(run_scenario(path))
     elif args.command == "eval":
         backend = load_settings().backend
-        result = run_eval(OUTPUT_DIR / f"eval_traces_{backend}.jsonl")
+        result = run_eval(
+            OUTPUT_DIR / f"eval_traces_{backend}.jsonl",
+            OUTPUT_DIR / f"eval_decision_log_{backend}.jsonl",
+        )
         out = OUTPUT_DIR / f"eval_{backend}.json"
         out.write_text(json.dumps(result, indent=2))
         print(json.dumps(result["summary"], indent=2))

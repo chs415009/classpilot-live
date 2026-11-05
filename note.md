@@ -202,3 +202,64 @@ patterns from `main`.
   ran Part 1 in Snowsight as ACCOUNTADMIN: `GRANT CREATE STAGE ON SCHEMA
   CLASSPILOT_DEMO.AGENT TO ROLE CLASSPILOT_AGENT_ROLE`, checked with `SHOW GRANTS`.
   Part 2 (`PROBE_STAGE`) not run yet.
+
+### Cost calibration from v1 (account: current trial; read by the user 2026-11-04)
+- 2026-11-04 [result] `CORTEX_AI_FUNCTIONS_USAGE_HISTORY` since 2026-10-20: 330 queries
+  (AI_COMPLETE 329, AI_EMBED 1), **0.0456 AI credits** in total. mistral-large3 on the
+  Stage 3/4 days: 195 queries 0.0284, 65 queries 0.0104 → about **0.00015 AI credits per
+  call** (about $0.0003 at $2/credit). claude-haiku-4-5 and llama3.3-70b probes were in
+  the same range per call.
+- 2026-11-04 [result] `WAREHOUSE_METERING_HISTORY`: `CLASSPILOT_WH` **0.855 credits** in
+  total, 0.849 of it on 2026-10-20..24 (active work), then 0.0002-0.002 per day with no
+  work (most likely the v1 `LESSON_SEARCH` refresh checks; to confirm). Cloud services
+  0.008.
+- 2026-11-04 [finding] The warehouse costs about 19× the AI credits. Per-call LLM cost is
+  negligible at our volumes; what matters is how long the warehouse stays up (XS = 1
+  credit/hour, auto-suspend 60 s). The plan's dollar estimates (e.g. "under $3" for 25
+  calls) are far too high for the AI part; a stage's real cost is mostly warehouse
+  minutes. Route A (REST) may avoid the warehouse entirely (probe). Cortex Search serving
+  cost is not in these two views.
+
+### Live probes (2026-11-04, current trial account; outputs in outputs/probes/, gitignored)
+- 2026-11-04 [result] Offline engine probe: with `num_retries=0` and
+  `ChatAdapter(use_json_adapter_fallback=False)`, DSPy makes exactly one engine call.
+  Malformed output, a bad `Literal` value, or non-JSON → `dspy.AdapterParseError`. Engine
+  errors surface as `dspy.utils.exceptions.LMTimeoutError` (from `lm15.TimeoutError`),
+  `LMServerError` (from `lm15.ServerError`), `LMUnexpectedError` (any other exception).
+  All of these map to our `LLMError` → `llm_error`. JSONAdapter does not pass a
+  `response_format` to a custom engine (the JSON schema goes into the prompt text).
+- 2026-11-04 [result] Route B (custom engine over `AI_COMPLETE`, mistral-large3): the
+  Analyst signature parses with both ChatAdapter (1.33 s) and JSONAdapter (1.07 s), with
+  the right category and objective. Prompt about 1.7k characters.
+- 2026-11-04 [finding] With ChatAdapter, an `objective_id: str | None` field came back as
+  the string `"None"`, not null. The Stage 3 signatures must normalize this (or use a
+  sentinel) before the validator sees it.
+- 2026-11-04 [finding] **The connector's `cursor.execute(..., timeout=N)` did not cancel a
+  running `AI_COMPLETE`**: with `timeout=1` the call returned after 15.9 s. So in v1 the
+  thread timeout escalated on time, but the query kept running (and billing). v1 note
+  2026-10-21 ("cancels slow calls server-side") was wrong in practice.
+- 2026-11-04 [finding] `ALTER SESSION SET STATEMENT_TIMEOUT_IN_SECONDS = 2` **does** cancel
+  it server-side: error 000630 after 2.37 s. The Stage 3 adapter uses the session
+  statement timeout (whole seconds), plus the thread timeout as a backstop.
+- 2026-11-04 [result] Route A (Cortex REST, key-pair JWT signed with `cryptography`, no
+  PyJWT): authentication is accepted (403, not 401), but every REST endpoint returns
+  `003001 "This account is not allowed to access this endpoint. Please contact Snowflake
+  support."`, both through LiteLLM and direct. (per account: likely a trial restriction)
+  `GET /api/v2/cortex/models` returned 400 "request entity required". Not retried.
+- 2026-11-04 [decision] (proposed, for review) **Route B** for all LLM calls on this
+  account: a DSPy custom engine over `AI_COMPLETE` via the existing connector. Keep the
+  JWT helper idea for a future account where REST is enabled.
+- 2026-11-04 [result] Created `PROBE_STAGE` (approved SQL, SSE, directory table), `PUT`
+  both materials with `AUTO_COMPRESS=FALSE`, `ALTER STAGE ... REFRESH`, then
+  `AI_PARSE_DOCUMENT` LAYOUT + page_split: reference PDF 3 pages in 5.4 s; slide PDF in
+  4.8 s. Output keys `metadata`, `pages[]` (`index`, `content`, `dimensions`).
+- 2026-11-04 [finding] `AI_PARSE_DOCUMENT` reports **13 pages** for `L1_slide.pdf`, while
+  the macOS `file` command said 8. To confirm with PyMuPDF; the Stage 4 alignment check
+  must count pages with the same library used for rendering.
+- 2026-11-04 [finding] LAYOUT output marks embedded images as `![img-N.jpeg](img-N.jpeg)`
+  in the page Markdown. That is a cheap image-page signal from the parse output itself
+  (pages 0, 1, 5, 12 of the slides have it). Vector diagrams without embedded images
+  would not show up this way, so it complements, not replaces, the PyMuPDF heuristic.
+- 2026-11-04 [finding] PPTX speaker notes could not be tested: the materials are PDF.
+- 2026-11-04 [result] LLM calls so far in Stage 1: 5 `AI_COMPLETE` (3 Route B, 2 timeout
+  probes) + 2 `AI_PARSE_DOCUMENT` (16 pages) + 4 rejected REST requests. Limit about 38.

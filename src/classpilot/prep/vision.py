@@ -17,6 +17,15 @@ PROMPT_TEXT_LIMIT = 4000  # characters of text layer / notes put into the prompt
 class VisionDescription(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
+    # The model reports what it sees; code decides what becomes a chunk (prep/chunking).
+    # Default True: descriptions stored before this field existed count as visual.
+    has_visuals: bool = Field(
+        default=True,
+        description=(
+            "true or false: does the page show pictures, charts, or diagrams "
+            "(not only text and decorative boxes)?"
+        ),
+    )
     slide_text: str = Field(description="all text visible on the page")
     diagram_description: str = Field(
         description="what the pictures, charts, or diagrams show; empty if there are none"
@@ -32,7 +41,7 @@ def json_shape() -> str:
     """The reply shape for the prompt, built from VisionDescription's fields."""
     parts = []
     for name, field in VisionDescription.model_fields.items():
-        hint = f"<{field.description}>"
+        hint = f"<{field.description}>" if field.annotation is not bool else field.description
         value = [hint] if field.annotation == list[str] else hint
         parts.append(f"{json.dumps(name)}: {json.dumps(value)}")
     return "{" + ", ".join(parts) + "}"

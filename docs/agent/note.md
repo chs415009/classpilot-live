@@ -193,4 +193,12 @@ is no longer updated)
 - 2026-11-05 [result] Real deck + reference parsed into 25 chunks; a second lesson with
   the same files made 0 calls with the same ids; `lesson_id` filter returned only the
   queried lesson's chunks (4 queries). Service suspended. 245 tests.
+- 2026-11-05 [decision] User: keep the cautious routing; vision now reports `has_visuals`
+  (no description chunk when false) and key concepts are not chunked. The Stage 5 live
+  rows were chunked before this change (no `has_visuals`, key concepts in chunks); the
+  next `prep parse` of those lessons re-chunks them with 0 LLM calls.
+- 2026-11-05 [result] Stage 5 cost (ACCOUNT_USAGE): vision 7 calls 0.0150 AI credits
+  (0.0021 each, with the page text in the prompt), AI_PARSE_DOCUMENT 3 pages 0.0110,
+  embedding 0.0002, serving 0.0000, `CLASSPILOT_WH` 0.0715. Total about 0.098 credits;
+  warehouse time is again the largest item. `sql/probes/stage5_cost_reading.sql`.
 

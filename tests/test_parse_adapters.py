@@ -59,8 +59,10 @@ def test_prompt_shape_matches_the_model():
     shape = json.loads(json_shape())
     schema = VisionDescription.model_json_schema()
     assert list(shape) == list(VisionDescription.model_fields)
-    assert set(schema["required"]) == set(shape)
+    # Every field is asked for; only has_visuals has a default (for older stored rows).
+    assert set(schema["required"]) == set(shape) - {"has_visuals"}
     assert isinstance(shape["key_concepts"], list)
+    assert shape["has_visuals"].startswith("true or false")
     assert json_shape() in build_prompt("text", None)
 
 
@@ -84,6 +86,19 @@ def test_parse_reply_accepts_plain_fenced_and_double_encoded(raw):
     assert parse_reply(raw) == VisionDescription(
         slide_text="a", diagram_description="b", key_concepts=["c"]
     )
+
+
+@pytest.mark.parametrize(("value", "expected"), [(False, False), ("false", False), ("true", True)])
+def test_parse_reply_reads_has_visuals(value, expected):
+    raw = json.dumps(
+        {"has_visuals": value, "slide_text": "", "diagram_description": "", "key_concepts": []}
+    )
+    assert parse_reply(raw).has_visuals is expected
+
+
+def test_older_descriptions_without_has_visuals_count_as_visual():
+    old = {"slide_text": "a", "diagram_description": "b", "key_concepts": []}
+    assert VisionDescription.model_validate(old).has_visuals is True
 
 
 @pytest.mark.parametrize("raw", ["", "not json", '{"slide_text": "a"}', "[1, 2]"])

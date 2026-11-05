@@ -3,8 +3,11 @@
 Per page, in this order:
 - `text_layer`: the page text (slide text layer or parsed Markdown, image markers
   removed) plus the speaker notes;
-- `llm_description`: the vision description and key concepts (image pages only); the
-  vision `slide_text` is added when the page has no text of its own.
+- `llm_description` (image pages only): the vision `diagram_description` when the
+  model reported pictures, charts, or diagrams (`has_visuals`), and the vision
+  `slide_text` when the page has no text of its own. Key concepts are not chunked:
+  they summarize the page text, and as chunks they outranked the source text (Stage 5);
+  they stay in PARSED_PAGES.
 Each part is split at paragraph, then line, then word boundaries to at most
 `max_chars`. Ids are `<page_id>-c<n>`, numbered 1.. per page in that order, so the
 same pages always give the same ids. Empty pages give no chunks.
@@ -79,11 +82,8 @@ def page_parts(page: ParsedPage) -> list[tuple[str, str]]:
         pieces = []
         if not text and vision.slide_text.strip():
             pieces.append(vision.slide_text.strip())
-        if vision.diagram_description.strip():
+        if vision.has_visuals and vision.diagram_description.strip():
             pieces.append(vision.diagram_description.strip())
-        concepts = [c.strip() for c in vision.key_concepts if c.strip()]
-        if concepts:
-            pieces.append("Key concepts: " + ", ".join(concepts))
         if pieces:
             parts.append(("llm_description", "\n\n".join(pieces)))
     return parts

@@ -67,11 +67,23 @@ def test_notes_join_the_text_and_vision_is_a_separate_chunk():
     assert chunks["deck1-p01-c1"].text == "Medallion Architecture\n\nSpeaker notes: Welcome."
     vision = chunks["deck1-p03-c2"]
     assert vision.origin == "llm_description"
-    assert vision.text == (
-        "Three boxes connected by arrows from left to right.\n\nKey concepts: data flow"
-    )
+    # Key concepts are not chunked (they summarize the text and outranked it, Stage 5).
+    assert vision.text == "Three boxes connected by arrows from left to right."
     # A page without its own text gets the vision slide_text first.
-    assert chunks["deck1-p04-c1"].text.startswith("Bronze Silver Gold\n\n")
+    assert chunks["deck1-p04-c1"].text == (
+        "Bronze Silver Gold\n\nThree boxes connected by arrows from left to right."
+    )
+
+
+def test_pages_without_visuals_get_no_description_chunk():
+    no_visuals = VISION.model_copy(
+        update={"has_visuals": False, "diagram_description": "No diagrams; only text."}
+    )
+    chunks = chunk_file(parsed(page(1, "ADT text", vision=no_visuals)), 1500)
+    assert [(c.chunk_id, c.origin) for c in chunks] == [("deck1-p01-c1", "text_layer")]
+    # Text shown only as an image (no text layer) is still kept from slide_text.
+    only_image_text = chunk_file(parsed(page(1, "", vision=no_visuals)), 1500)
+    assert [c.text for c in only_image_text] == ["Bronze Silver Gold"]
 
 
 def test_long_text_is_split_within_the_limit_and_keeps_every_word():

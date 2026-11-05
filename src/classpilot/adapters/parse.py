@@ -99,6 +99,7 @@ class MockVision:
             "```json\n"
             + json.dumps(
                 {
+                    "has_visuals": True,
                     "slide_text": "",
                     "diagram_description": f"Mock description of page {page}.",
                     "key_concepts": [f"concept of {page}"],

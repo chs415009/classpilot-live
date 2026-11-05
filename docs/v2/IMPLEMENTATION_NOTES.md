@@ -214,8 +214,10 @@ Implemented in Stage 5 (`prep/parse.py`, `adapters/parse.py`):
 - Chunk from Silver per-page text. Keep `source_id`, `page_index`, and `origin`
   (`text_layer` | `llm_description`) on every chunk.
 - Per page: a `text_layer` part (page text with image markers removed, plus "Speaker
-  notes: ...") and an `llm_description` part (vision description and key concepts; the
-  vision `slide_text` too when the page has no text). Each part is split at paragraph,
+  notes: ...") and an `llm_description` part: the vision `diagram_description` only when
+  the model reports `has_visuals`, and the vision `slide_text` when the page has no text
+  of its own. Key concepts are not chunked (they summarize the page text and outranked
+  it; kept in `PARSED_PAGES`). Each part is split at paragraph,
   line, then word boundaries to at most 1,500 characters (Cortex Search: at most 512
   tokens per chunk with the default embedding model). Chunks are numbered per page in
   that order. Empty pages give no chunks.
@@ -719,4 +721,7 @@ Stage 5 (parse in Snowflake, chunks, search) decisions:
   switches the service name. The v1 service is not re-checked during v2 work (user).
 - 2026-11-05 Speaker notes join the page's `text_layer` chunk; chunks at most 1,500
   characters.
+- 2026-11-05 Vision reports `has_visuals`; code drops the description chunk when it is
+  false, and key concepts are never chunked (user chose both). The `unsure` → vision
+  routing stays, so real diagrams are not missed.
 

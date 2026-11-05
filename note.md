@@ -198,3 +198,7 @@ patterns from `main`.
   https://docs.snowflake.com/en/sql-reference/account-usage/cortex_ai_functions_usage_history
 - 2026-11-04 [change] Plan docs updated to name `CORTEX_AI_FUNCTIONS_USAGE_HISTORY`
   instead of the old view.
+- 2026-11-04 [result] User reviewed and approved `sql/probes/stage1_probe_setup.sql` and
+  ran Part 1 in Snowsight as ACCOUNTADMIN: `GRANT CREATE STAGE ON SCHEMA
+  CLASSPILOT_DEMO.AGENT TO ROLE CLASSPILOT_AGENT_ROLE`, checked with `SHOW GRANTS`.
+  Part 2 (`PROBE_STAGE`) not run yet.

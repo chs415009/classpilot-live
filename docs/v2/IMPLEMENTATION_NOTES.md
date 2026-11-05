@@ -282,6 +282,7 @@ Rules:
 - Slide ids are system-generated (`<source>-p<NN>`).
 - `known_wrong` covers every wrong option. Each wrong option maps to exactly one
   misconception, and each misconception to exactly one remediation.
+  No two misconceptions share a remediation (agent-side check, Stage 2).
 - `citations` hold chunk ids (they include the page).
 - A segment without a poll has `active_poll: null` and `questions: {}`.
 - There is no correct-answer explanation.

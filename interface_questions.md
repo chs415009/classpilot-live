@@ -24,7 +24,7 @@ Status: `open` (not discussed yet), `agreed` (decision written under the item),
 - **Current approach:** The team's existing manifest structure, with only `new` / `changed` fields (IMPLEMENTATION_NOTES section 5): `params`, `slides` keyed by system slide ids `<source>-p<NN>`, `correct_option`, `known_wrong` for every wrong option, remediations of type `tts_explanation` with `text`, `show_slide`, chunk-id `citations`, and a `status` per item. No correct-answer explanation and no `quality` field (the report counts statuses).
 - **Why change:** The team structure had no generated content, no status, and human-chosen ids.
 - **Suggested direction:** Agree the `new` / `changed` fields. Dropped polls stay in `questions` with `status: "dropped"`; `active_poll` points to another question or is `null`, and the front end reads only `active_poll`. Decide whether the manifest needs a version number.
-- **Stage 2 draft (2026-11-04):** Implemented as `contracts/manifest.py` with fixture `content/manifest.json`. Load-time validation: every wrong option is in `known_wrong` and points to a known misconception; each misconception has exactly one remediation and no two share one; segment slides and `show_slide` are known slide ids; a segment with no questions has `active_poll: null`; `active_poll: null` is allowed with questions only if all of them are dropped; `active_poll` is never a dropped question; each question's `segment` matches its segment. To discuss: the last two rules are my reading of section 5. The fixture cites v1 chunk ids (`chunk-01`), not `<slide>-c<N>`, so the Stage 3 parity check can use the v1 search index.
+- **Stage 2 draft (2026-11-04):** Implemented as `contracts/manifest.py` (fixture `content/manifest.json`); the structure is unchanged from section 5. To check with Sai: what the front end can rely on for `active_poll`: it is `null` when a segment has no questions or only dropped ones, otherwise it names a question that is not dropped.
 
 ## Q-14 Poll path: action values, evidence fields, explain payload
 - **Status:** open · **Area:** poll input, decision output · **Affects:** front end / backend (Sai), pipeline · **Raised:** 2026-11-04
@@ -70,7 +70,6 @@ Status: `open` (not discussed yet), `agreed` (decision written under the item),
 - **Current approach (draft):** Sai's backend calls `POST /sessions/{id}/report` at session end; `GET /sessions/{id}/report` returns the HTML page; a CLI command does the same. Inputs: the agent's decision log (text), traces, poll evidence, manifest status values. No LLM summary.
 - **Why change:** The report reads text that Yaksha's Gold tables do not hold.
 - **Suggested direction:** Agree the endpoint and that the report does not read Gold tables.
-- **Stage 2 draft (2026-11-04):** The decision log is `outputs/decision_log.jsonl`, one entry per decision: `schema_version`, `created_at`, `lesson_id`, the full decision, and the question (Path B) or the poll evidence (Path A) it answered. It is also where escalated questions are stored (Q-16).
 
 ## Q-21 Trace records for the star schema
 - **Status:** open · **Area:** trace output · **Affects:** pipeline (Yaksha) · **Raised:** 2026-11-04

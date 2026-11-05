@@ -113,3 +113,8 @@ is no longer updated)
 - 2026-11-04 [decision] Trace v2: one JSONL file with `record_type`; claim support is
   `null` instead of `-1`; question and claim text only as hashes (text in the decision
   log). Draft, Q-21.
+- 2026-11-04 [decision] interface_questions.md holds only what another part reads or
+  sends (manifest, API shapes, decision/trace records, table names). Agent-internal
+  formats (decision log, prep-only validation) are recorded in IMPLEMENTATION_NOTES.
+- 2026-11-04 [decision] The fixture manifest cites v1 chunk ids (`chunk-01`), not
+  `<slide>-c<N>`, so the Stage 3 parity check can use the v1 search index.

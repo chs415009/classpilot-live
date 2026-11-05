@@ -21,6 +21,9 @@ class PollSettings(BaseModel):
 class QuestionSettings(BaseModel):
     confidence_threshold: float = 0.70
     retrieval_top_k: int = 3
+    # Cortex Search service for live Q&A. v1 LESSON_SEARCH serves the v1 fixture lesson
+    # in content/; lessons prepared by `prep parse` are in objects.search_service.
+    search_service: str = "LESSON_SEARCH"
 
 
 class LLMSettings(BaseModel):

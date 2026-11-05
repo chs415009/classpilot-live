@@ -6,8 +6,6 @@ from typing import Protocol
 from classpilot.settings import Settings
 from classpilot.text import coverage
 
-SEARCH_SERVICE = "LESSON_SEARCH"
-
 
 class RetrievalError(Exception):
     """Search backend failed (connection problem, service error)."""
@@ -48,11 +46,12 @@ class CortexSearchRetriever:
     Score = `@scores.cosine_similarity` (range -1..1); the other score fields are
     unbounded and depend on the query.
 
-    Every query is filtered on the LESSON_ID attribute (syntax checked in Stage 1;
-    the v1 LESSON_SEARCH service already has LESSON_ID as an attribute).
+    Every query is filtered on the LESSON_ID attribute (syntax checked in Stage 1).
+    The service is `question.search_service` unless `service_name` is given; v1
+    LESSON_SEARCH and v2 LESSON_SEARCH_V2 both return CHUNK_ID and CHUNK_TEXT.
     """
 
-    def __init__(self, settings: Settings, service=None):
+    def __init__(self, settings: Settings, service=None, service_name: str | None = None):
         self.settings = settings
         if service is None:
             import os
@@ -65,7 +64,7 @@ class CortexSearchRetriever:
                 Root(shared_connection())
                 .databases[os.environ["SNOWFLAKE_DATABASE"]]
                 .schemas[os.environ["SNOWFLAKE_SCHEMA"]]
-                .cortex_search_services[SEARCH_SERVICE]
+                .cortex_search_services[service_name or settings.question.search_service]
             )
         self.service = service
 

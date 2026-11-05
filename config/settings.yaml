@@ -11,6 +11,7 @@ poll:
 question:
   confidence_threshold: 0.70            # responder confidence below this -> escalate
   retrieval_top_k: 3
+  search_service: LESSON_SEARCH         # v1 fixture lesson; prep lessons: objects.search_service
 
 llm:
   # Cortex AI_COMPLETE model (reached via cross-region inference from <account region>).

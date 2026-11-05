@@ -13,7 +13,7 @@ import argparse
 
 from classpilot.adapters.snowflake import connect
 
-SERVICES = ["LESSON_SEARCH"]  # v1 service; the v2 service is added in Stage 5
+SERVICES = ["LESSON_SEARCH_V2", "LESSON_SEARCH"]  # v2 (objects.search_service), v1
 
 
 def state(cursor, name: str) -> dict:

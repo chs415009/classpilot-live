@@ -5,6 +5,8 @@ python -m classpilot.cli run-all
 python -m classpilot.cli eval
 python -m classpilot.cli guardian-eval
 python -m classpilot.cli prep convert deck.pptx --ref reading.pdf --ref notes.docx
+python -m classpilot.cli prep parse --lesson l1 deck.pptx --ref reading.pdf
+python -m classpilot.cli prep search --lesson l1 "why keep raw data"
 """
 
 import argparse
@@ -15,6 +17,8 @@ from classpilot.runner import OUTPUT_DIR, run_eval, run_guardian_eval, run_scena
 from classpilot.settings import load_settings
 
 CONVERT_DIR = OUTPUT_DIR / "convert"
+PREP_TABLES_DIR = OUTPUT_DIR / "prep_tables"  # mock-mode tables
+PARSE_REPORT_DIR = OUTPUT_DIR / "parse"
 
 
 def print_scenario(result: dict) -> None:
@@ -73,6 +77,99 @@ def run_prep_convert(args) -> int:
     return 0
 
 
+def build_parse_deps(settings):
+    """Mock adapters and local tables, or Snowflake (BACKEND=cortex)."""
+    from classpilot.adapters import parse as adapters
+    from classpilot.prep.parse import ParseDeps
+    from classpilot.prep.tables import LocalTables, SnowflakeTables
+
+    cfg = settings.parse
+    if settings.backend == "mock":
+        stage = adapters.MockStage()
+        return ParseDeps(
+            stage,
+            adapters.MockParser(stage),
+            adapters.MockVision(),
+            LocalTables(PREP_TABLES_DIR),
+            cfg,
+            CONVERT_DIR,
+        )
+    from classpilot.adapters.snowflake import shared_connection
+
+    conn, stage_name = shared_connection(), settings.objects.raw_stage
+    return ParseDeps(
+        adapters.SnowflakeStage(conn, stage_name),
+        adapters.CortexParser(conn, stage_name, cfg.parse_timeout_seconds),
+        adapters.CortexVision(
+            conn, stage_name, cfg.vision_model, cfg.vision_max_tokens, cfg.vision_timeout_seconds
+        ),
+        SnowflakeTables(conn, settings.objects),
+        cfg,
+        CONVERT_DIR,
+    )
+
+
+def run_prep_parse(args) -> int:
+    from dataclasses import asdict
+
+    from classpilot.prep.convert import ConvertError
+    from classpilot.prep.libreoffice import LibreOfficeError
+    from classpilot.prep.pages import AlignmentError
+    from classpilot.prep.parse import ParseError, parse_lesson
+
+    settings = load_settings()
+    deps = build_parse_deps(settings)
+    try:
+        reports = parse_lesson(args.lesson, args.files, args.ref, deps, source=args.source)
+    except (ParseError, ConvertError, LibreOfficeError, AlignmentError) as exc:
+        print(f"error: {exc}")
+        return 1
+    print(f"backend={settings.backend} lesson={args.lesson}")
+    for r in reports:
+        state = "reused (known hash)" if r.reused else f"parsed, {r.parse_calls} parse calls"
+        fallback = ", parse failed: local text used" if r.parse_fallback else ""
+        print(f"{r.source_id} [{r.kind}] {r.original_name}: {r.pages} pages, {state}{fallback}")
+        print(f"  vision: {len(r.vision_pages)} pages {r.vision_pages}, failed {r.vision_failed}")
+        print(f"  chunks: {r.chunks}")
+    PARSE_REPORT_DIR.mkdir(parents=True, exist_ok=True)
+    out = PARSE_REPORT_DIR / f"{args.lesson}.json"
+    chunks = deps.tables.lesson_chunks(args.lesson)
+    out.write_text(
+        json.dumps(
+            {
+                "lesson_id": args.lesson,
+                "backend": settings.backend,
+                "files": [asdict(r) for r in reports],
+                "chunks": [c.model_dump() for c in chunks],
+            },
+            indent=2,
+        )
+    )
+    print(f"wrote {out}")
+    return 0
+
+
+def run_prep_search(args) -> int:
+    from classpilot.adapters.retrieval import CortexSearchRetriever, MockRetriever
+
+    settings = load_settings()
+    if settings.backend == "mock":
+        from classpilot.prep.tables import LocalTables
+
+        rows = [
+            {"chunk_id": c.chunk_id, "text": c.text, "lesson_id": args.lesson}
+            for c in LocalTables(PREP_TABLES_DIR).lesson_chunks(args.lesson)
+        ]
+        retriever = MockRetriever(rows)
+    else:
+        retriever = CortexSearchRetriever(settings, service_name=settings.objects.search_service)
+    for query in args.queries:
+        print(f"query: {query}")
+        for hit in retriever.search(query, args.top_k, args.lesson):
+            print(f"  {hit.score:6.3f} {hit.chunk_id}: {hit.text[:100]!r}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(prog="classpilot")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -98,13 +195,29 @@ def main(argv: list[str] | None = None) -> None:
     )
     convert_cmd.add_argument("--source", help="source id for a single file")
     convert_cmd.add_argument("--out", type=Path, default=CONVERT_DIR)
+    parse_cmd = prep_sub.add_parser(
+        "parse", help="convert, parse, describe image pages, chunk, and load a lesson"
+    )
+    parse_cmd.add_argument("--lesson", required=True, help="lesson id")
+    parse_cmd.add_argument("files", nargs="*", type=Path, help="slides (PPTX or PDF)")
+    parse_cmd.add_argument(
+        "--ref", action="append", default=[], type=Path, help="reference (PDF or DOCX)"
+    )
+    parse_cmd.add_argument("--source", help="source id for a single new file")
+    search_cmd = prep_sub.add_parser("search", help="search a lesson's chunks")
+    search_cmd.add_argument("--lesson", required=True)
+    search_cmd.add_argument("queries", nargs="+")
+    search_cmd.add_argument("--top-k", type=int, default=3)
 
     args = parser.parse_args(argv)
 
     if args.command == "prep":
+        if args.prep_command == "search":
+            raise SystemExit(run_prep_search(args))
         if not args.files and not args.ref:
-            parser.error("prep convert needs at least one file")
-        raise SystemExit(run_prep_convert(args))
+            parser.error(f"prep {args.prep_command} needs at least one file")
+        run = run_prep_parse if args.prep_command == "parse" else run_prep_convert
+        raise SystemExit(run(args))
     if args.command == "run":
         result = run_scenario(args.scenario)
         print(json.dumps({key: result[key] for key in ("decision", "records")}, indent=2))

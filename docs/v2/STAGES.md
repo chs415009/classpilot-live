@@ -287,7 +287,8 @@ Goal: A PPTX or PDF deck and PDF/DOCX references become per-page text, notes, PN
 an image-page flag on the local machine, with file hashes, system slide ids, and a
 slide/page alignment check.
 Depends on: Stage 0 (and Stage 1's image-page findings); approval of `python-pptx` and
-`pypdfium2` (not PyMuPDF: AGPL-3.0, repo is MIT); LibreOffice installed.
+`pypdfium2` (not PyMuPDF: AGPL-3.0, repo is MIT); LibreOffice in Docker (no host install,
+user decision 2026-11-05).
 Tasks:
 - `prep/convert.py`:
   - PPTX: python-pptx text and notes, LibreOffice → PDF, pypdfium2 → PNG.
@@ -315,10 +316,10 @@ Automated checks:
   - the image-page flag on each fixture slide
   - an alignment error on a deliberately mismatched pair
   - the same hash for the same file
-- A LibreOffice test that is skipped (and reported as skipped) when `soffice` is not
-  installed.
+- A LibreOffice test that is skipped (and reported as skipped) when the LibreOffice
+  Docker image is not available.
 Human review:
-- New dependencies and the LibreOffice install.
+- New dependencies and the LibreOffice Docker image.
 - Conversion output for one real deck from `materials/`: page count, notes, PNG
   quality, and the image-page flags (do they match what you see?).
 Live Snowflake usage: none

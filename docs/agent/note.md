@@ -126,3 +126,22 @@ is no longer updated)
   for every run. No Snowflake use.
 
 ## Stage 3: Live agents as DSPy modules
+
+- 2026-11-05 [finding] DSPy's stock ChatAdapter puts the signature instructions last,
+  after the field lists and format template. With the v1 Guardian text, live
+  guardian-eval (mistral-large3) caught 5/8 and 6/8 (missed gc-07, gc-10, gc-12).
+  `RulesFirstChatAdapter` leads with the instructions, as the v1 prompt did: 8/8, then
+  7/8 (gc-07 missed once). Instruction wording is unchanged from v1.
+- 2026-11-05 [finding] LLM timeouts at 10 s: 3 in 33 live calls (Guardian twice,
+  Responder once), against about 1 in 40 in v1. All fail closed (`llm_error`). Calls
+  usually take 1.2-4.4 s.
+- 2026-11-05 [result] Parity on the v1 lesson (Cortex, uncompiled): eval 10/11 actions
+  (tq-03 = Guardian timeout), recall 1.0, 0 let through, 0 wrong answers, 1.91 calls per
+  question (v1 1.82; tq-07 now goes through the Analyst), answered 4.1-6.5 s.
+  guardian-eval with the final prompt 8/8 and 7/8 (+1 timeout), 0 false fails. Reason
+  labels differ on tq-09/10/11 (labels were written for the mock in v1). 72 LLM calls
+  (approval 68 + 12 extra approved).
+- 2026-11-05 [question] `LESSON_SEARCH` answered "already resumed" at the start of the
+  live run, although the Stage 1 teardown was meant to suspend it; serving may have been
+  billed since. Check WAREHOUSE / Cortex Search usage in the cost reading. Suspended
+  again after the run (`scripts/search_service.py`).

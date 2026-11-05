@@ -6,6 +6,8 @@ a plain dict. The dict is unchecked: the validator parses it with the pydantic m
 Errors are not caught here; `call_llm` turns every exception into `LLMError`.
 """
 
+import textwrap
+
 import dspy
 
 from classpilot.agents.signatures import SIGNATURES
@@ -54,6 +56,22 @@ def prediction_dict(task: str, prediction: dspy.Prediction) -> dict:
     return out
 
 
+class RulesFirstChatAdapter(dspy.ChatAdapter):
+    """ChatAdapter with the signature's instructions at the top of the system message.
+
+    The stock ChatAdapter puts them last, after the field lists and format template. On
+    the v1 Guardian cases that cost 2-3 of 8 catches against the Stage 4 baseline, whose
+    prompt led with the strict rules (Stage 3 finding, docs/agent/note.md).
+    """
+
+    def format_system_message(self, signature: type[dspy.Signature]) -> str:
+        return (
+            f"{textwrap.dedent(signature.instructions).strip()}\n\n"
+            f"{self.format_field_description(signature)}\n"
+            f"{self.format_field_structure(signature)}"
+        )
+
+
 class DSPyAgents:
     """Analyst, Responder, and Guardian as uncompiled `dspy.Predict` modules."""
 
@@ -61,7 +79,7 @@ class DSPyAgents:
 
     def __init__(self, lm: dspy.LM, adapter: dspy.Adapter | None = None):
         self.lm = lm
-        self.adapter = adapter or dspy.ChatAdapter(use_json_adapter_fallback=False)
+        self.adapter = adapter or RulesFirstChatAdapter(use_json_adapter_fallback=False)
         self.modules = {task: dspy.Predict(sig) for task, (sig, _) in SIGNATURES.items()}
 
     def complete(self, task: str, inputs: dict) -> dict:

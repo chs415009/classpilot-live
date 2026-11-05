@@ -64,7 +64,10 @@ class GuardianSignature(dspy.Signature):
     chunks: str = dspy.InputField(desc="cited chunks, one per line as '[<chunk_id>] <text>'")
     question: str = dspy.InputField(desc="the student question")
     answer: str = dspy.InputField(desc="the answer to review")
-    claims: list[GuardianClaim] = dspy.OutputField()
+    claims: list[GuardianClaim] = dspy.OutputField(
+        desc="every factual claim, each with the id of the cited chunk that directly states it, "
+        "or null"
+    )
     reveals_graded_work: bool = dspy.OutputField()
     verdict: Literal["pass", "fail"] = dspy.OutputField()
     reason: str = dspy.OutputField(desc="one sentence")

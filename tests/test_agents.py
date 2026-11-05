@@ -232,3 +232,12 @@ def test_module_engine_error(task, error):
 def test_call_llm_wraps_agent_errors_as_llm_error():
     with pytest.raises(LLMError):
         call_llm(agents(FakeEngine(error=lm15.ServerError("503"))), "analyst", ANALYST_INPUTS, 5)
+
+
+def test_rules_come_first_in_the_system_message():
+    inputs, reply = GOOD["guardian"]
+    engine = FakeEngine(reply)
+    call_llm(agents(engine), "guardian", inputs, timeout_s=5)
+    system = engine.requests[0].system
+    assert system.startswith("You review an answer before a student sees it.")
+    assert system.index("Be strict") < system.index("Your input fields are")

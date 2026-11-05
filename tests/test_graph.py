@@ -4,33 +4,11 @@ import pytest
 
 from classpilot.adapters.llm import MockLLM
 from classpilot.adapters.retrieval import MockRetriever, RetrievalError
-from classpilot.graph import Deps, run_poll, run_question
+from classpilot.graph import Deps, run_question
 from classpilot.runner import run_eval, run_guardian_eval, run_scenario, scenario_files
 from classpilot.trace import write_trace
 
 KAFKA = "How does the Bronze layer handle streaming data from Kafka?"
-
-
-# ---------- Path A ----------
-
-
-def test_poll_reteach_uses_no_llm(deps, make_evidence):
-    decision, trace = run_poll(make_evidence({"A": 3, "B": 13, "C": 4, "D": 1}), deps)
-    assert decision.action == "reteach"
-    assert decision.remediation_id == "R-03"
-    assert trace.llm_calls == 0
-    assert trace.agent_mode is None
-    assert trace.nodes_run == [
-        "threshold_check",
-        "misconception_lookup",
-        "remediation_limit_check",
-        "poll_decision",
-    ]
-
-
-def test_poll_unmapped_option_escalates(deps, make_evidence):
-    decision, _ = run_poll(make_evidence({"A": 3, "B": 1, "C": 1, "D": 15}), deps)
-    assert decision.escalation_reason == "no_mapping"
 
 
 # ---------- Path B ----------

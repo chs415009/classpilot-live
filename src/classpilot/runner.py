@@ -9,7 +9,8 @@ from classpilot.adapters import make_adapters
 from classpilot.adapters.llm import MockLLM
 from classpilot.content import Content, load_content
 from classpilot.contracts import PollEvidence, StudentQuestion
-from classpilot.graph import Deps, run_poll, run_question
+from classpilot.graph import Deps, run_question
+from classpilot.live.poll import run_poll
 from classpilot.nodes.guardian import run_guardian
 from classpilot.settings import PROJECT_ROOT, Settings, load_settings
 from classpilot.trace import DEFAULT_TRACE_PATH, write_trace
@@ -36,10 +37,12 @@ def run_scenario(
 ) -> dict:
     scenario = json.loads(Path(path).read_text())
     settings = load_settings(overrides=scenario.get("settings_overrides"))
-    deps = make_deps(settings, load_content(), scenario.get("mock_overrides"))
+    content = load_content()
+    deps = make_deps(settings, content, scenario.get("mock_overrides"))
 
     if scenario["path"] == "poll":
-        decision, trace = run_poll(PollEvidence.model_validate(scenario["input"]), deps)
+        evidence = PollEvidence.model_validate(scenario["input"])
+        decision, trace = run_poll(evidence, content.manifest, settings.backend)
     else:
         question = StudentQuestion.model_validate(scenario["input"])
         decision, trace = run_question(question, deps, agent_mode)

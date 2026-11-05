@@ -12,9 +12,10 @@ DEFAULT_SETTINGS_PATH = PROJECT_ROOT / "config" / "settings.yaml"
 
 
 class PollSettings(BaseModel):
+    # Defaults that prep writes into the manifest `params`; the live poll rule reads
+    # the manifest, so a lesson keeps the values it was generated with.
     min_responses: int = 5
     wrong_ratio_threshold: float = 0.60
-    max_remediations_per_objective: int = 1
 
 
 class QuestionSettings(BaseModel):

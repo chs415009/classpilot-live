@@ -1,7 +1,8 @@
-"""Pydantic models for the data contracts in CLAUDE.md.
+"""Live-path contracts: poll evidence, student question, decision.
 
-Field names match the team README so they line up with the front end and the
-data pipeline. Unused fields are None (serialized as null).
+DRAFT v2 shapes (interface_questions.md Q-14, Q-15, Q-19) until the team agrees.
+Field names follow the team README where one exists. Unused fields are None
+(serialized as null).
 """
 
 from typing import Literal
@@ -9,15 +10,13 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 Path = Literal["poll", "question"]
-Action = Literal["continue", "reteach", "answer", "escalate"]
+Action = Literal["explain", "reveal", "answer", "escalate"]
 EscalationReason = Literal[
     "out_of_scope",
     "assignment_like",
     "low_confidence",
     "unsupported",
     "llm_error",
-    "no_mapping",
-    "remediation_limit",
 ]
 Backend = Literal["mock", "cortex"]
 
@@ -27,6 +26,7 @@ Backend = Literal["mock", "cortex"]
 
 class PollEvidence(BaseModel):
     session_id: str
+    poll_id: str  # manifest question id of the poll that ran
     objective_id: str
     question_id: str
     snapshot_time: str
@@ -34,7 +34,6 @@ class PollEvidence(BaseModel):
     answers_received: int
     option_counts: dict[str, int]
     correct_option: str
-    remediations_used: dict[str, int] = Field(default_factory=dict)
 
 
 class StudentQuestion(BaseModel):
@@ -54,7 +53,15 @@ class Decision(BaseModel):
     session_id: str
     path: Path
     action: Action
+    # poll path
+    poll_id: str | None = None
+    option: str | None = None  # the wrong option explained
+    misconception_id: str | None = None
     remediation_id: str | None = None
+    remediation_text: str | None = None
+    show_slide: str | None = None
+    correct_option: str | None = None  # revealed after explain, or on reveal
+    # question path
     answer_text: str | None = None
     citations: list[str] | None = None
     escalation_reason: EscalationReason | None = None

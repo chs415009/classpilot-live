@@ -33,17 +33,17 @@ def deps(settings, content):
 
 @pytest.fixture
 def make_evidence():
-    def _make(option_counts, used=0, answers=None):
+    def _make(option_counts, answers=None, correct="A", poll_id="q-01"):
         return PollEvidence(
             session_id="session-001",
-            objective_id="objective-02",
-            question_id="question-07",
+            poll_id=poll_id,
+            objective_id="seg-02",
+            question_id=poll_id,
             snapshot_time="2026-10-22T18:30:40Z",
             connected_students=24,
             answers_received=answers if answers is not None else sum(option_counts.values()),
             option_counts=option_counts,
-            correct_option="A",
-            remediations_used={"objective-02": used},
+            correct_option=correct,
         )
 
     return _make

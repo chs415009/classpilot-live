@@ -1,6 +1,6 @@
 """Command line entry point.
 
-python -m classpilot.cli run scenarios/01_poll_reteach.json [--mode 2|3]
+python -m classpilot.cli run scenarios/01_poll_explain.json [--mode 2|3]
 python -m classpilot.cli run-all [--mode 2|3]
 python -m classpilot.cli eval --mode 2|3
 python -m classpilot.cli guardian-eval
@@ -19,10 +19,14 @@ def print_scenario(result: dict) -> None:
     status = "OK " if result["matches_expected"] else "MISMATCH"
     decision = result["decision"]
     print(f"[{status}] {result['file']}: {result['name']}")
-    print(
-        f"  action={decision['action']} reason={decision['escalation_reason']} "
-        f"remediation={decision['remediation_id']} confidence={decision['confidence']}"
-    )
+    if decision["path"] == "poll":
+        detail = (
+            f"option={decision['option']} remediation={decision['remediation_id']} "
+            f"show_slide={decision['show_slide']} correct={decision['correct_option']}"
+        )
+    else:
+        detail = f"reason={decision['escalation_reason']} confidence={decision['confidence']}"
+    print(f"  action={decision['action']} {detail}")
     print(
         f"  nodes={result['trace']['nodes_run']} llm_calls={result['trace']['llm_calls']} "
         f"latency_ms={result['trace']['latency_ms']}"

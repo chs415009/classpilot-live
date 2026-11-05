@@ -1,0 +1,29 @@
+{
+  "name": "Poll trigger -> explain with show_slide",
+  "description": "13 of 21 students (62%) picked B. known_wrong maps B to M-01, whose remediation R-01 is read aloud while slide dbt-medallion-p03 is shown; then A is revealed.",
+  "path": "poll",
+  "expected": {
+    "action": "explain",
+    "option": "B",
+    "misconception_id": "M-01",
+    "remediation_id": "R-01",
+    "show_slide": "dbt-medallion-p03",
+    "correct_option": "A"
+  },
+  "input": {
+    "session_id": "session-001",
+    "poll_id": "q-01",
+    "objective_id": "seg-02",
+    "question_id": "q-01",
+    "snapshot_time": "2026-10-22T18:30:40Z",
+    "connected_students": 24,
+    "answers_received": 21,
+    "option_counts": {
+      "A": 3,
+      "B": 13,
+      "C": 4,
+      "D": 1
+    },
+    "correct_option": "A"
+  }
+}

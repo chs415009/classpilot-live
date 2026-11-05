@@ -1,4 +1,4 @@
-"""LangGraph flows for Path A (poll trigger) and Path B (student question)."""
+"""LangGraph flow for Path B (student question). Path A is `live/poll.py`."""
 
 import operator
 import time
@@ -15,7 +15,6 @@ from classpilot.contracts import (
     AnalystOutput,
     Decision,
     EscalationReason,
-    PollEvidence,
     ResponderOutput,
     StudentQuestion,
     Trace,
@@ -38,96 +37,6 @@ class Deps:
     content: Content
     llm: LLMClient | None = None
     retriever: Retriever | None = None
-
-
-# ---------- Path A: poll trigger (rules only) ----------
-
-
-class PollState(TypedDict, total=False):
-    evidence: PollEvidence
-    nodes_run: Annotated[list[str], operator.add]
-    threshold: rules.ThresholdResult
-    remediation_id: str | None
-    limit_reached: bool
-    outcome: rules.PollOutcome
-
-
-def build_poll_graph(deps: Deps):
-    poll = deps.settings.poll
-
-    def threshold_check(state: PollState) -> dict:
-        result = rules.check_poll_threshold(
-            state["evidence"], poll.min_responses, poll.wrong_ratio_threshold
-        )
-        return {"threshold": result, "nodes_run": ["threshold_check"]}
-
-    def misconception_lookup(state: PollState) -> dict:
-        remediation_id = rules.lookup_remediation(
-            deps.content.misconception_map,
-            state["evidence"].question_id,
-            state["threshold"].top_wrong_option,
-        )
-        return {"remediation_id": remediation_id, "nodes_run": ["misconception_lookup"]}
-
-    def remediation_limit_check(state: PollState) -> dict:
-        reached = rules.remediation_limit_reached(
-            state["evidence"], poll.max_remediations_per_objective
-        )
-        return {"limit_reached": reached, "nodes_run": ["remediation_limit_check"]}
-
-    def poll_decision(state: PollState) -> dict:
-        outcome = rules.decide_poll(
-            state["threshold"], state.get("remediation_id"), state.get("limit_reached", False)
-        )
-        return {"outcome": outcome, "nodes_run": ["poll_decision"]}
-
-    graph = StateGraph(PollState)
-    graph.add_node("threshold_check", threshold_check)
-    graph.add_node("misconception_lookup", misconception_lookup)
-    graph.add_node("remediation_limit_check", remediation_limit_check)
-    graph.add_node("poll_decision", poll_decision)
-
-    graph.add_edge(START, "threshold_check")
-    graph.add_conditional_edges(
-        "threshold_check",
-        lambda s: "misconception_lookup" if s["threshold"].triggered else "poll_decision",
-    )
-    graph.add_conditional_edges(
-        "misconception_lookup",
-        lambda s: "remediation_limit_check" if s["remediation_id"] else "poll_decision",
-    )
-    graph.add_edge("remediation_limit_check", "poll_decision")
-    graph.add_edge("poll_decision", END)
-    return graph.compile()
-
-
-def run_poll(evidence: PollEvidence, deps: Deps) -> tuple[Decision, Trace]:
-    start = time.perf_counter()
-    state = build_poll_graph(deps).invoke({"evidence": evidence, "nodes_run": []})
-    total_ms = elapsed_ms(start)
-
-    outcome: rules.PollOutcome = state["outcome"]
-    decision = Decision(
-        decision_id=new_decision_id(),
-        session_id=evidence.session_id,
-        path="poll",
-        action=outcome.action,
-        remediation_id=outcome.remediation_id,
-        escalation_reason=outcome.escalation_reason,
-    )
-    trace = Trace(
-        decision_id=decision.decision_id,
-        input_ref=f"{evidence.question_id}@{evidence.snapshot_time}",
-        agent_mode=None,
-        nodes_run=state["nodes_run"],
-        llm_calls=0,
-        retrieved_chunk_ids=[],
-        latency_ms={"total": total_ms},
-        backend=deps.settings.backend,
-        action=decision.action,
-        created_at=utc_now(),
-    )
-    return decision, trace
 
 
 # ---------- Path B: student question ----------

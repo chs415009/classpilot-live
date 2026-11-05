@@ -1,4 +1,4 @@
-"""Rule-based checks. Thresholds and final decisions are always made here, never by an LLM."""
+"""Path B rules: the final validator and the checks it uses. The LLM never decides."""
 
 from dataclasses import dataclass
 
@@ -9,68 +9,9 @@ from classpilot.contracts import (
     AnalystOutput,
     EscalationReason,
     GuardianOutput,
-    PollEvidence,
     ResponderOutput,
 )
 from classpilot.text import jaccard
-
-# ---------- Path A: poll trigger ----------
-
-
-@dataclass
-class ThresholdResult:
-    triggered: bool
-    top_wrong_option: str | None
-    wrong_share: float  # top wrong option count / answers received
-
-
-def check_poll_threshold(
-    evidence: PollEvidence, min_responses: int, wrong_ratio_threshold: float
-) -> ThresholdResult:
-    wrong_counts = {
-        option: count
-        for option, count in evidence.option_counts.items()
-        if option != evidence.correct_option
-    }
-    if evidence.answers_received <= 0 or not wrong_counts:
-        return ThresholdResult(False, None, 0.0)
-
-    top_option = max(wrong_counts, key=lambda option: wrong_counts[option])
-    share = wrong_counts[top_option] / evidence.answers_received
-    triggered = evidence.answers_received >= min_responses and share >= wrong_ratio_threshold
-    return ThresholdResult(triggered, top_option, share)
-
-
-def lookup_remediation(
-    misconception_map: dict[str, dict[str, dict]], question_id: str, option: str
-) -> str | None:
-    entry = misconception_map.get(question_id, {}).get(option)
-    return entry["remediation_id"] if entry else None
-
-
-def remediation_limit_reached(evidence: PollEvidence, max_per_objective: int) -> bool:
-    used = evidence.remediations_used.get(evidence.objective_id, 0)
-    return used >= max_per_objective
-
-
-@dataclass
-class PollOutcome:
-    action: Action
-    remediation_id: str | None = None
-    escalation_reason: EscalationReason | None = None
-
-
-def decide_poll(
-    threshold: ThresholdResult, remediation_id: str | None, limit_reached: bool
-) -> PollOutcome:
-    if not threshold.triggered:
-        return PollOutcome("continue")
-    if remediation_id is None:
-        return PollOutcome("escalate", escalation_reason="no_mapping")
-    if limit_reached:
-        return PollOutcome("escalate", escalation_reason="remediation_limit")
-    return PollOutcome("reteach", remediation_id=remediation_id)
-
 
 # ---------- Path B: student question ----------
 

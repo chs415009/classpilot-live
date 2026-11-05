@@ -58,25 +58,30 @@ def test_threshold_with_no_answers(make_evidence):
 # ---------- mapping, limit, poll decision ----------
 
 
-def test_lookup_remediation(content):
-    assert rules.lookup_remediation(content.misconception_map, "question-07", "B") == "R-03"
-    assert rules.lookup_remediation(content.misconception_map, "question-07", "D") is None
-    assert rules.lookup_remediation(content.misconception_map, "question-99", "B") is None
-
-
-def test_remediation_limit(make_evidence):
-    assert not rules.remediation_limit_reached(make_evidence({"B": 5}, used=0), 1)
-    assert rules.remediation_limit_reached(make_evidence({"B": 5}, used=1), 1)
-
-
-def test_decide_poll():
+def test_decide_poll_explain_or_reveal():
     hit = rules.ThresholdResult(True, "B", 0.62)
     miss = rules.ThresholdResult(False, "B", 0.40)
-    assert rules.decide_poll(miss, None, False).action == "continue"
-    assert rules.decide_poll(hit, None, False).escalation_reason == "no_mapping"
-    assert rules.decide_poll(hit, "R-03", True).escalation_reason == "remediation_limit"
-    outcome = rules.decide_poll(hit, "R-03", False)
-    assert (outcome.action, outcome.remediation_id) == ("reteach", "R-03")
+    assert rules.decide_poll(hit) == rules.PollOutcome("explain", "B")
+    assert rules.decide_poll(miss) == rules.PollOutcome("reveal")
+
+
+def test_lookup_explanation_follows_known_wrong(content):
+    manifest = content.manifest
+    _, question = manifest.find_question("q-01")
+    explanation = rules.lookup_explanation(manifest, question, "C")
+    assert explanation == rules.Explanation(
+        "M-02", "R-02", manifest.remediations["R-02"].text, "dbt-medallion-p04"
+    )
+
+
+def test_lookup_explanation_missing_link_is_none(content):
+    manifest = content.manifest.model_copy(deep=True)
+    _, question = manifest.find_question("q-01")
+    assert rules.lookup_explanation(manifest, question, "A") is None  # correct option
+    del manifest.misconceptions["M-01"]
+    assert rules.lookup_explanation(manifest, question, "B") is None
+    del manifest.remediations["R-02"]
+    assert rules.lookup_explanation(manifest, question, "C") is None
 
 
 # ---------- protected check ----------

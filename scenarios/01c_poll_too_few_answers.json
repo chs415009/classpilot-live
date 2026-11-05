@@ -1,0 +1,24 @@
+{
+  "name": "Poll with too few answers -> reveal",
+  "description": "3 of 4 answers are wrong (75%), but 4 answers are below min_responses (5), so the correct option is revealed without an explanation.",
+  "path": "poll",
+  "expected": {
+    "action": "reveal",
+    "correct_option": "A",
+    "remediation_id": null
+  },
+  "input": {
+    "session_id": "session-001",
+    "poll_id": "q-01",
+    "objective_id": "seg-02",
+    "question_id": "q-01",
+    "snapshot_time": "2026-10-22T18:30:40Z",
+    "connected_students": 24,
+    "answers_received": 4,
+    "option_counts": {
+      "A": 1,
+      "B": 3
+    },
+    "correct_option": "A"
+  }
+}

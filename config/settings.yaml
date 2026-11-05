@@ -5,9 +5,9 @@ agent_mode: 3          # 3 = Analyst + Responder + Guardian (default), 2 = no Gu
 backend: mock          # mock | cortex
 
 poll:
+  # Defaults written into the manifest `params` at prep time; the live rule reads the manifest.
   min_responses: 5
   wrong_ratio_threshold: 0.60
-  max_remediations_per_objective: 1
 
 question:
   protected_similarity_threshold: 0.5   # >= this -> escalate, no LLM call

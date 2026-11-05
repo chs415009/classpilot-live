@@ -1,17 +1,27 @@
 {
-  "name": "Poll below threshold -> continue",
-  "description": "Top wrong option B has 9 of 21 (43%), under the 60% threshold, so the lesson continues.",
+  "name": "Poll below threshold -> reveal",
+  "description": "Top wrong option B has 9 of 21 (43%), under the 60% threshold, so only the correct option A is revealed.",
   "path": "poll",
-  "expected": {"action": "continue"},
+  "expected": {
+    "action": "reveal",
+    "correct_option": "A",
+    "remediation_id": null,
+    "show_slide": null
+  },
   "input": {
     "session_id": "session-001",
-    "objective_id": "objective-02",
-    "question_id": "question-07",
+    "poll_id": "q-01",
+    "objective_id": "seg-02",
+    "question_id": "q-01",
     "snapshot_time": "2026-10-22T18:30:40Z",
     "connected_students": 24,
     "answers_received": 21,
-    "option_counts": {"A": 8, "B": 9, "C": 3, "D": 1},
-    "correct_option": "A",
-    "remediations_used": {"objective-02": 0}
+    "option_counts": {
+      "A": 8,
+      "B": 9,
+      "C": 3,
+      "D": 1
+    },
+    "correct_option": "A"
   }
 }

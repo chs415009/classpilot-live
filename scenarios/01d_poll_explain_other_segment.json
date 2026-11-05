@@ -1,0 +1,29 @@
+{
+  "name": "Poll trigger in another segment -> explain",
+  "description": "For q-03 (seg-03), 15 of 20 picked A. known_wrong maps A to M-04, remediation R-04, shown with slide dbt-medallion-p06; then B is revealed.",
+  "path": "poll",
+  "expected": {
+    "action": "explain",
+    "option": "A",
+    "misconception_id": "M-04",
+    "remediation_id": "R-04",
+    "show_slide": "dbt-medallion-p06",
+    "correct_option": "B"
+  },
+  "input": {
+    "session_id": "session-001",
+    "poll_id": "q-03",
+    "objective_id": "seg-03",
+    "question_id": "q-03",
+    "snapshot_time": "2026-10-22T18:52:00Z",
+    "connected_students": 24,
+    "answers_received": 20,
+    "option_counts": {
+      "A": 15,
+      "B": 4,
+      "C": 1,
+      "D": 0
+    },
+    "correct_option": "B"
+  }
+}

@@ -202,7 +202,7 @@ classpilot-live/
 | 10 | Post-class report |
 | 11 | Integration, rehearsal, handoff |
 
-**Current stage: Stage 4 (not started).** Stages 0-2 accepted 2026-11-04, Stage 3 on 2026-11-05. Every stage ends at its exit gate: run the
+**Current stage: Stage 5 (not started).** Stages 0-2 accepted 2026-11-04, Stages 3-4 on 2026-11-05. Every stage ends at its exit gate: run the
 automated checks, report the results, list what the user must review, and wait for
 approval before the next stage. Details are in `docs/v2/STAGES.md`.
 

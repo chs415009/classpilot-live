@@ -155,7 +155,7 @@ is no longer updated)
   compiling in Stage 9). gc-07 stays as is: a useful edge case for Stage 9, no prompt
   change now.
 
-## Stage 4: Parse layer, local conversion
+## Stage 4: Parse layer, local conversion — accepted 2026-11-05
 
 - 2026-11-05 [decision] User: nothing installed on the host. LibreOffice runs in Docker
   (`scripts/libreoffice/`, LibreOffice 25.2 on Debian 13); the LibreOffice tests skip

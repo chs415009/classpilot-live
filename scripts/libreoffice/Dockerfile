@@ -5,7 +5,8 @@ FROM debian:trixie-slim
 
 # Impress only (no GUI recommends) plus fonts that are metric-compatible with the
 # common Office fonts (Arial/Times/Courier -> Liberation, Calibri -> Carlito,
-# Cambria -> Caladea), so text positions in the PDF stay close to the PPTX.
+# Cambria -> Caladea) and Open Sans (Google Slides default), so text positions in the
+# PDF stay close to the PPTX. LibreOffice does not use fonts embedded in a PPTX.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         libreoffice-impress \
@@ -13,6 +14,7 @@ RUN apt-get update \
         fonts-crosextra-carlito \
         fonts-crosextra-caladea \
         fonts-dejavu-core \
+        fonts-open-sans \
     && rm -rf /var/lib/apt/lists/*
 
 # Run as a non-root user; HOME holds the throwaway LibreOffice profile.

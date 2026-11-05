@@ -293,3 +293,29 @@ patterns from `main`.
   v1). Vision is used only for image pages, so it is a small share of prep calls.
 - 2026-11-04 [result] Stage 1 live usage so far: 15 `AI_COMPLETE` (3 Route B, 2 timeout,
   10 vision incl. 3 rejected as legacy) + 2 `AI_PARSE_DOCUMENT` (16 pages). Limit about 38.
+
+### Stage 1 cost reading (user, 2026-11-04; `CORTEX_AI_FUNCTIONS_USAGE_HISTORY`, AI credits exclude warehouse)
+- 2026-11-04 [result] Per call (from per-query METRICS):
+  - mistral-large3, Analyst prompt (about 450 input / 55 output tokens): **0.00019** credits.
+    1024 output tokens: 0.00093.
+  - claude-haiku-4-5 vision, one slide (about 1,650 input incl. image / 200 output):
+    **0.0016-0.0017** credits.
+  - openai-gpt-5-nano vision: 0.00023 at 800 output tokens (empty reply), **0.00072** for
+    the valid reply (2,811 output tokens, mostly reasoning).
+  - AI_PARSE_DOCUMENT LAYOUT: 13 pages 0.0476, 3 pages 0.0110 → **0.0037 credits per page**
+    (PDF). This is the most expensive unit we use.
+- 2026-11-04 [finding] The query cancelled by `STATEMENT_TIMEOUT_IN_SECONDS` does not
+  appear in the usage view (only the 4 completed mistral-large3 queries do). The 3
+  `llama4-maverick` legacy errors are not billed either. Check again later (view latency).
+- 2026-11-04 [result] Day totals 2026-11-04: AI credits 0.066 (parse 0.059, haiku 0.005,
+  mistral 0.0015, gpt-5-nano 0.0014). `CLASSPILOT_WH` 0.113 so far (view lags up to 3 h).
+  The warehouse is still the largest item; parse is the largest AI item.
+- 2026-11-04 [finding] Consequences for the plan: (1) slides use the free local PyMuPDF
+  text layer plus vision only for image pages (0.0017/page) instead of parse
+  (0.0037/page); parse is only for references. (2) A 40-slide deck with 15 image pages
+  costs about 0.03 credits of vision; a 50-page reference about 0.18 credits of parse.
+  (3) gpt-5-nano is about 2.3× cheaper per slide than haiku but about 6× slower and needs
+  a large token budget; at our volumes the difference is about 0.001 credits per image
+  page, so haiku stays the proposal. (4) LLM calls for live Q&A and generation cost about
+  0.0002-0.001 credits each; the $400 trial budget is not a constraint at this scale.
+  Warehouse minutes are.

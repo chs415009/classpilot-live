@@ -9,6 +9,8 @@ dependencies = [
     "pyyaml",
     # DSPy 3.4 custom-engine API; forward()-style custom LMs are removed in 3.5.
     "dspy>=3.4.1,<3.5",
+    # PDF page rendering and text layer (slides, references).
+    "pymupdf",
 ]
 
 [project.optional-dependencies]
@@ -41,3 +43,5 @@ select = ["E", "F", "I", "B", "UP"]
 # CSS/HTML strings. Both are replaced in later v2 stages (DSPy signatures, new report).
 "src/classpilot/nodes/*.py" = ["E501"]
 "src/classpilot/report.py" = ["E501"]
+# One-off probe scripts with prompt text (Stage 1); not product code.
+"scripts/probes/*.py" = ["E501"]

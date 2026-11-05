@@ -263,3 +263,33 @@ patterns from `main`.
 - 2026-11-04 [finding] PPTX speaker notes could not be tested: the materials are PDF.
 - 2026-11-04 [result] LLM calls so far in Stage 1: 5 `AI_COMPLETE` (3 Route B, 2 timeout
   probes) + 2 `AI_PARSE_DOCUMENT` (16 pages) + 4 rejected REST requests. Limit about 38.
+- 2026-11-04 [decision] User approved adding `pymupdf` in Stage 1 (needed to render the PDF
+  slides and read their text layer). Installed PyMuPDF 2.1. User confirmed by hand that
+  `L1_slide.pdf` has 13 pages (PyMuPDF agrees; the macOS `file` command was wrong).
+- 2026-11-04 [question] PyMuPDF is licensed **AGPL-3.0** (or Artifex commercial). The
+  repo is public and the prep service would run it on a server. Which license should the
+  repo use, and is AGPL acceptable for the course project (alternative: `pypdfium2`,
+  Apache/BSD)? To decide before Stage 4 builds on it.
+- 2026-11-04 [result] Page signals (PyMuPDF, 13 slides): embedded image area fraction is
+  0.32-0.50 on the four image slides (0, 1, 5, 12) and 0.03 on a slide with only a small
+  logo (2); 0 elsewhere. Same four slides as the `![img-N]` markers in the parse output.
+  Drawing area is about 1.8 on every slide (template background), so drawings are only
+  useful after subtracting what every page of the deck shares. Draft heuristic for
+  Stage 4: image if image area >= 0.10; unsure if 0.02-0.10 or non-template drawings
+  cover a large area; text otherwise. PNG at 144 dpi: 1584x1224, 13-660 KB (well under
+  3.75 MB).
+- 2026-11-04 [result] Vision probe, single-file `AI_COMPLETE` with the text layer in the
+  prompt, slides 7 (text only), 5 (image), 12 (image + text):
+  - `claude-haiku-4-5`: 3.1-3.6 s per slide. Valid JSON with all three keys, but always
+    wrapped in a ```json fence (strip in code). Descriptions match the slides (checked
+    against the slide content); empty `diagram_description` on the text-only slide.
+  - `llama4-maverick`: error 100351 "has been in legacy state, please use other models".
+    (per account)
+  - `openai-gpt-5-nano`: empty reply at `max_tokens` 800 (reasoning model; tokens used
+    up). With 4000 it returned valid JSON without a fence, but took 18.9 s.
+- 2026-11-04 [decision] (proposed, for review) Vision model: `claude-haiku-4-5` (fast,
+  reliable JSON). `openai-gpt-5-nano` only if the cost reading shows a large price
+  difference. Text model for live Q&A stays `mistral-large3` (v1 baseline; fastest in
+  v1). Vision is used only for image pages, so it is a small share of prep calls.
+- 2026-11-04 [result] Stage 1 live usage so far: 15 `AI_COMPLETE` (3 Route B, 2 timeout,
+  10 vision incl. 3 rejected as legacy) + 2 `AI_PARSE_DOCUMENT` (16 pages). Limit about 38.

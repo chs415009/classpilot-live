@@ -5,9 +5,9 @@ The trace JSONL is the only source of the team's star schema: one line per recor
 `record_type` says which fact it feeds. Every record carries `run_id` (= the
 decision id) and `session_id` (the BATCH: one class session).
 
-Removed by agreement and never written: scenario key, assignment key, max reteach,
-matches-expected count, support score, is-approved, token counts. `extra="forbid"`
-keeps them (and any other unplanned field) out.
+The fields removed from the data model by agreement (IMPLEMENTATION_NOTES 6.3,
+"Not provided") are never written: `extra="forbid"` keeps them, and any other
+unplanned field, out. The contract test checks this.
 """
 
 from typing import Literal

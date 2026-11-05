@@ -125,7 +125,7 @@ is no longer updated)
   126 tests); v1-only code and data removed; trace v2 and the decision log are written
   for every run. No Snowflake use.
 
-## Stage 3: Live agents as DSPy modules
+## Stage 3: Live agents as DSPy modules — accepted 2026-11-05
 
 - 2026-11-05 [finding] DSPy's stock ChatAdapter puts the signature instructions last,
   after the field lists and format template. With the v1 Guardian text, live
@@ -141,10 +141,18 @@ is no longer updated)
   guardian-eval with the final prompt 8/8 and 7/8 (+1 timeout), 0 false fails. Reason
   labels differ on tq-09/10/11 (labels were written for the mock in v1). 72 LLM calls
   (approval 68 + 12 extra approved).
-- 2026-11-05 [question] `LESSON_SEARCH` answered "already resumed" at the start of the
-  live run, although the Stage 1 teardown was meant to suspend it; serving may have been
-  billed since. Check WAREHOUSE / Cortex Search usage in the cost reading. Suspended
-  again after the run (`scripts/search_service.py`).
+- 2026-11-05 [finding] `LESSON_SEARCH` answered "already resumed" at the start of the
+  live run: `CORTEX_SEARCH_DAILY_USAGE_HISTORY` has a SERVING row every day from
+  2026-10-20 to 2026-11-04, so it was never suspended (the Stage 1 teardown did not take
+  effect). Cost rounds to 0.0000 credits per day for 5 chunks; `CLASSPILOT_WH` shows
+  0.0002-0.002 credits per day for the daily refresh. Suspended after the run and
+  checked with `scripts/search_service.py status`.
+- 2026-11-05 [result] Stage 3 cost: mistral-large3 0.026 AI credits for the day (73 billed
+  calls incl. Stage 1's; the 3 timed-out calls do not appear). Guardian about 0.0004 per
+  call, Analyst 0.0002. Snowsight queries ran on `SNOWFLAKE_LEARNING_WH` (0.12 credits on
+  11-04), not on our warehouse. `sql/probes/stage3_cost_reading.sql`.
 - 2026-11-05 [decision] User: keep `llm.timeout_seconds` at 10 s for now (revisit after
   compiling in Stage 9). gc-07 stays as is: a useful edge case for Stage 9, no prompt
   change now.
+
+## Stage 4: Parse layer, local conversion

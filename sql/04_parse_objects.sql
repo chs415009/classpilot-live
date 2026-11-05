@@ -33,7 +33,8 @@ CREATE TABLE IF NOT EXISTS {{RAW_FILES}} (
 );
 
 -- Silver: one row per page of a file, independent of lessons (a known hash is never
--- parsed again). PARSE_METHOD: local_text | ai_parse_layout | vision | vision_failed.
+-- parsed again). PARSE_METHOD: local_text | ai_parse_layout | local_text_fallback, plus
+-- "+vision" or "+vision_failed" for image pages (e.g. local_text+vision).
 CREATE TABLE IF NOT EXISTS {{PARSED_PAGES}} (
   FILE_ID         STRING NOT NULL,
   PAGE_INDEX      NUMBER NOT NULL,  -- 1-based

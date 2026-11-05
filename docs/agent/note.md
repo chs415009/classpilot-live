@@ -205,7 +205,7 @@ is no longer updated)
 - 2026-11-05 [decision] User: re-chunk the Stage 5 live lessons in Stage 7 (first real
   v2 use), not now.
 
-## Stage 6: Generators and the prep-time Guardian (mock)
+## Stage 6: Generators and the prep-time Guardian (mock) — accepted 2026-11-05
 
 - 2026-11-05 [decision] User agreed: one prep Guardian signature per item type (live
   Guardian unchanged); Segmenter fallback = fixed 3-slide groups; dropped polls keep
@@ -219,4 +219,5 @@ is no longer updated)
   status, every script fallback level, and the poll drop path are covered by tests
   (391 tests). No Snowflake use. Stage 7 estimate for a 14-slide deck: about 70 calls
   if everything passes, up to about 140 with every retry.
-
+- 2026-11-05 [change] User: README is updated in every stage (features, setup and
+  deployment steps, commands run again).

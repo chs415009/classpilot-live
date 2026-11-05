@@ -57,7 +57,7 @@ RULES: list[tuple[str, re.Pattern, Replacement]] = [
     ("double quote", re.compile(r"\""), ""),
     ("bracket", re.compile(r"[()\[\]{}]"), " "),
     ("symbol", re.compile(r"[|\\^~$@#*]"), " "),
-    ("semicolon", re.compile(r";"), "."),
+    ("semicolon", re.compile(r";"), ","),
 ]
 
 SENTENCE_END = re.compile(r"[.!?:,]$")
@@ -88,4 +88,5 @@ def clean_for_tts(text: str) -> str:
         sentences.append(line if SENTENCE_END.search(line) else f"{line}.")
     joined = " ".join(sentences)
     joined = re.sub(r"\s+([.,!?:])", r"\1", joined)
-    return re.sub(r"\.{2,}", ".", joined).strip()
+    joined = re.sub(r"\.{2,}", ".", joined).strip()
+    return re.sub(r"[,:]$", ".", joined)

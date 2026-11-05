@@ -15,7 +15,7 @@ from collections import defaultdict, deque
 
 from classpilot.adapters.llm import LLMError
 from classpilot.contracts.prep import OPTION_LETTERS
-from classpilot.prep.tts import clean_for_tts
+from classpilot.prep.tts import clean_for_tts, tts_issues
 from classpilot.text import coverage, split_sentences
 
 NOTES = re.compile(r"(?:^|\n\n)Speaker notes: ", re.MULTILINE)
@@ -110,12 +110,23 @@ class MockPrepLLM:
 
     @staticmethod
     def _poll_writer(inputs: dict) -> dict:
-        chunk = next((c for c in inputs["chunks"] if c.get("slide_id")), inputs["chunks"][0])
-        body, notes = _body_and_notes(chunk["text"])
-        lines = [line.strip() for line in body.splitlines() if line.strip()]
-        candidates = [ln for ln in lines[1:] if len(ln.split()) >= 3] or lines or [notes]
-        correct_text = clean_for_tts(candidates[0]).rstrip(".")
-        title = lines[0] if lines else "this segment"
+        # The correct option is a content line of the slide chunk with the most of them
+        # (at least 4 words, no code); else the first speaker-notes sentence; else a title.
+        slide_chunks = [c for c in inputs["chunks"] if c.get("slide_id")] or inputs["chunks"]
+
+        def candidates(chunk):
+            body, _ = _body_and_notes(chunk["text"])
+            lines = [ln.strip() for ln in body.splitlines() if ln.strip()][1:]
+            return [ln for ln in lines if len(ln.split()) >= 4 and not tts_issues(ln)]
+
+        chunk = max(slide_chunks, key=lambda c: len(candidates(c)))
+        lines = candidates(chunk)
+        if not lines:
+            notes = [n for c in slide_chunks if (n := _body_and_notes(c["text"])[1])]
+            lines = split_sentences(notes[0]) if notes else [_title(slide_chunks) or "The lesson"]
+            chunk = next((c for c in slide_chunks if notes and notes[0] in c["text"]), chunk)
+        correct_text = clean_for_tts(lines[0]).rstrip(".")
+        title = _title([chunk]) or "this segment"
         correct = OPTION_LETTERS[len(inputs["objective"]) % len(OPTION_LETTERS)]
         wrong = [o for o in OPTION_LETTERS if o != correct]
         options = {correct: correct_text, **dict(zip(wrong, DISTRACTORS, strict=True))}

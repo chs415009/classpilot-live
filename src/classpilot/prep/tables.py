@@ -29,6 +29,8 @@ class PrepTables(Protocol):
 
     def lesson_chunks(self, lesson_id: str) -> list[Chunk]: ...
 
+    def lesson_files(self, lesson_id: str) -> list[ParsedFile]: ...  # in upload order
+
     def refresh_search(self) -> bool: ...  # False when the service does not exist yet
 
 
@@ -92,6 +94,10 @@ class LocalTables:
     def lesson_chunks(self, lesson_id: str) -> list[Chunk]:
         rows = self._read(self.root / "chunks" / f"{lesson_id}.json", [])
         return [Chunk.model_validate(r) for r in rows]
+
+    def lesson_files(self, lesson_id: str) -> list[ParsedFile]:
+        ids = [r["file_id"] for r in self.raw_files() if r["lesson_id"] == lesson_id]
+        return [f for f in (self.known_file(i) for i in ids) if f is not None]
 
     def refresh_search(self) -> bool:
         self.refreshes += 1
@@ -245,6 +251,15 @@ class SnowflakeTables:
         )
         keys = ("chunk_id", "file_id", "source_id", "page_id", "page_index", "origin", "text")
         return [Chunk.model_validate(dict(zip(keys, row, strict=True))) for row in rows]
+
+    def lesson_files(self, lesson_id: str) -> list[ParsedFile]:
+        rows = self._rows(
+            f"SELECT FILE_ID FROM {self.o.raw_files} WHERE LESSON_ID = %s "
+            f"ORDER BY UPLOADED_AT, FILE_ID",
+            (lesson_id,),
+        )
+        files = (self.known_file(row[0]) for row in rows)
+        return [f for f in files if f is not None]
 
     def refresh_search(self) -> bool:
         try:

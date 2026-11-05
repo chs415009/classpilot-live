@@ -243,6 +243,22 @@ def test_snowflake_tables_sql_and_missing_service(tmp_path):
         SnowflakeTables(conn, ObjectNames(chunks="X; DROP"))
 
 
+def test_lesson_files_in_upload_order(tmp_path, docx):
+    deps = make_deps(tmp_path)
+    parse_lesson("lesson-a", [DECK_PPTX], [docx], deps)
+    files = deps.tables.lesson_files("lesson-a")
+    assert [(f.source_id, f.kind) for f in files] == [
+        ("fixture-deck", "slides"),
+        ("reading-notes", "reference"),
+    ]
+    assert deps.tables.lesson_files("other") == []
+    conn = RecordingConnection()
+    assert SnowflakeTables(conn, ObjectNames()).lesson_files("lesson-a") == []
+    assert conn.sql == [
+        "SELECT FILE_ID FROM RAW_FILES WHERE LESSON_ID = %s ORDER BY UPLOADED_AT, FILE_ID"
+    ]
+
+
 # --- CLI --------------------------------------------------------------------------------
 
 

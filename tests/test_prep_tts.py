@@ -32,6 +32,7 @@ def test_code_slide_is_spelled_out_for_tts():
         ("50% of rows", "50 percent of rows."),
         ("ELT/ETL", "ELT slash ETL."),
         ("SELECT * FROM t;", "SELECT star FROM t."),
+        ("Load raw data; clean it later", "Load raw data, clean it later."),
         ("Use `ref()` here", "Use ref here."),
         ("## Title\n- **Bronze** keeps raw data", "Title. Bronze keeps raw data."),
         ("See [the docs](https://example.com)", "See the docs."),
@@ -62,6 +63,6 @@ def test_issue_names_describe_the_problem():
 
 def test_lines_become_sentences_and_empty_lines_vanish():
     assert clean_for_tts("Summary\n\nKeep bronze unchanged\nClean once,") == (
-        "Summary. Keep bronze unchanged. Clean once,"
+        "Summary. Keep bronze unchanged. Clean once."
     )
     assert clean_for_tts("   \n\n") == ""

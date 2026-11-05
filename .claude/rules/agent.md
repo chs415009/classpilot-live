@@ -164,7 +164,7 @@ classpilot-live/
 | 10 | Post-class report |
 | 11 | Integration, rehearsal, handoff |
 
-**Current stage: Stage 1 (in review).** Stage 0 accepted 2026-11-04. Every stage ends at its exit gate: run the
+**Current stage: Stage 2 (not started).** Stages 0 and 1 accepted 2026-11-04. Every stage ends at its exit gate: run the
 automated checks, report the results, list what the user must review, and wait for
 approval before the next stage. Details are in `docs/v2/STAGES.md`.
 
@@ -189,9 +189,12 @@ matches, `ruff check`, `ruff format --check`, `scripts/check_secrets.sh`, and no
 - At the start of a session: read this file, the latest part of `docs/agent/note.md`, and the
   current stage in `docs/v2/STAGES.md`. v1 docs are archived in `docs/v1/`; read them
   only for history or the Stage 4 baseline (`docs/v1/note_v1.md`).
-- While working: log changes to the plan or design, deviations from this file, findings
-  from docs or probes, and open questions in `docs/agent/note.md` (`- YYYY-MM-DD [type] text`;
-  types `change`, `decision`, `finding`, `todo`, `question`, `result`).
+- `docs/agent/note.md` records only what someone needs later: changes to the plan or
+  design, deviations from these rules, significant findings (things that change how we
+  build or what it costs), user decisions, and open questions that block work. Do not
+  log routine task completion, step-by-step results, or anything the commits and plan
+  already show. Entries are 1-3 lines (`- YYYY-MM-DD [type] text`; types `change`,
+  `decision`, `finding`, `question`, `result`); one short `result` entry per stage.
 - Anything that touches an interface other parts depend on goes into
   `interface_questions.md` (current approach, why change, suggested direction). Do not
   change shared contracts on your own.

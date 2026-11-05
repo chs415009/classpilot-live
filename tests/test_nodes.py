@@ -4,16 +4,22 @@ from classpilot.contracts import AnalystOutput, GuardianOutput, ResponderOutput
 from classpilot.nodes.analyst import run_analyst
 from classpilot.nodes.guardian import run_guardian
 from classpilot.nodes.responder import run_responder
+from classpilot.nodes.retrieval import run_retrieval
 
 
 def analyst(text, content, llm=None):
     return run_analyst(text, content.objectives, llm or MockLLM(), timeout_s=2)
 
 
+LESSON = "lesson-dbt-medallion"
+
+
+def retrieve(text, content):
+    return MockRetriever(content.chunks).search(text, 3, LESSON)
+
+
 def responder(text, content, llm=None):
-    return run_responder(
-        text, MockRetriever(content.chunks), llm or MockLLM(), top_k=3, timeout_s=2
-    )
+    return run_responder(text, retrieve(text, content), llm or MockLLM(), timeout_s=2)
 
 
 # ---------- analyst ----------
@@ -23,7 +29,7 @@ def test_analyst_in_scope_links_objective(content):
     result = analyst("Why do we keep raw data in Bronze if it has errors?", content)
     output = AnalystOutput.model_validate(result.raw)
     assert output.category == "in_scope"
-    assert output.objective_id == "objective-02"
+    assert output.objective_id == "seg-02"
 
 
 def test_analyst_out_of_scope(content):
@@ -54,11 +60,11 @@ def test_analyst_timeout(content):
 
 
 def test_responder_cites_retrieved_chunks(content):
-    result = responder("Why do we keep raw data in Bronze if it has errors?", content)
+    text = "Why do we keep raw data in Bronze if it has errors?"
+    result = responder(text, content)
     output = ResponderOutput.model_validate(result.raw)
-    retrieved_ids = {c.chunk_id for c in result.retrieved}
     assert output.citations == ["chunk-01"]
-    assert set(output.citations) <= retrieved_ids
+    assert set(output.citations) <= {c.chunk_id for c in retrieve(text, content)}
     assert output.confidence >= 0.7
 
 
@@ -67,29 +73,40 @@ def test_responder_low_confidence_when_not_covered(content):
     assert ResponderOutput.model_validate(result.raw).confidence < 0.7
 
 
+def test_responder_without_chunks_has_low_confidence():
+    result = run_responder("What does ref() do?", [], MockLLM(), 2)
+    output = ResponderOutput.model_validate(result.raw)
+    assert output.citations == [] and output.confidence < 0.7
+
+
 def test_responder_timeout(content):
     result = run_responder(
         "What does ref() do?",
-        MockRetriever(content.chunks),
+        retrieve("What does ref() do?", content),
         MockLLM(delays={"responder": 0.5}),
-        3,
         0.1,
     )
     assert result.raw is None
     assert "timed out" in result.error
-    assert result.retrieved  # retrieval still ran
 
 
-def test_responder_retrieval_error_skips_llm():
+# ---------- retrieval ----------
+
+
+def test_retrieval_returns_lesson_chunks(content):
+    result = run_retrieval(MockRetriever(content.chunks), "What does ref() do?", 3, LESSON)
+    assert result.error is None
+    assert result.chunks[0].chunk_id == "chunk-04"
+
+
+def test_retrieval_error_is_reported():
     class DownRetriever:
-        def search(self, query, top_k):
+        def search(self, query, top_k, lesson_id):
             raise RetrievalError("search down")
 
-    result = run_responder("What does ref() do?", DownRetriever(), MockLLM(), 3, 1)
-    assert result.raw is None
+    result = run_retrieval(DownRetriever(), "What does ref() do?", 3, LESSON)
+    assert result.chunks == []
     assert "search down" in result.error
-    assert result.retrieved == []
-    assert result.llm_called is False
 
 
 # ---------- guardian ----------

@@ -1,7 +1,6 @@
-# Thresholds and switches for the agent demo.
-# Env vars AGENT_MODE and BACKEND override the values below.
+# Thresholds and switches for the agent part.
+# The env var BACKEND overrides the value below.
 
-agent_mode: 3          # 3 = Analyst + Responder + Guardian (default), 2 = no Guardian
 backend: mock          # mock | cortex
 
 poll:
@@ -10,7 +9,6 @@ poll:
   wrong_ratio_threshold: 0.60
 
 question:
-  protected_similarity_threshold: 0.5   # >= this -> escalate, no LLM call
   confidence_threshold: 0.70            # responder confidence below this -> escalate
   retrieval_top_k: 3
 

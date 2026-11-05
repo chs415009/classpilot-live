@@ -11,24 +11,6 @@ from classpilot.contracts import (
     GuardianOutput,
     ResponderOutput,
 )
-from classpilot.text import jaccard
-
-# ---------- Path B: student question ----------
-
-
-@dataclass
-class ProtectedMatch:
-    score: float
-    protected_id: str | None
-
-
-def check_protected(question_text: str, protected_questions: list[dict]) -> ProtectedMatch:
-    best = ProtectedMatch(0.0, None)
-    for item in protected_questions:
-        score = jaccard(question_text, item["text"])
-        if score > best.score:
-            best = ProtectedMatch(score, item["protected_id"])
-    return best
 
 
 def parse_or_none(model: type, raw: dict | None):
@@ -92,7 +74,6 @@ class ValidatorResult:
 
 def validate_final(
     *,
-    agent_mode: int,
     early_reason: EscalationReason | None,
     analyst_raw: dict | None,
     responder_raw: dict | None,
@@ -121,12 +102,11 @@ def validate_final(
     if reason is not None:
         return escalate(reason)
 
-    if agent_mode == 3:
-        check = check_guardian(guardian_raw, response.citations)
-        if check.passed is None:
-            return escalate("llm_error")
-        if not check.passed:
-            return escalate("unsupported")
+    check = check_guardian(guardian_raw, response.citations)
+    if check.passed is None:
+        return escalate("llm_error")
+    if not check.passed:
+        return escalate("unsupported")
 
     return ValidatorResult(
         "answer",

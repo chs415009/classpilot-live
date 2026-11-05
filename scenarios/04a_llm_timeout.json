@@ -2,14 +2,26 @@
   "name": "LLM timeout -> fallback escalate",
   "description": "The mock responder takes 1.5 s but the timeout is set to 0.5 s for this run. The graph does not hang; it escalates with llm_error.",
   "path": "question",
-  "expected": {"action": "escalate", "escalation_reason": "llm_error"},
-  "settings_overrides": {"llm": {"timeout_seconds": 0.5}},
-  "mock_overrides": {"delays": {"responder": 1.5}},
+  "expected": {
+    "action": "escalate",
+    "escalation_reason": "llm_error"
+  },
+  "settings_overrides": {
+    "llm": {
+      "timeout_seconds": 0.5
+    }
+  },
+  "mock_overrides": {
+    "delays": {
+      "responder": 1.5
+    }
+  },
   "input": {
     "session_id": "session-001",
     "event_id": "evt-126",
+    "lesson_id": "lesson-dbt-medallion",
     "anonymous_learner_id": "learner-002",
-    "objective_id": "objective-03",
+    "objective_id": "seg-03",
     "question_text": "What does ref() do in a dbt model?",
     "submitted_at": "2026-10-22T18:34:00Z"
   }

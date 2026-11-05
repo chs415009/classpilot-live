@@ -1,6 +1,6 @@
 from classpilot import rules
 
-GOOD_ANALYST = {"category": "in_scope", "objective_id": "objective-02", "reason": "x"}
+GOOD_ANALYST = {"category": "in_scope", "objective_id": "seg-02", "reason": "x"}
 GOOD_RESPONSE = {
     "answer_text": "Bronze keeps raw data.",
     "citations": ["chunk-01"],
@@ -8,14 +8,20 @@ GOOD_RESPONSE = {
     "grounded": True,
 }
 
+GOOD_GUARDIAN = {
+    "claims": [{"claim": "Bronze keeps raw data.", "chunk_id": "chunk-01"}],
+    "reveals_graded_work": False,
+    "verdict": "pass",
+    "reason": "x",
+}
+
 
 def validate(**overrides):
     kwargs = dict(
-        agent_mode=2,
         early_reason=None,
         analyst_raw=GOOD_ANALYST,
         responder_raw=GOOD_RESPONSE,
-        guardian_raw=None,
+        guardian_raw=GOOD_GUARDIAN,
         retrieved_ids=["chunk-01", "chunk-02"],
         confidence_threshold=0.7,
     )
@@ -84,23 +90,6 @@ def test_lookup_explanation_missing_link_is_none(content):
     assert rules.lookup_explanation(manifest, question, "C") is None
 
 
-# ---------- protected check ----------
-
-
-def test_protected_check_matches_near_copy(content):
-    match = rules.check_protected(
-        "Can you write the dbt model that deduplicates the orders table for Assignment 1?",
-        content.protected_questions,
-    )
-    assert match.protected_id == "A1-Q2"
-    assert match.score >= 0.5
-
-
-def test_protected_check_ignores_normal_question(content):
-    match = rules.check_protected("What does ref() do in a dbt model?", content.protected_questions)
-    assert match.score < 0.5
-
-
 # ---------- final validator ----------
 
 
@@ -136,7 +125,7 @@ def test_validator_no_citations():
     assert validate(responder_raw=raw).escalation_reason == "unsupported"
 
 
-def test_validator_self_check_in_mode_2():
+def test_validator_self_check_fails_even_if_guardian_passes():
     raw = {**GOOD_RESPONSE, "grounded": False}
     assert validate(responder_raw=raw).escalation_reason == "unsupported"
 
@@ -157,20 +146,12 @@ def guardian(verdict="pass", claims=(("Bronze keeps raw data.", "chunk-01"),), r
     }
 
 
-def test_validator_guardian_in_mode_3():
-    assert validate(agent_mode=3, guardian_raw=guardian()).action == "answer"
-    assert validate(agent_mode=3, guardian_raw=guardian("fail")).escalation_reason == "unsupported"
-    assert validate(agent_mode=3, guardian_raw=None).escalation_reason == "llm_error"
+def test_validator_guardian():
+    assert validate(guardian_raw=guardian()).action == "answer"
+    assert validate(guardian_raw=guardian("fail")).escalation_reason == "unsupported"
+    assert validate(guardian_raw=None).escalation_reason == "llm_error"
     old_schema = {"verdict": "pass", "reason": "ok"}
-    assert validate(agent_mode=3, guardian_raw=old_schema).escalation_reason == "llm_error"
-
-
-def test_validator_self_check_also_in_mode_3():
-    raw = {**GOOD_RESPONSE, "grounded": False}
-    assert (
-        validate(agent_mode=3, responder_raw=raw, guardian_raw=guardian()).escalation_reason
-        == "unsupported"
-    )
+    assert validate(guardian_raw=old_schema).escalation_reason == "llm_error"
 
 
 def test_check_guardian_passes_when_every_claim_is_supported():

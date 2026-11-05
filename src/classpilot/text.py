@@ -1,7 +1,6 @@
 """Small text helpers for word-overlap similarity (no ML dependencies).
 
-Used by the protected-question rule and by the mock adapters. Cortex Search
-replaces the retrieval part in cortex mode; the protected check stays a rule.
+Used by the mock adapters. Cortex Search replaces the mock retrieval in cortex mode.
 """
 
 import re
@@ -102,13 +101,6 @@ def normalize(word: str) -> str:
 def content_words(text: str) -> list[str]:
     words = re.findall(r"[a-z0-9_]+", text.lower())
     return [normalize(w) for w in words if w not in STOPWORDS]
-
-
-def jaccard(a: str, b: str) -> float:
-    set_a, set_b = set(content_words(a)), set(content_words(b))
-    if not set_a or not set_b:
-        return 0.0
-    return len(set_a & set_b) / len(set_a | set_b)
 
 
 def coverage(query: str, text: str) -> float:

@@ -1,4 +1,4 @@
-"""Retriever interface over approved lesson chunks: a mock and Cortex Search."""
+"""Retriever interface over lesson chunks, filtered by lesson: a mock and Cortex Search."""
 
 from dataclasses import dataclass
 from typing import Protocol
@@ -21,19 +21,20 @@ class RetrievedChunk:
 
 
 class Retriever(Protocol):
-    def search(self, query: str, top_k: int) -> list[RetrievedChunk]: ...
+    def search(self, query: str, top_k: int, lesson_id: str) -> list[RetrievedChunk]: ...
 
 
 class MockRetriever:
-    """Ranks chunks by how many of the query's content words they contain."""
+    """Ranks the lesson's chunks by how many of the query's content words they contain."""
 
     def __init__(self, chunks: list[dict]):
         self.chunks = chunks
 
-    def search(self, query: str, top_k: int) -> list[RetrievedChunk]:
+    def search(self, query: str, top_k: int, lesson_id: str) -> list[RetrievedChunk]:
         scored = [
             RetrievedChunk(c["chunk_id"], c["text"], round(coverage(query, c["text"]), 3))
             for c in self.chunks
+            if c["lesson_id"] == lesson_id
         ]
         scored = [c for c in scored if c.score > 0]
         scored.sort(key=lambda c: c.score, reverse=True)
@@ -45,7 +46,10 @@ class CortexSearchRetriever:
 
     Uses the snowflake-core Python API on the shared connector connection.
     Score = `@scores.cosine_similarity` (range -1..1); the other score fields are
-    unbounded and depend on the query. Only static, pre-approved content is indexed.
+    unbounded and depend on the query.
+
+    Every query is filtered on the LESSON_ID attribute (syntax checked in Stage 1;
+    the v1 LESSON_SEARCH service already has LESSON_ID as an attribute).
     """
 
     def __init__(self, settings: Settings, service=None):
@@ -65,10 +69,13 @@ class CortexSearchRetriever:
             )
         self.service = service
 
-    def search(self, query: str, top_k: int) -> list[RetrievedChunk]:
+    def search(self, query: str, top_k: int, lesson_id: str) -> list[RetrievedChunk]:
         try:
             response = self.service.search(
-                query=query, columns=["CHUNK_ID", "CHUNK_TEXT"], limit=top_k
+                query=query,
+                columns=["CHUNK_ID", "CHUNK_TEXT"],
+                filter={"@eq": {"LESSON_ID": lesson_id}},
+                limit=top_k,
             )
         except Exception as exc:
             raise RetrievalError(f"Cortex Search failed: {exc}") from exc

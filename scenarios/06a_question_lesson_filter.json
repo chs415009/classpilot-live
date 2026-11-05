@@ -1,0 +1,21 @@
+{
+  "name": "lesson_id filter keeps other lessons out -> escalate",
+  "description": "Only lesson-dbt-advanced has a chunk on snapshots (adv-chunk-01). The question belongs to lesson-dbt-medallion, so retrieval never returns that chunk and the answer is escalated as low confidence.",
+  "path": "question",
+  "expected": {
+    "action": "escalate",
+    "escalation_reason": "low_confidence"
+  },
+  "expected_retrieved_excludes": [
+    "adv-chunk-01"
+  ],
+  "input": {
+    "session_id": "session-001",
+    "event_id": "evt-129",
+    "lesson_id": "lesson-dbt-medallion",
+    "anonymous_learner_id": "learner-021",
+    "objective_id": "seg-03",
+    "question_text": "What do dbt snapshots record over time?",
+    "submitted_at": "2026-10-22T18:38:00Z"
+  }
+}

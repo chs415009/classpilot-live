@@ -41,9 +41,8 @@ target-version = "py312"
 select = ["E", "F", "I", "B", "UP"]
 
 [tool.ruff.lint.per-file-ignores]
-# LLM prompt text must stay byte-identical to the Stage 4 baseline, and report.py holds
-# CSS/HTML strings. Both are replaced in later v2 stages (DSPy signatures, new report).
+# LLM prompt text must stay byte-identical to the Stage 4 baseline until the prompts
+# become DSPy signatures (Stage 3).
 "src/classpilot/nodes/*.py" = ["E501"]
-"src/classpilot/report.py" = ["E501"]
 # One-off probe scripts with prompt text (Stage 1); not product code.
 "scripts/probes/*.py" = ["E501"]

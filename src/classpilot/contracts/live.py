@@ -39,6 +39,7 @@ class PollEvidence(BaseModel):
 class StudentQuestion(BaseModel):
     session_id: str
     event_id: str
+    lesson_id: str  # retrieval filter (draft, Q-19)
     anonymous_learner_id: str
     objective_id: str | None = None
     question_text: str
@@ -71,7 +72,6 @@ class Decision(BaseModel):
 class Trace(BaseModel):
     decision_id: str
     input_ref: str
-    agent_mode: int | None  # None for the poll path (no agents involved)
     nodes_run: list[str]
     llm_calls: int
     retrieved_chunk_ids: list[str]
@@ -94,7 +94,7 @@ class ResponderOutput(BaseModel):
     answer_text: str
     citations: list[str]
     confidence: float = Field(ge=0.0, le=1.0)
-    grounded: bool  # responder's own self-check (used in 2-agent mode)
+    grounded: bool  # responder's own self-check (checked before the Guardian runs)
 
 
 class GuardianClaim(BaseModel):

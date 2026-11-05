@@ -58,7 +58,6 @@ def run_poll(evidence: PollEvidence, manifest: Manifest, backend: str) -> tuple[
     trace = Trace(
         decision_id=decision.decision_id,
         input_ref=f"{evidence.poll_id}@{evidence.snapshot_time}",
-        agent_mode=None,
         nodes_run=nodes_run,
         llm_calls=0,
         retrieved_chunk_ids=[],

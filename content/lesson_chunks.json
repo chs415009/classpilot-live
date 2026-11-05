@@ -3,17 +3,17 @@
   "title": "dbt and the Medallion Architecture",
   "objectives": [
     {
-      "objective_id": "objective-01",
+      "objective_id": "seg-01",
       "title": "Explain the purpose of the Bronze, Silver and Gold layers",
       "keywords": ["medallion", "silver", "gold", "layer", "layers", "aggregate", "clean", "cleaned"]
     },
     {
-      "objective_id": "objective-02",
+      "objective_id": "seg-02",
       "title": "Explain why the Bronze layer keeps raw data unchanged",
       "keywords": ["bronze", "raw", "replay", "reprocess", "audit", "errors", "unchanged"]
     },
     {
-      "objective_id": "objective-03",
+      "objective_id": "seg-03",
       "title": "Build dbt models with ref() and add dbt tests",
       "keywords": ["dbt", "model", "models", "ref", "materialization", "test", "tests", "unique", "not_null"]
     }
@@ -21,27 +21,27 @@
   "chunks": [
     {
       "chunk_id": "chunk-01",
-      "objective_id": "objective-02",
+      "objective_id": "seg-02",
       "text": "The Bronze layer stores raw data exactly as it arrived from the source, including rows with errors. We keep raw data unchanged in Bronze so we can replay and reprocess it later when a cleaning rule changes. Keeping the original raw data also gives an audit trail: anyone can check what the source really sent."
     },
     {
       "chunk_id": "chunk-02",
-      "objective_id": "objective-01",
+      "objective_id": "seg-01",
       "text": "The Silver layer holds cleaned data. Silver models remove duplicates, fix data types, and standardize names so that different sources line up. Errors found in Bronze are fixed or filtered in Silver, not in Bronze."
     },
     {
       "chunk_id": "chunk-03",
-      "objective_id": "objective-01",
+      "objective_id": "seg-01",
       "text": "The Gold layer holds business-level tables built from Silver, such as daily aggregates and metrics for dashboards. Gold tables answer specific business questions, while Silver is a general cleaned copy of the data."
     },
     {
       "chunk_id": "chunk-04",
-      "objective_id": "objective-03",
+      "objective_id": "seg-03",
       "text": "A dbt model is a SELECT statement saved in a .sql file. Inside a model, ref() points to another model, and dbt uses these ref() calls to build the dependency graph and run models in the right order. The materialization setting decides whether a model is built as a view, a table, or an incremental table."
     },
     {
       "chunk_id": "chunk-05",
-      "objective_id": "objective-03",
+      "objective_id": "seg-03",
       "text": "dbt tests check data quality. Generic tests such as unique, not_null, accepted_values, and relationships are declared in a schema.yml file next to the model. The unique test checks that a column has no duplicates. Running dbt test reports every row that fails a test."
     }
   ]

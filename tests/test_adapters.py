@@ -16,14 +16,26 @@ from classpilot.settings import Settings
 
 
 def test_mock_retriever_ranks_best_chunk_first(content):
-    results = MockRetriever(content.chunks).search("What does ref() do in a dbt model?", top_k=3)
+    results = MockRetriever(content.chunks).search(
+        "What does ref() do in a dbt model?", 3, "lesson-dbt-medallion"
+    )
     assert results[0].chunk_id == "chunk-04"
     assert len(results) <= 3
     assert all(r.score > 0 for r in results)
 
 
 def test_mock_retriever_returns_nothing_for_unrelated_query(content):
-    assert MockRetriever(content.chunks).search("pizza recipe", top_k=3) == []
+    assert MockRetriever(content.chunks).search("pizza recipe", 3, "lesson-dbt-medallion") == []
+
+
+def test_mock_retriever_filters_by_lesson(content):
+    retriever = MockRetriever(content.chunks)
+    query = "What do dbt snapshots record over time?"
+    own = [c.chunk_id for c in retriever.search(query, 3, "lesson-dbt-medallion")]
+    other = [c.chunk_id for c in retriever.search(query, 3, "lesson-dbt-advanced")]
+    assert "adv-chunk-01" not in own
+    assert other == ["adv-chunk-01"]
+    assert retriever.search(query, 3, "no-such-lesson") == []
 
 
 def test_call_llm_timeout_raises_llm_error():
@@ -160,7 +172,7 @@ def test_cortex_search_maps_rows_and_cosine_score():
             {"CHUNK_ID": "chunk-02", "CHUNK_TEXT": "Silver holds cleaned data."},
         ]
     )
-    results = CortexSearchRetriever(Settings(), service=service).search("why bronze", top_k=2)
+    results = CortexSearchRetriever(Settings(), service=service).search("why bronze", 2, "lesson-x")
     assert results == [
         RetrievedChunk("chunk-01", "Bronze keeps raw data.", 0.727),
         RetrievedChunk("chunk-02", "Silver holds cleaned data.", 0.0),
@@ -168,6 +180,7 @@ def test_cortex_search_maps_rows_and_cosine_score():
     assert service.kwargs == {
         "query": "why bronze",
         "columns": ["CHUNK_ID", "CHUNK_TEXT"],
+        "filter": {"@eq": {"LESSON_ID": "lesson-x"}},
         "limit": 2,
     }
 
@@ -175,4 +188,4 @@ def test_cortex_search_maps_rows_and_cosine_score():
 def test_cortex_search_error_raises_retrieval_error():
     service = FakeSearchService(error=RuntimeError("503"))
     with pytest.raises(RetrievalError):
-        CortexSearchRetriever(Settings(), service=service).search("q", top_k=3)
+        CortexSearchRetriever(Settings(), service=service).search("q", 3, "lesson-x")

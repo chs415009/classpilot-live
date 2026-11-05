@@ -1,11 +1,10 @@
-"""Grounded Responder: retrieve approved chunks and answer only from them."""
+"""Grounded Responder: answer only from the retrieved lesson chunks."""
 
 import json
 import time
-from dataclasses import dataclass
 
 from classpilot.adapters.llm import LLMClient, LLMError, call_llm
-from classpilot.adapters.retrieval import RetrievalError, RetrievedChunk, Retriever
+from classpilot.adapters.retrieval import RetrievedChunk
 from classpilot.nodes import NodeResult, elapsed_ms
 
 PROMPT = """Answer the student question using ONLY the approved lesson chunks below.
@@ -22,24 +21,9 @@ Reply with JSON only:
 {{"answer_text": "...", "citations": ["chunk-.."], "confidence": 0.0-1.0, "grounded": true|false}}"""
 
 
-@dataclass
-class ResponderResult(NodeResult):
-    retrieved: list[RetrievedChunk]
-    retrieval_ms: int
-    llm_called: bool = True
-
-
 def run_responder(
-    question_text: str, retriever: Retriever, llm: LLMClient, top_k: int, timeout_s: float
-) -> ResponderResult:
-    start = time.perf_counter()
-    try:
-        retrieved = retriever.search(question_text, top_k)
-    except RetrievalError as exc:
-        # No chunks means no grounded answer; the graph escalates like an LLM error.
-        return ResponderResult(None, str(exc), 0, [], elapsed_ms(start), llm_called=False)
-    retrieval_ms = elapsed_ms(start)
-
+    question_text: str, retrieved: list[RetrievedChunk], llm: LLMClient, timeout_s: float
+) -> NodeResult:
     chunk_lines = "\n".join(f"[{c.chunk_id}] {c.text}" for c in retrieved) or "(none)"
     prompt = PROMPT.format(chunks=chunk_lines, question=json.dumps(question_text))
     payload = {
@@ -49,6 +33,6 @@ def run_responder(
     start = time.perf_counter()
     try:
         raw = call_llm(llm, "responder", prompt, payload, timeout_s)
-        return ResponderResult(raw, None, elapsed_ms(start), retrieved, retrieval_ms)
+        return NodeResult(raw, None, elapsed_ms(start))
     except LLMError as exc:
-        return ResponderResult(None, str(exc), elapsed_ms(start), retrieved, retrieval_ms)
+        return NodeResult(None, str(exc), elapsed_ms(start))

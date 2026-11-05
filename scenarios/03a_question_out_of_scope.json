@@ -2,10 +2,14 @@
   "name": "Out-of-scope question -> escalate",
   "description": "Course logistics, not lesson content. The analyst classifies it out_of_scope; no retrieval happens.",
   "path": "question",
-  "expected": {"action": "escalate", "escalation_reason": "out_of_scope"},
+  "expected": {
+    "action": "escalate",
+    "escalation_reason": "out_of_scope"
+  },
   "input": {
     "session_id": "session-001",
     "event_id": "evt-124",
+    "lesson_id": "lesson-dbt-medallion",
     "anonymous_learner_id": "learner-005",
     "objective_id": null,
     "question_text": "What time is the midterm exam next week?",

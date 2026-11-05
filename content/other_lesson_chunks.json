@@ -1,0 +1,11 @@
+{
+  "lesson_id": "lesson-dbt-advanced",
+  "title": "Advanced dbt (second fixture lesson, only for the lesson_id filter)",
+  "chunks": [
+    {
+      "chunk_id": "adv-chunk-01",
+      "objective_id": "seg-01",
+      "text": "dbt snapshots record how a row changes over time. A snapshot keeps every version of a row with valid_from and valid_to columns, which is how dbt handles slowly changing dimensions of type 2."
+    }
+  ]
+}

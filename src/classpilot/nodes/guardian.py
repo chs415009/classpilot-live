@@ -1,4 +1,4 @@
-"""Guardian (3-agent mode): independent check of the answer against the cited chunks.
+"""Guardian: independent check of the answer against the cited chunks.
 
 It sees only the question, the answer, and the cited chunks - not the analyst's
 reasoning or the responder's confidence. It lists the answer's claims and which

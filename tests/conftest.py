@@ -4,7 +4,7 @@ from classpilot.adapters.llm import MockLLM
 from classpilot.adapters.retrieval import MockRetriever
 from classpilot.content import load_content
 from classpilot.contracts import PollEvidence, StudentQuestion
-from classpilot.graph import Deps
+from classpilot.live.question_graph import Deps
 from classpilot.settings import Settings
 
 
@@ -12,7 +12,6 @@ from classpilot.settings import Settings
 def force_mock_backend(monkeypatch):
     # Tests never call Snowflake, even if the shell has BACKEND=cortex set.
     monkeypatch.setenv("BACKEND", "mock")
-    monkeypatch.delenv("AGENT_MODE", raising=False)
 
 
 @pytest.fixture
@@ -51,10 +50,11 @@ def make_evidence():
 
 @pytest.fixture
 def make_question():
-    def _make(text):
+    def _make(text, lesson_id="lesson-dbt-medallion"):
         return StudentQuestion(
             session_id="session-001",
             event_id="evt-test",
+            lesson_id=lesson_id,
             anonymous_learner_id="learner-001",
             question_text=text,
             submitted_at="2026-10-22T18:31:05Z",

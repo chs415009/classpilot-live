@@ -19,7 +19,6 @@ class PollSettings(BaseModel):
 
 
 class QuestionSettings(BaseModel):
-    protected_similarity_threshold: float = 0.5
     confidence_threshold: float = 0.70
     retrieval_top_k: int = 3
 
@@ -30,7 +29,6 @@ class LLMSettings(BaseModel):
 
 
 class Settings(BaseModel):
-    agent_mode: Literal[2, 3] = 3
     backend: Literal["mock", "cortex"] = "mock"
     poll: PollSettings = PollSettings()
     question: QuestionSettings = QuestionSettings()
@@ -50,8 +48,6 @@ def _deep_merge(base: dict, extra: dict) -> dict:
 def load_settings(path: Path = DEFAULT_SETTINGS_PATH, overrides: dict | None = None) -> Settings:
     data = yaml.safe_load(path.read_text()) if path.exists() else {}
     data = data or {}
-    if os.environ.get("AGENT_MODE"):
-        data["agent_mode"] = int(os.environ["AGENT_MODE"])
     if os.environ.get("BACKEND"):
         data["backend"] = os.environ["BACKEND"]
     if overrides:

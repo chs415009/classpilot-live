@@ -1,4 +1,4 @@
-"""Run scenario files and the labeled eval set. Shared by the CLI and the report."""
+"""Run scenario files, the labeled eval set, and the Guardian eval. Used by the CLI."""
 
 import json
 import statistics
@@ -9,8 +9,8 @@ from classpilot.adapters import make_adapters
 from classpilot.adapters.llm import MockLLM
 from classpilot.content import Content, load_content
 from classpilot.contracts import PollEvidence, StudentQuestion
-from classpilot.graph import Deps, run_question
 from classpilot.live.poll import run_poll
+from classpilot.live.question_graph import Deps, run_question
 from classpilot.nodes.guardian import run_guardian
 from classpilot.settings import PROJECT_ROOT, Settings, load_settings
 from classpilot.trace import DEFAULT_TRACE_PATH, write_trace
@@ -32,9 +32,7 @@ def make_deps(settings: Settings, content: Content, mock_overrides: dict | None 
     return Deps(settings, content, llm, retriever)
 
 
-def run_scenario(
-    path: Path, agent_mode: int | None = None, trace_path: Path | None = DEFAULT_TRACE_PATH
-) -> dict:
+def run_scenario(path: Path, trace_path: Path | None = DEFAULT_TRACE_PATH) -> dict:
     scenario = json.loads(Path(path).read_text())
     settings = load_settings(overrides=scenario.get("settings_overrides"))
     content = load_content()
@@ -45,7 +43,7 @@ def run_scenario(
         decision, trace = run_poll(evidence, content.manifest, settings.backend)
     else:
         question = StudentQuestion.model_validate(scenario["input"])
-        decision, trace = run_question(question, deps, agent_mode)
+        decision, trace = run_question(question, deps)
 
     if trace_path is not None:
         write_trace(trace, trace_path)
@@ -53,6 +51,8 @@ def run_scenario(
     expected = scenario.get("expected", {})
     actual = decision.model_dump()
     matches = all(actual.get(key) == value for key, value in expected.items())
+    excluded = set(scenario.get("expected_retrieved_excludes", []))
+    matches = matches and not excluded & set(trace.retrieved_chunk_ids)
     return {
         "file": Path(path).name,
         "name": scenario["name"],
@@ -69,9 +69,10 @@ def scenario_files() -> list[Path]:
     return sorted(SCENARIO_DIR.glob("*.json"))
 
 
-def run_eval(agent_mode: int, trace_path: Path | None = None) -> dict:
-    settings = load_settings(overrides={"agent_mode": agent_mode})
-    deps = make_deps(settings, load_content())
+def run_eval(trace_path: Path | None = None) -> dict:
+    settings = load_settings()
+    content = load_content()
+    deps = make_deps(settings, content)
     questions = json.loads(EVAL_PATH.read_text())
     if trace_path is not None and trace_path.exists():
         trace_path.unlink()
@@ -81,13 +82,14 @@ def run_eval(agent_mode: int, trace_path: Path | None = None) -> dict:
         question = StudentQuestion(
             session_id="eval-session",
             event_id=item["id"],
+            lesson_id=content.lesson_id,
             anonymous_learner_id="eval-learner",
             objective_id=item.get("objective_id"),
             question_text=item["question_text"],
             submitted_at="2026-10-22T00:00:00Z",
         )
         details: dict = {}
-        decision, trace = run_question(question, deps, agent_mode, details)
+        decision, trace = run_question(question, deps, details)
         if trace_path is not None:
             write_trace(trace, trace_path)
         rows.append(
@@ -108,7 +110,6 @@ def run_eval(agent_mode: int, trace_path: Path | None = None) -> dict:
             }
         )
     return {
-        "agent_mode": agent_mode,
         "backend": settings.backend,
         "summary": summarize(rows),
         "rows": rows,

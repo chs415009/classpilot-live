@@ -1,13 +1,17 @@
 {
-  "name": "Assignment question -> escalate without any LLM call",
-  "description": "Very close to protected question A1-Q2, so the rule escalates before the analyst runs.",
+  "name": "Assignment question -> escalate (Analyst)",
+  "description": "Asks for graded work. The Analyst classifies it assignment_like, so retrieval and the responder never run.",
   "path": "question",
-  "expected": {"action": "escalate", "escalation_reason": "assignment_like"},
+  "expected": {
+    "action": "escalate",
+    "escalation_reason": "assignment_like"
+  },
   "input": {
     "session_id": "session-001",
     "event_id": "evt-125",
+    "lesson_id": "lesson-dbt-medallion",
     "anonymous_learner_id": "learner-011",
-    "objective_id": "objective-03",
+    "objective_id": "seg-03",
     "question_text": "Can you write the dbt model that deduplicates the orders table for Assignment 1?",
     "submitted_at": "2026-10-22T18:33:12Z"
   }

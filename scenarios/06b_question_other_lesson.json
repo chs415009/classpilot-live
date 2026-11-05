@@ -1,0 +1,20 @@
+{
+  "name": "Same question in the other lesson -> answer from that lesson",
+  "description": "The same question with lesson_id lesson-dbt-advanced retrieves adv-chunk-01 and is answered from it. (The mock Analyst still uses the main fixture lesson's objectives.)",
+  "path": "question",
+  "expected": {
+    "action": "answer",
+    "citations": [
+      "adv-chunk-01"
+    ]
+  },
+  "input": {
+    "session_id": "session-001",
+    "event_id": "evt-130",
+    "lesson_id": "lesson-dbt-advanced",
+    "anonymous_learner_id": "learner-021",
+    "objective_id": "seg-03",
+    "question_text": "What do dbt snapshots record over time?",
+    "submitted_at": "2026-10-22T18:38:00Z"
+  }
+}

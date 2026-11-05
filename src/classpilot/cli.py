@@ -1,10 +1,9 @@
 """Command line entry point.
 
-python -m classpilot.cli run scenarios/01_poll_explain.json [--mode 2|3]
-python -m classpilot.cli run-all [--mode 2|3]
-python -m classpilot.cli eval --mode 2|3
+python -m classpilot.cli run scenarios/01_poll_explain.json
+python -m classpilot.cli run-all
+python -m classpilot.cli eval
 python -m classpilot.cli guardian-eval
-python -m classpilot.cli report
 """
 
 import argparse
@@ -39,35 +38,27 @@ def main(argv: list[str] | None = None) -> None:
 
     run_cmd = sub.add_parser("run", help="run one scenario file and print decision + trace")
     run_cmd.add_argument("scenario", type=Path)
-    run_cmd.add_argument("--mode", type=int, choices=[2, 3])
 
-    all_cmd = sub.add_parser("run-all", help="run every file in scenarios/")
-    all_cmd.add_argument("--mode", type=int, choices=[2, 3])
-
-    eval_cmd = sub.add_parser("eval", help="run eval/test_questions.json")
-    eval_cmd.add_argument("--mode", type=int, choices=[2, 3], default=3)
+    sub.add_parser("run-all", help="run every file in scenarios/")
+    sub.add_parser("eval", help="run eval/test_questions.json")
 
     sub.add_parser(
         "guardian-eval", help="run eval/guardian_cases.json straight through the Guardian"
     )
 
-    sub.add_parser(
-        "report", help="run all scenarios live in mode 2 and 3, write outputs/report.html"
-    )
-
     args = parser.parse_args(argv)
 
     if args.command == "run":
-        result = run_scenario(args.scenario, args.mode)
+        result = run_scenario(args.scenario)
         print(json.dumps({"decision": result["decision"], "trace": result["trace"]}, indent=2))
         print("matches expected:", result["matches_expected"])
     elif args.command == "run-all":
         for path in scenario_files():
-            print_scenario(run_scenario(path, args.mode))
+            print_scenario(run_scenario(path))
     elif args.command == "eval":
         backend = load_settings().backend
-        result = run_eval(args.mode, OUTPUT_DIR / f"eval_traces_{backend}_mode{args.mode}.jsonl")
-        out = OUTPUT_DIR / f"eval_{backend}_mode{args.mode}.json"
+        result = run_eval(OUTPUT_DIR / f"eval_traces_{backend}.jsonl")
+        out = OUTPUT_DIR / f"eval_{backend}.json"
         out.write_text(json.dumps(result, indent=2))
         print(json.dumps(result["summary"], indent=2))
         print(f"wrote {out}")
@@ -89,10 +80,6 @@ def main(argv: list[str] | None = None) -> None:
             )
         print(json.dumps(result["summary"], indent=2))
         print(f"wrote {out}")
-    elif args.command == "report":
-        from classpilot.report import build_report
-
-        print(f"wrote {build_report(on_result=print_scenario)}")
 
 
 if __name__ == "__main__":

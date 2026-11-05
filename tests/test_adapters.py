@@ -1,17 +1,15 @@
-import json
 from types import SimpleNamespace
 
 import pytest
 
 from classpilot.adapters import make_adapters
-from classpilot.adapters.llm import CortexLLM, LLMError, MockLLM, call_llm, response_format
+from classpilot.adapters.llm import LLMError, MockLLM, call_llm
 from classpilot.adapters.retrieval import (
     CortexSearchRetriever,
     MockRetriever,
     RetrievalError,
     RetrievedChunk,
 )
-from classpilot.contracts import AnalystOutput, GuardianOutput, ResponderOutput
 from classpilot.settings import Settings
 
 
@@ -40,25 +38,25 @@ def test_mock_retriever_filters_by_lesson(content):
 
 def test_call_llm_timeout_raises_llm_error():
     with pytest.raises(LLMError, match="timed out"):
-        call_llm(MockLLM(delays={"analyst": 0.5}), "analyst", "", {}, timeout_s=0.1)
+        call_llm(MockLLM(delays={"analyst": 0.5}), "analyst", {}, timeout_s=0.1)
 
 
 def test_call_llm_wraps_unexpected_exceptions():
     class Broken:
-        def complete_json(self, task, prompt, payload):
+        def complete(self, task, inputs):
             raise RuntimeError("boom")
 
     with pytest.raises(LLMError, match="boom"):
-        call_llm(Broken(), "analyst", "", {}, timeout_s=1)
+        call_llm(Broken(), "analyst", {}, timeout_s=1)
 
 
 def test_call_llm_rejects_non_dict():
     class ReturnsText:
-        def complete_json(self, task, prompt, payload):
+        def complete(self, task, inputs):
             return "not json"
 
     with pytest.raises(LLMError):
-        call_llm(ReturnsText(), "analyst", "", {}, timeout_s=1)
+        call_llm(ReturnsText(), "analyst", {}, timeout_s=1)
 
 
 def test_mock_backend_makes_mock_adapters(content):
@@ -68,85 +66,6 @@ def test_mock_backend_makes_mock_adapters(content):
 
 
 # ---------- Cortex adapters, with fake Snowflake objects (no network) ----------
-
-
-class FakeCursor:
-    def __init__(self, reply):
-        self.reply = reply
-        self.calls = []
-
-    def execute(self, sql, params, timeout=None):
-        self.calls.append((sql, params, timeout))
-        if isinstance(self.reply, Exception):
-            raise self.reply
-        return self
-
-    def fetchone(self):
-        return (self.reply,)
-
-    def close(self):
-        pass
-
-
-class FakeConnection:
-    def __init__(self, reply):
-        self.cursor_obj = FakeCursor(reply)
-
-    def cursor(self):
-        return self.cursor_obj
-
-
-def cortex_llm(reply, timeout_seconds=10):
-    settings = Settings(llm={"model": "mistral-large3", "timeout_seconds": timeout_seconds})
-    return CortexLLM(settings, connection=FakeConnection(reply))
-
-
-def test_cortex_llm_returns_value_and_binds_model_prompt_schema():
-    llm = cortex_llm(json.dumps({"value": {"verdict": "pass", "reason": "ok"}, "error": None}))
-    assert llm.complete_json("guardian", "the prompt", {}) == {"verdict": "pass", "reason": "ok"}
-
-    sql, params, timeout = llm.connection.cursor_obj.calls[0]
-    assert "AI_COMPLETE" in sql and "%s" in sql
-    assert params[0] == "mistral-large3"
-    assert params[1] == "the prompt"
-    assert json.loads(params[2]) == response_format("guardian")
-    assert timeout == 10
-
-
-@pytest.mark.parametrize(
-    "reply",
-    [
-        None,  # AI_COMPLETE returned NULL
-        json.dumps({"value": None, "error": "model overloaded"}),
-        json.dumps({"value": "plain text", "error": None}),
-        RuntimeError("000604: query was canceled"),
-    ],
-)
-def test_cortex_llm_failures_raise_llm_error(reply):
-    with pytest.raises(LLMError):
-        cortex_llm(reply).complete_json("analyst", "p", {})
-
-
-def test_cortex_llm_timeout_is_whole_seconds_at_least_one():
-    llm = cortex_llm(json.dumps({"value": {}, "error": None}), timeout_seconds=0.5)
-    llm.complete_json("analyst", "p", {})
-    assert llm.connection.cursor_obj.calls[0][2] == 1
-
-
-def test_cortex_llm_needs_a_model():
-    with pytest.raises(ValueError):
-        CortexLLM(Settings(llm={"model": None}), connection=FakeConnection(None))
-
-
-@pytest.mark.parametrize(
-    ("task", "model"),
-    [("analyst", AnalystOutput), ("responder", ResponderOutput), ("guardian", GuardianOutput)],
-)
-def test_response_format_matches_contract(task, model):
-    schema = response_format(task)["schema"]
-    assert set(schema["properties"]) == set(model.model_fields)
-    assert schema["required"] == list(schema["properties"])
-    assert schema["additionalProperties"] is False
 
 
 class FakeSearchService:

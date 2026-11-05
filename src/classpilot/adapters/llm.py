@@ -1,17 +1,16 @@
-"""LLM client interface, a deterministic mock, and Cortex AI_COMPLETE.
+"""LLM client interface, the timeout wrapper, and a deterministic mock.
 
 Nodes call `call_llm(...)`, which enforces the timeout and turns every failure
-into LLMError so the graph can fall back to escalation instead of hanging.
+into LLMError so the graph can fall back to escalation instead of hanging. The real
+client is `agents.program.DSPyAgents` on the Route B engine (`adapters/cortex_engine.py`).
 """
 
-import json
 import re
 import time
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import TimeoutError as FutureTimeout
 from typing import Protocol
 
-from classpilot.settings import Settings
 from classpilot.text import content_words, coverage, split_sentences
 
 
@@ -20,18 +19,18 @@ class LLMError(Exception):
 
 
 class LLMClient(Protocol):
-    def complete_json(self, task: str, prompt: str, payload: dict) -> dict:
-        """Return the model's JSON answer for one task (analyst, responder, guardian).
+    def complete(self, task: str, inputs: dict) -> dict:
+        """Return the outputs of one task (analyst, responder, guardian) as a dict.
 
-        `prompt` is the full text a real model would see. `payload` carries the
-        same information as structured data, so the mock can work without parsing.
+        `inputs` is structured data (question text, objectives, chunks); the DSPy client
+        formats it into the signature's fields, the mock reads it directly.
         """
         ...
 
 
-def call_llm(client: LLMClient, task: str, prompt: str, payload: dict, timeout_s: float) -> dict:
+def call_llm(client: LLMClient, task: str, inputs: dict, timeout_s: float) -> dict:
     pool = ThreadPoolExecutor(max_workers=1)
-    future = pool.submit(client.complete_json, task, prompt, payload)
+    future = pool.submit(client.complete, task, inputs)
     try:
         result = future.result(timeout=timeout_s)
     except FutureTimeout:
@@ -73,7 +72,7 @@ class MockLLM:
         self.errors = errors or {}
         self.bad_output = bad_output or set()
 
-    def complete_json(self, task: str, prompt: str, payload: dict) -> dict:
+    def complete(self, task: str, inputs: dict) -> dict:
         if task in self.delays:
             time.sleep(self.delays[task])
         if task in self.errors:
@@ -85,7 +84,7 @@ class MockLLM:
             "responder": self._responder,
             "guardian": self._guardian,
         }[task]
-        return handler(payload)
+        return handler(inputs)
 
     @staticmethod
     def _analyst(payload: dict) -> dict:
@@ -186,102 +185,3 @@ class MockLLM:
             "verdict": "fail" if reveals or unsupported or not claims else "pass",
             "reason": reason,
         }
-
-
-# ---------- Cortex ----------
-
-
-# JSON schemas for AI_COMPLETE structured output, one per task. They mirror the
-# pydantic models in contracts.py. Cortex ignores range keywords (minimum/maximum),
-# so the final validator still checks ranges.
-_STRING = {"type": "string"}
-TASK_SCHEMAS = {
-    "analyst": {
-        "category": {"type": "string", "enum": ["in_scope", "out_of_scope", "assignment_like"]},
-        "objective_id": {"type": ["string", "null"]},
-        "reason": _STRING,
-    },
-    "responder": {
-        "answer_text": _STRING,
-        "citations": {"type": "array", "items": _STRING},
-        "confidence": {"type": "number"},
-        "grounded": {"type": "boolean"},
-    },
-    "guardian": {
-        "claims": {
-            "type": "array",
-            "items": {
-                "type": "object",
-                "properties": {"claim": _STRING, "chunk_id": {"type": ["string", "null"]}},
-                "required": ["claim", "chunk_id"],
-                "additionalProperties": False,
-            },
-        },
-        "reveals_graded_work": {"type": "boolean"},
-        "verdict": {"type": "string", "enum": ["pass", "fail"]},
-        "reason": _STRING,
-    },
-}
-
-COMPLETE_SQL = (
-    "SELECT AI_COMPLETE("
-    "model => %s, prompt => %s, "
-    "model_parameters => {'temperature': 0, 'max_tokens': 1024}, "
-    "response_format => PARSE_JSON(%s), "
-    "return_error_details => TRUE)"
-)
-
-
-def response_format(task: str) -> dict:
-    properties = TASK_SCHEMAS[task]
-    return {
-        "type": "json",
-        "schema": {
-            "type": "object",
-            "properties": properties,
-            "required": list(properties),
-            "additionalProperties": False,
-        },
-    }
-
-
-class CortexLLM:
-    """Calls Snowflake Cortex AI_COMPLETE through the Python connector.
-
-    The model, prompt, and schema are bind variables. The query timeout cancels the
-    call on the Snowflake side, so a timed-out call does not keep running.
-    `payload` is only used by the mock and is ignored here.
-    """
-
-    def __init__(self, settings: Settings, connection=None):
-        if not settings.llm.model:
-            raise ValueError("Set llm.model in config/settings.yaml for BACKEND=cortex.")
-        self.model = settings.llm.model
-        self.timeout_s = settings.llm.timeout_seconds
-        if connection is None:
-            from classpilot.adapters.snowflake import shared_connection
-
-            connection = shared_connection()
-        self.connection = connection
-
-    def complete_json(self, task: str, prompt: str, payload: dict) -> dict:
-        params = (self.model, prompt, json.dumps(response_format(task)))
-        cursor = self.connection.cursor()
-        try:
-            row = cursor.execute(
-                COMPLETE_SQL, params, timeout=max(1, int(self.timeout_s))
-            ).fetchone()
-        except Exception as exc:
-            raise LLMError(f"{task}: Cortex call failed: {exc}") from exc
-        finally:
-            cursor.close()
-
-        result = json.loads(row[0]) if row and row[0] is not None else None
-        if not isinstance(result, dict):
-            raise LLMError(f"{task}: Cortex returned no result")
-        if result.get("error"):
-            raise LLMError(f"{task}: Cortex error: {result['error']}")
-        value = result.get("value")
-        if not isinstance(value, dict):
-            raise LLMError(f"{task}: Cortex returned no JSON object")
-        return value

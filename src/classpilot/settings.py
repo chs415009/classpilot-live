@@ -16,6 +16,7 @@ class PollSettings(BaseModel):
     # the manifest, so a lesson keeps the values it was generated with.
     min_responses: int = 5
     wrong_ratio_threshold: float = 0.60
+    poll_answer_seconds: int = 60
 
 
 class QuestionSettings(BaseModel):
@@ -72,12 +73,25 @@ class ObjectNames(BaseModel):
     search_service: str = "LESSON_SEARCH_V2"
 
 
+class PrepSettings(BaseModel):
+    # Generation and the prep-time Guardian (Stage 6, IMPLEMENTATION_NOTES 5 and 7.4).
+    poll_count: int = 5  # at most this many polls; fewer are accepted
+    max_retries: int = 1  # retries with Guardian feedback before the fallback
+    model: str | None = None  # Cortex model for generation; None: llm.model
+    llm_timeout_seconds: float = 60  # per call; prep is not time-critical
+    max_tokens: int = 1500
+    retrieval_top_k: int = 4  # extra chunks retrieved per generated item
+    fallback_segment_slides: int = 3  # slides per segment when the Segmenter fails
+    fallback_script: str = "Please look at the slide on screen."
+
+
 class Settings(BaseModel):
     backend: Literal["mock", "cortex"] = "mock"
     poll: PollSettings = PollSettings()
     question: QuestionSettings = QuestionSettings()
     llm: LLMSettings = LLMSettings()
     parse: ParseSettings = ParseSettings()
+    prep: PrepSettings = PrepSettings()
     objects: ObjectNames = ObjectNames()
 
 

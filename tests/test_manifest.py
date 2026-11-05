@@ -141,3 +141,22 @@ def test_duplicate_segment_ids(raw):
 def test_unknown_status_value(raw):
     raw["slides"]["dbt-medallion-p01"]["status"] = "approved"
     assert_invalid(raw, "status")
+
+
+# ---------- dropped questions (Stage 6) ----------
+
+
+def test_dropped_question_without_options_or_misconceptions_is_valid(raw):
+    q = seg(raw, "seg-02")["questions"]["q-02"]
+    q.update({"text": "", "options": {}, "correct_option": "", "known_wrong": {}})
+    Manifest.model_validate(raw)
+
+
+def test_dropped_question_still_needs_known_misconception_ids(raw):
+    seg(raw, "seg-02")["questions"]["q-02"]["known_wrong"] = {"B": "M-99"}
+    assert_invalid(raw, "unknown misconception 'M-99'")
+
+
+def test_active_question_still_needs_full_known_wrong(raw):
+    seg(raw, "seg-02")["questions"]["q-01"]["known_wrong"] = {}
+    assert_invalid(raw, "known_wrong covers")

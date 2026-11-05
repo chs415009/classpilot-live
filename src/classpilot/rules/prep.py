@@ -1,0 +1,201 @@
+"""Prep rules (Stage 6): structure checks per generated item and the prep Guardian rule.
+
+Every check returns a list of problems in plain sentences. An empty list passes; a
+non-empty list fails the attempt and goes back to the generator as its `feedback`.
+The LLM never decides: a Guardian "pass" next to an unsupported claim still fails.
+"""
+
+from dataclasses import dataclass, field
+
+from pydantic import BaseModel, ValidationError
+
+from classpilot.contracts.manifest import Manifest
+from classpilot.contracts.prep import (
+    OPTION_LETTERS,
+    ExplanationOutput,
+    PlacementOutput,
+    PollGuardianOutput,
+    PollOutput,
+    PrepGuardianOutput,
+    ScriptOutput,
+    SegmenterOutput,
+)
+from classpilot.prep.tts import tts_issues
+
+
+def parse_output[M: BaseModel](model: type[M], raw: dict | None) -> M | None:
+    if raw is None:
+        return None
+    try:
+        return model.model_validate(raw)
+    except ValidationError:
+        return None
+
+
+def _citation_problems(citations: list[str], allowed: set[str], required: bool) -> list[str]:
+    problems = []
+    if required and not citations:
+        problems.append("Cite at least one chunk id.")
+    unknown = [c for c in citations if c not in allowed]
+    if unknown:
+        problems.append(f"Cite only the chunk ids given; unknown: {', '.join(unknown)}.")
+    return problems
+
+
+def _tts_problems(what: str, text: str) -> list[str]:
+    issues = tts_issues(text)
+    if not issues:
+        return []
+    return [
+        f"The {what} is read aloud: no Markdown, backticks, or code symbols "
+        f"(found: {', '.join(issues)}). Spell code and symbols out in words."
+    ]
+
+
+# ---------- structure checks ----------
+
+
+def segmenter_problems(out: SegmenterOutput, slide_ids: list[str]) -> list[str]:
+    """Segments cover every slide exactly once, consecutive and in deck order."""
+    if not out.segments:
+        return ["Return at least one segment."]
+    problems = []
+    for n, seg in enumerate(out.segments, start=1):
+        if not seg.slides:
+            problems.append(f"Segment {n} has no slides.")
+        if not seg.objective.strip():
+            problems.append(f"Segment {n} has no objective.")
+    listed = [s for seg in out.segments for s in seg.slides]
+    unknown = [s for s in listed if s not in slide_ids]
+    if unknown:
+        problems.append(f"Unknown slide ids: {', '.join(unknown)}.")
+    missing = [s for s in slide_ids if s not in listed]
+    if missing:
+        problems.append(f"Every slide must be in a segment; missing: {', '.join(missing)}.")
+    repeated = sorted({s for s in listed if listed.count(s) > 1})
+    if repeated:
+        problems.append(f"Each slide belongs to one segment; repeated: {', '.join(repeated)}.")
+    if not (unknown or missing or repeated) and listed != slide_ids:
+        problems.append("Segments must hold consecutive slides in deck order.")
+    return problems
+
+
+def script_problems(out: ScriptOutput, allowed_chunks: set[str]) -> list[str]:
+    problems = [] if out.script.strip() else ["The script is empty."]
+    problems += _tts_problems("script", out.script)
+    return problems + _citation_problems(out.citations, allowed_chunks, required=False)
+
+
+def placement_problems(out: PlacementOutput, segment_ids: list[str]) -> list[str]:
+    if not out.segment_ids:
+        return ["Name at least one segment."]
+    problems = []
+    unknown = [s for s in out.segment_ids if s not in segment_ids]
+    if unknown:
+        problems.append(f"Unknown segment ids: {', '.join(unknown)}.")
+    if len(set(out.segment_ids)) != len(out.segment_ids):
+        problems.append("Name each segment at most once (at most one poll per segment).")
+    return problems
+
+
+def poll_problems(out: PollOutput, allowed_chunks: set[str]) -> list[str]:
+    problems = [] if out.question.strip() else ["The question is empty."]
+    if sorted(out.options) != list(OPTION_LETTERS):
+        problems.append(f"Give exactly 4 options keyed {', '.join(OPTION_LETTERS)}.")
+    texts = [t.strip().lower() for t in out.options.values()]
+    if any(not t for t in texts):
+        problems.append("Every option needs text.")
+    elif len(set(texts)) != len(texts):
+        problems.append("Options must be different from each other.")
+    if out.correct_option not in out.options:
+        problems.append(f"correct_option {out.correct_option!r} is not one of the options.")
+    wrong = sorted(set(out.options) - {out.correct_option})
+    covered = [m.option for m in out.misconceptions]
+    if sorted(covered) != wrong:
+        problems.append(
+            f"Give exactly one misconception per wrong option ({', '.join(wrong)}); "
+            f"got {', '.join(covered) or 'none'}."
+        )
+    if any(not (m.label.strip() and m.description.strip()) for m in out.misconceptions):
+        problems.append("Every misconception needs a label and a description.")
+    return problems + _citation_problems(out.citations, allowed_chunks, required=True)
+
+
+def explanation_problems(
+    out: ExplanationOutput,
+    allowed_chunks: set[str],
+    chunk_slide: dict[str, str | None],
+    slide_ids: set[str],
+) -> list[str]:
+    """`chunk_slide` maps a chunk id to its slide id (None for reference pages)."""
+    problems = [] if out.text.strip() else ["The explanation text is empty."]
+    problems += _tts_problems("explanation", out.text)
+    problems += _citation_problems(out.citations, allowed_chunks, required=True)
+    cited_slides = {chunk_slide.get(c) for c in out.citations} - {None}
+    if out.show_slide not in slide_ids:
+        problems.append(f"show_slide {out.show_slide!r} is not a slide id.")
+    elif out.show_slide not in cited_slides:
+        options = ", ".join(sorted(cited_slides)) or "none: cite a slide chunk"
+        problems.append(
+            f"show_slide must be the slide of a cited chunk ({options}); got {out.show_slide!r}."
+        )
+    return problems
+
+
+def manifest_poll_problems(manifest: Manifest, poll_count: int) -> list[str]:
+    """At most `poll_count` active polls and at most one poll (of any status) per segment."""
+    problems = []
+    active = [s.active_poll for s in manifest.segments if s.active_poll is not None]
+    if len(active) > poll_count:
+        problems.append(f"{len(active)} active polls, at most {poll_count} allowed.")
+    for seg in manifest.segments:
+        if len(seg.questions) > 1:
+            problems.append(f"{seg.segment_id} has {len(seg.questions)} polls, at most 1.")
+    return problems
+
+
+# ---------- prep Guardian rule ----------
+
+
+@dataclass
+class PrepCheck:
+    passed: bool | None  # None: the Guardian output does not match the schema
+    problems: list[str] = field(default_factory=list)
+
+
+def check_prep_guardian(
+    raw: dict | None,
+    cited_ids: list[str],
+    *,
+    require_claims: bool,
+    wrong_options: list[str] | None = None,
+) -> PrepCheck:
+    """Pass only if the Guardian says pass AND its claim list backs that up.
+
+    Every claim needs a cited chunk. Scripts may have no claims at all (transitions are
+    not claims); explanations and polls need at least one. For a poll
+    (`wrong_options` given), every wrong option also needs a cited chunk that shows it
+    is wrong.
+    """
+    model = PollGuardianOutput if wrong_options is not None else PrepGuardianOutput
+    output = parse_output(model, raw)
+    if output is None:
+        return PrepCheck(None, ["The Guardian output did not match the schema."])
+    cited = set(cited_ids)
+    problems = [
+        f"Not supported by the cited chunks: {c.claim!r}"
+        for c in output.claims
+        if c.chunk_id not in cited
+    ]
+    if require_claims and not output.claims:
+        problems.append("The Guardian found no claims to check.")
+    if wrong_options is not None:
+        shown = {w.option for w in output.wrong_options if w.chunk_id in cited}
+        problems += [
+            f"Option {o} is not shown to be wrong by the cited chunks."
+            for o in wrong_options
+            if o not in shown
+        ]
+    if output.verdict != "pass" and not problems:
+        problems.append(output.reason or "The Guardian failed the item.")
+    return PrepCheck(not problems, problems)

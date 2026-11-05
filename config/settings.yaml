@@ -7,6 +7,7 @@ poll:
   # Defaults written into the manifest `params` at prep time; the live rule reads the manifest.
   min_responses: 5
   wrong_ratio_threshold: 0.60
+  poll_answer_seconds: 60
 
 question:
   confidence_threshold: 0.70            # responder confidence below this -> escalate
@@ -41,6 +42,18 @@ parse:
   vision_timeout_seconds: 60
   parse_timeout_seconds: 300
   chunk_max_chars: 1500      # Cortex Search: <= 512 tokens per chunk (default embedding model)
+
+prep:
+  # Generation + prep-time Guardian (prep generate / prep run). Prep runs are not traced
+  # to the data model; each item's outcome is its manifest `status`.
+  poll_count: 5                 # at most one poll per segment; fewer are accepted
+  max_retries: 1                # retries with the Guardian's feedback, then the fallback
+  model: null                   # Cortex model for generation; null: llm.model (Stage 7)
+  llm_timeout_seconds: 60
+  max_tokens: 1500
+  retrieval_top_k: 4
+  fallback_segment_slides: 3    # used only when the Segmenter fails twice
+  fallback_script: "Please look at the slide on screen."
 
 objects:
   # Parse-layer Snowflake objects (sql/04, sql/05). Role, warehouse, database, schema: .env

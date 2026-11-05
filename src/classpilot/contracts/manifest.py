@@ -113,6 +113,13 @@ def manifest_errors(m: Manifest) -> list[str]:
             where = f"{seg.segment_id}/{qid}"
             if q.segment != seg.segment_id:
                 errors.append(f"{where}: segment field is {q.segment!r}")
+            for option, mid in q.known_wrong.items():
+                if mid not in m.misconceptions:
+                    errors.append(f"{where}: option {option} -> unknown misconception {mid!r}")
+            if q.status == "dropped":
+                # Kept only so the report can count it; the poll path never uses it.
+                # It may lack options or misconceptions (the generation that failed).
+                continue
             if q.correct_option not in q.options:
                 errors.append(f"{where}: correct_option {q.correct_option!r} not in options")
             wrong = set(q.options) - {q.correct_option}
@@ -121,9 +128,6 @@ def manifest_errors(m: Manifest) -> list[str]:
                     f"{where}: known_wrong covers {sorted(q.known_wrong)}, "
                     f"wrong options are {sorted(wrong)}"
                 )
-            for option, mid in q.known_wrong.items():
-                if mid not in m.misconceptions:
-                    errors.append(f"{where}: option {option} -> unknown misconception {mid!r}")
 
     owners: dict[str, str] = {}
     for mid, mis in m.misconceptions.items():

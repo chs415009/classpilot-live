@@ -11,10 +11,22 @@ This repo holds the prep service, parse layer, generators, live Q&A and poll end
 trace records, and the post-class report (LangGraph + DSPy + Snowflake Cortex). The front
 end, live backend, and data pipeline live elsewhere.
 
-**Status:** v2 in development. The code currently still implements the v1 agent demo
-(poll trigger + student question flow, mock or Cortex backend) under the new package
-name; v2 behavior arrives stage by stage (`docs/v2/STAGES.md`). Results so far are
-exploratory (small, synthetic data).
+**Status:** v2 in development, built stage by stage (`docs/v2/STAGES.md`). Results so far
+are exploratory (small, synthetic data).
+
+## What works now
+
+| Feature | Since | Backend |
+|---|---|---|
+| Live poll rule: poll evidence → explain (remediation text + slide) or reveal | Stage 2 | code only |
+| Live student question: Analyst → retrieval → Responder → Guardian → rule (DSPy) | Stage 3 | mock, Cortex |
+| Trace records (JSONL) and decision log for every live decision | Stage 2 | — |
+| Local conversion: PPTX/PDF/DOCX → page text, notes, PNGs, image-page flag | Stage 4 | local + Docker |
+| Parse layer: vision for image pages, AI_PARSE_DOCUMENT for references, chunks, Cortex Search | Stage 5 | mock, Cortex |
+| Generators: segments, scripts, polls, explanations, each checked by the prep Guardian, retried once, then a fallback; team manifest | Stage 6 | mock (Cortex in Stage 7) |
+
+Not yet: the HTTP service (Stage 8), compiled DSPy programs (Stage 9), the post-class
+report (Stage 10).
 
 ## Docs
 
@@ -52,19 +64,40 @@ python -m classpilot.cli guardian-eval                 # Guardian-only cases
 scripts/check_secrets.sh --history                     # before every push
 ```
 
-## Local conversion (slides and references)
+## Prep pipeline (before class)
 
 Nothing is installed on the host besides Python and Docker: PPTX → PDF runs in a
-LibreOffice Docker image. Without the image, PDF slides and references still convert,
-and the two LibreOffice tests are skipped.
+LibreOffice Docker image. Without the image, PDF slides and references still work,
+and the LibreOffice tests are skipped.
 
 ```bash
 scripts/libreoffice/build.sh                           # once: builds classpilot-libreoffice:1
-python -m classpilot.cli prep convert deck.pptx --ref reading.pdf --ref notes.docx
+
+# whole pipeline: convert -> parse -> chunk -> generate -> check -> manifest
+python -m classpilot.cli prep run --backend mock --lesson l1 deck.pptx --ref reading.pdf
+
+# or step by step
+python -m classpilot.cli prep convert deck.pptx --ref reading.pdf   # local only
+python -m classpilot.cli prep parse --lesson l1 deck.pptx --ref reading.pdf
+python -m classpilot.cli prep search --lesson l1 "why keep raw data"
+python -m classpilot.cli prep generate --lesson l1 --poll-count 3   # from the stored parse
 ```
 
-Output goes to `outputs/convert/<file_id[:16]>/`: `convert.json` (page ids, text, notes,
-image-page flag) and one PNG per page.
+`--backend mock|cortex` overrides `BACKEND` (default mock). A file hash that was parsed
+before is never parsed again, also for another lesson, and `prep generate` reads only
+the stored parse, so changing `--poll-count` costs no parse calls.
+
+| Output (all under `outputs/`, gitignored) | What |
+|---|---|
+| `convert/<file_id[:16]>/` | `convert.json` (page ids, text, notes, image-page flag), one PNG per page |
+| `prep_tables/` | mock-mode tables (RAW_FILES, PARSED_PAGES, LESSON_CHUNKS_V2 as JSON) |
+| `parse/<lesson>.json` | parse report and chunks |
+| `prep/<lesson>/manifest.json` | the team manifest (`docs/v2/IMPLEMENTATION_NOTES.md` section 5) |
+| `prep/<lesson>/generation_report.json` | every attempt of every generated item, with its problems |
+| `prep/<lesson>/slides/` | slide PNGs named by slide id |
+
+Settings (thresholds, `poll_count`, retries, timeouts, models, object names):
+`config/settings.yaml`. An example manifest from the mock: `tests/fixtures/deck/manifest_mock.json`.
 
 ## Snowflake (optional, Cortex backend)
 
@@ -90,5 +123,21 @@ Account-specific values go only into `.env` (copy `.env.example`); never commit 
    ```
 6. Run `sql/03_search_service.sql`, then `python scripts/smoke_test.py --search`.
 
-Then, for example: `BACKEND=cortex python -m classpilot.cli run-all`. Live runs use
-Snowflake credits.
+Then, for example: `BACKEND=cortex python -m classpilot.cli run-all` (v1 sample lesson).
+
+**v2 parse objects** (stage, RAW_FILES, PARSED_PAGES, LESSON_CHUNKS_V2, search service).
+SQL templates are filled from `.env` and `config/settings.yaml`; the script prints the
+SQL and runs it only with `--execute`:
+
+```bash
+python scripts/run_sql.py sql/04_parse_objects.sql              # review, then --execute
+python -m classpilot.cli prep parse --backend cortex --lesson l1 deck.pptx --ref reading.pdf
+python scripts/run_sql.py sql/05_search_service_v2.sql          # once, after the first chunks
+python scripts/search_service.py status                         # also: resume | suspend
+```
+
+Suspend the search service when it is not in use. Cost readings:
+`sql/probes/stage5_cost_reading.sql` (ACCOUNT_USAGE views, which lag behind real time).
+
+All Cortex runs use Snowflake credits; this is a shared account, so ask before running
+them.

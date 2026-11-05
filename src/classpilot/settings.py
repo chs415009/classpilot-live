@@ -81,6 +81,8 @@ class PrepSettings(BaseModel):
     llm_timeout_seconds: float = 60  # per call; prep is not time-critical
     max_tokens: int = 1500
     retrieval_top_k: int = 4  # extra chunks retrieved per generated item
+    retrieval_search_k: int = 12  # search depth when reference chunks are required
+    script_reference_chunks: int = 2  # at least this many reference chunks per script
     fallback_segment_slides: int = 3  # slides per segment when the Segmenter fails
     fallback_script: str = "Please look at the slide on screen."
 

@@ -62,8 +62,12 @@ class ScriptWriterSignature(dspy.Signature):
     The professor is not in the room; a text-to-speech voice reads your script.
     - Teach this slide's content in 2 to 5 short spoken sentences, in service of the
       segment objective.
-    - Use only facts stated in the chunks given; do not add facts from your own
-      knowledge. Cite the ids of the chunks you used.
+    - Use only what the chunks given state. You may say it in simpler words, and you may
+      use examples and analogies that the chunks contain (the reference chunks often
+      have them). Do not add facts, examples, analogies, or explanations of your own.
+      Cite the ids of the chunks you used.
+    - If the slide only lists items, name them and say what they have in common, using
+      what the chunks say.
     - You may add a short transition (for example "Next, let's look at how data moves")
       that states no facts.
     - Plain spoken English only: no Markdown, bullets, backticks, or code. Spell out
@@ -83,8 +87,8 @@ class PollPlacerSignature(dspy.Signature):
     """You choose where to place in-class polls. A poll comes at the end of a segment and
     checks that segment's objective with one multiple-choice question.
     - Return the ids of the segments whose content suits such a question, best first.
-      Name each segment at most once. Leave out segments with nothing to test, such as a
-      title or agenda segment.
+      Name each segment at most once. Leave out segments with nothing to test: a title,
+      agenda, or outline, course logistics (instructor, textbooks), and image sources.
     - Name up to poll_count segments first, then any other suitable segments as backups,
       still best first. A backup is used only when a poll cannot be written.
     - Prefer polls spread across the lesson. A poll after the last slide is allowed.
@@ -111,7 +115,10 @@ class PollWriterSignature(dspy.Signature):
       contradicts it), not merely unmentioned.
     - Each wrong option shows one specific misconception a student might have. For
       every wrong option, give that misconception: a short label and one sentence that
-      describes the mistaken belief.
+      describes the mistaken belief. Give no misconception for the correct option.
+    - Ask a positive question, not "Which is NOT ..." or "All of these EXCEPT ...".
+    - Test the lesson content, not course logistics (instructor, textbooks, schedule,
+      outline).
     - Keep the question and the options short and plain: no Markdown or code.
     - If feedback is given, your previous poll had these problems; fix all of them."""
 
@@ -170,8 +177,9 @@ class ScriptGuardianSignature(dspy.Signature):
          supported.
        - A chunk that only names a term, without explaining it, does not support an
          explanation of that term.
-       - Transitions and sign-posts ("Next, let's look at ...", "Let's recap") state no
-         facts; they are not claims, so leave them out.
+       - Transitions, sign-posts, and sentences that only say what the slide shows or
+         lists ("Next, let's look at ...", "Let's recap", "This slide lists three
+         examples") state no facts; they are not claims, so leave them out.
     2. verdict is "pass" only if every claim has a chunk id."""
 
     chunks: str = dspy.InputField(desc="cited chunks, one per line as '[<chunk_id>] <text>'")
@@ -209,7 +217,8 @@ class PollGuardianSignature(dspy.Signature):
         desc="claims of the question and correct option, each with a chunk id or null"
     )
     wrong_options: list[WrongOptionCheck] = dspy.OutputField(
-        desc="one per wrong option: the chunk id that shows it is wrong, or null"
+        desc="one per wrong option: its key only (A, B, C, or D) and the chunk id that "
+        "shows it is wrong, or null"
     )
     verdict: Literal["pass", "fail"] = dspy.OutputField()
     reason: str = dspy.OutputField(desc="one sentence")

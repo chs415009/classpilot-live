@@ -19,6 +19,9 @@ Replacement = str | Callable[[re.Match], str]
 FILE_EXTENSIONS = ("sql", "py", "yml", "yaml", "csv", "json", "md", "txt")
 
 
+BULLETS = "-*+•○◦▪■►▶➢"
+
+
 def _spell(letters: str) -> str:
     return " ".join(letters.lower())
 
@@ -26,11 +29,14 @@ def _spell(letters: str) -> str:
 # (name, pattern, replacement), applied in this order. Markdown first, then code symbols.
 RULES: list[tuple[str, re.Pattern, Replacement]] = [
     ("code fence", re.compile(r"```[a-zA-Z]*"), " "),
+    ("URL", re.compile(r"https?://\S+|\bwww\.\S+"), ""),
     ("backtick", re.compile(r"`"), ""),
     ("Markdown image", re.compile(r"!\[[^\]]*\]\([^)]*\)"), ""),
     ("Markdown link", re.compile(r"\[([^\]]+)\]\([^)]*\)"), r"\1"),
     ("Markdown heading", re.compile(r"^[ \t]*#{1,6}[ \t]+", re.MULTILINE), ""),
-    ("Markdown bullet", re.compile(r"^[ \t]*[-*+•][ \t]+", re.MULTILINE), ""),
+    # Slide text has bullets on their own line ("•\nIntroduction") or before the item.
+    ("Markdown bullet", re.compile(rf"^[ \t]*[{BULLETS}][ \t]*$", re.MULTILINE), ""),
+    ("Markdown bullet", re.compile(rf"^[ \t]*[{BULLETS}][ \t]+", re.MULTILINE), ""),
     ("Markdown emphasis", re.compile(r"(\*\*|__)(\S(?:.*?\S)?)\1"), r"\2"),
     ("Markdown emphasis", re.compile(r"(?<![\w*])\*(\S(?:.*?\S)?)\*(?![\w*])"), r"\1"),
     ("template braces", re.compile(r"\{\{|\}\}|\{%|%\}"), " "),
@@ -54,13 +60,37 @@ RULES: list[tuple[str, re.Pattern, Replacement]] = [
     ("slash", re.compile(r"(?<=\w)/(?=\w)"), " slash "),
     # Paired quotes only, so apostrophes ("it's", "students' answers") stay.
     ("quote", re.compile(r"(?<![A-Za-z])'([^'\s][^'\n]*?)'(?![A-Za-z])"), r"\1"),
-    ("double quote", re.compile(r"\""), ""),
     ("bracket", re.compile(r"[()\[\]{}]"), " "),
     ("symbol", re.compile(r"[|\\^~$@#*]"), " "),
     ("semicolon", re.compile(r";"), ","),
 ]
 
 SENTENCE_END = re.compile(r"[.!?:,]$")
+
+
+def _line_key(line: str) -> str:
+    return " ".join(line.split()).lower()
+
+
+def template_lines(texts: list[str], min_share: float = 0.5, min_count: int = 3) -> set[str]:
+    """Lines that appear on at least `min_share` of the pages (and on `min_count`): the
+    deck's footer or header, such as the course name and the term."""
+    counts: dict[str, int] = {}
+    for text in texts:
+        for key in {_line_key(line) for line in text.splitlines() if line.strip()}:
+            counts[key] = counts.get(key, 0) + 1
+    needed = max(min_count, min_share * len(texts))
+    return {key for key, n in counts.items() if n >= needed}
+
+
+def strip_lines(text: str, drop: set[str]) -> str:
+    """Remove template lines (`template_lines`) and lines that hold only a page number."""
+    kept = [
+        line
+        for line in text.splitlines()
+        if _line_key(line) not in drop and not line.strip().isdigit()
+    ]
+    return "\n".join(kept)
 
 
 def _apply_rules(text: str) -> tuple[str, list[str]]:

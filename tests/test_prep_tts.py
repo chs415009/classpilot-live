@@ -2,7 +2,7 @@
 
 import pytest
 
-from classpilot.prep.tts import clean_for_tts, tts_issues
+from classpilot.prep.tts import clean_for_tts, strip_lines, template_lines, tts_issues
 
 FIXTURE_CODE_SLIDE = (
     "A Silver Model in dbt\n"
@@ -66,3 +66,33 @@ def test_lines_become_sentences_and_empty_lines_vanish():
         "Summary. Keep bronze unchanged. Clean once."
     )
     assert clean_for_tts("   \n\n") == ""
+
+
+REAL_STYLE_PAGES = [
+    "Outline\nFall 2025\nINFO 6205 - Course\n4\n•\nIntroduction\n•\nJava Review - 1",
+    "Data\nFall 2025\nINFO 6205 - Course\n5\n○\nStack of books",
+    "Summary\nFall 2025\nINFO 6205  -  Course\n6",
+]
+
+
+def test_template_lines_are_the_lines_on_most_pages():
+    assert template_lines(REAL_STYLE_PAGES) == {"fall 2025", "info 6205 - course"}
+    assert template_lines(REAL_STYLE_PAGES[:2]) == set()  # needs at least 3 pages
+
+
+def test_slide_text_fallback_without_footer_page_number_or_bullet_lines():
+    drop = template_lines(REAL_STYLE_PAGES)
+    assert clean_for_tts(strip_lines(REAL_STYLE_PAGES[0], drop)) == (
+        "Outline. Introduction. Java Review - 1."
+    )
+    assert clean_for_tts(strip_lines(REAL_STYLE_PAGES[1], drop)) == "Data. Stack of books."
+
+
+def test_urls_are_removed_and_flagged():
+    text = "Image Sources\nhttps://example.com/a/b.jpg\nSee www.example.org"
+    assert clean_for_tts(text) == "Image Sources. See."
+    assert tts_issues("See https://example.com") == ["URL"]
+
+
+def test_plain_double_quotes_are_not_a_tts_issue():
+    assert tts_issues('The term "queue" means a line.') == []

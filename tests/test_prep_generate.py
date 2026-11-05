@@ -209,7 +209,7 @@ def test_script_fails_twice_falls_back_to_slide_text(tables):
     assert slide.status == "fallback"
     assert slide.script == (
         "Summary. Keep bronze unchanged for replay. Clean once in silver. "
-        "Aggregate for consumers in gold. ClassPilot fixture deck."
+        "Aggregate for consumers in gold."  # the footer on every slide is left out
     )
     assert item(result, f"script {P}06").detail == "slide_text"
 
@@ -450,3 +450,27 @@ def test_manifest_is_independent_of_material_mutation(tables):
     a = run(tables, MockPrepLLM(), copy.deepcopy(material)).manifest
     b = run(tables, MockPrepLLM(), copy.deepcopy(material)).manifest
     assert a == b
+
+
+def test_scripts_get_reference_chunks_beyond_the_top_hits(tables):
+    material = load_material(LESSON, tables)
+    for n in (1, 2, 3):
+        material.chunks[f"ref-p0{n}-c1"] = {
+            "chunk_id": f"ref-p0{n}-c1",
+            "slide_id": None,
+            "text": f"Reading {n}: like a library, the bronze layer keeps every raw copy.",
+        }
+    llm = Rigged()
+    run(tables, llm, material, retrieval_top_k=1, script_reference_chunks=2)
+    p02 = next(i for i in llm.inputs_of("script_writer") if i["slide_id"] == f"{P}02")
+    refs = [c["chunk_id"] for c in p02["chunks"] if c["slide_id"] is None]
+    assert len(refs) == 2
+    assert p02["objective"] == "Explain Medallion Architecture Basics"
+
+
+def test_no_reference_chunks_needed_keeps_the_top_hits_only(tables):
+    material = load_material(LESSON, tables)
+    llm = Rigged()
+    run(tables, llm, material, retrieval_top_k=1, script_reference_chunks=0)
+    p02 = next(i for i in llm.inputs_of("script_writer") if i["slide_id"] == f"{P}02")
+    assert len(p02["chunks"]) <= 2  # its own chunk + 1 retrieved

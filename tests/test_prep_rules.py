@@ -270,3 +270,16 @@ def test_poll_needs_every_wrong_option_shown_wrong():
 def test_poll_guardian_output_without_wrong_options_is_a_schema_mismatch():
     raw = guardian([("q", "c1")])
     assert check_prep_guardian(raw, ["c1"], require_claims=True, wrong_options=["B"]).passed is None
+
+
+@pytest.mark.parametrize("given", ["B", "B: Clean data", "(B) Clean data", " B. Clean data"])
+def test_wrong_option_key_is_read_from_the_start_of_the_option(given):
+    raw = guardian([("q", "c1")], wrong=[(given, "c1"), ("C", "c1"), ("D", "c1")])
+    check = check_prep_guardian(raw, ["c1"], require_claims=True, wrong_options=["B", "C", "D"])
+    assert check.passed, check.problems
+
+
+def test_option_text_without_a_key_is_not_matched():
+    raw = guardian([("q", "c1")], wrong=[("Clean data", "c1"), ("C", "c1"), ("D", "c1")])
+    check = check_prep_guardian(raw, ["c1"], require_claims=True, wrong_options=["B", "C", "D"])
+    assert check.problems == ["Option B is not shown to be wrong by the cited chunks."]

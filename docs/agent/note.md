@@ -221,3 +221,40 @@ is no longer updated)
   if everything passes, up to about 140 with every retry.
 - 2026-11-05 [change] User: README is updated in every stage (features, setup and
   deployment steps, commands run again).
+
+## Stage 7: Live prep run on one deck
+
+- 2026-11-05 [decision] User: generation model `mistral-large3` (prep.model null), up to
+  200 LLM calls (limit 300), at most 2 runs, poll_count 5. Leftover data (v1 table and
+  service, the `fixture-lesson` rows) stays until all stages are done, then is cleaned.
+- 2026-11-05 [finding] Account inventory (`sql/probes/stage7_account_inventory.sql`,
+  run with the service role via `scripts/probes/readonly_sql.py`): only the expected
+  objects; both search services suspended; the service user has one RSA key, no
+  password or PAT; no network policies or tasks. A teammate's user also holds
+  CLASSPILOT_AGENT_ROLE (owner of our tables).
+- 2026-11-05 [finding] Re-chunk kept 25 chunks; key concepts are gone, but the stored
+  "No diagrams ... only text" description of `l1-pdf-p02` stays (stored rows predate
+  `has_visuals`, which defaults to true); removing it needs a new vision call.
+- 2026-11-05 [result] Run 1 (mistral-large3): 76 calls, 224 s; 9 segments; scripts ok 3,
+  ok_after_retry 2, fallback 9; all 7 polls dropped. `prep check` passed.
+- 2026-11-05 [finding] Run 1 causes: (1) the poll Guardian wrote wrong options as
+  "A: <text>" (they are shown to it that way), so the rule never matched a key: 5 of 7
+  drops were this bug; (2) PollWriter gave a misconception for the correct option and
+  asked NOT questions; placement listed logistics segments as backups; (3) ScriptWriter
+  added examples and analogies the slides lack (sparse bullet slides), which the
+  Guardian rightly failed, and the Guardian counted "this slide shows ..." as claims;
+  (4) fallback text kept bullet-only lines, page numbers, the footer, and URLs, and the
+  lint failed plain double quotes.
+- 2026-11-05 [change] Fixes before run 2, user approved. Code: (A) the rule reads the
+  option key from the start of the Guardian's text; (B) plain double quotes are no
+  TTS issue; (C) the slide-text fallback drops bullet-only lines, page numbers, URLs,
+  and lines on most slides (footer); (H) script retrieval queries objective + slide
+  text and adds reference chunks until 2 are present (`prep.script_reference_chunks`).
+  Instructions: (D) ScriptWriter may reword chunk content and use examples the chunks
+  contain, no examples of its own; (E) ScriptGuardian: sentences that only say what the
+  slide shows are not claims; (F) PollWriter: no misconception for the correct option,
+  no NOT/EXCEPT questions, no logistics; (G) PollPlacer leaves out logistics segments.
+- 2026-11-05 [decision] User: generated examples and explanations of the writer's own
+  stay out (only content the chunks contain), for quality and a small scope; an
+  `illustration` item type is a possible Stage 9 topic if scripts stay too dry.
+

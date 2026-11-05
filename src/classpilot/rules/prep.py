@@ -5,6 +5,7 @@ non-empty list fails the attempt and goes back to the generator as its `feedback
 The LLM never decides: a Guardian "pass" next to an unsupported claim still fails.
 """
 
+import re
 from dataclasses import dataclass, field
 
 from pydantic import BaseModel, ValidationError
@@ -156,6 +157,15 @@ def manifest_poll_problems(manifest: Manifest, poll_count: int) -> list[str]:
 
 # ---------- prep Guardian rule ----------
 
+OPTION_KEY = re.compile(r"^\s*\(?([A-D])\b")
+
+
+def option_key(text: str) -> str:
+    """'A', 'A: text', '(A) text' -> 'A'. Stage 7: the Guardian echoed 'A: <text>'
+    because the options are shown to it in that form. Anything else stays as given."""
+    match = OPTION_KEY.match(text)
+    return match.group(1) if match else text.strip()
+
 
 @dataclass
 class PrepCheck:
@@ -190,7 +200,7 @@ def check_prep_guardian(
     if require_claims and not output.claims:
         problems.append("The Guardian found no claims to check.")
     if wrong_options is not None:
-        shown = {w.option for w in output.wrong_options if w.chunk_id in cited}
+        shown = {option_key(w.option) for w in output.wrong_options if w.chunk_id in cited}
         problems += [
             f"Option {o} is not shown to be wrong by the cited chunks."
             for o in wrong_options

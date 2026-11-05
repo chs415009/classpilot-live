@@ -49,7 +49,7 @@ from classpilot.contracts.prep import (
 from classpilot.prep.chunking import clean_text
 from classpilot.prep.records import ParsedPage
 from classpilot.prep.tables import PrepTables
-from classpilot.prep.tts import clean_for_tts
+from classpilot.prep.tts import clean_for_tts, strip_lines, template_lines
 from classpilot.rules.prep import (
     check_prep_guardian,
     explanation_problems,
@@ -247,27 +247,39 @@ class Generator:
         self.deps = deps
         self.llm = CountingLLM(deps.llm)
         self.report = GenerationReport(material.lesson_id, deps.prep.poll_count)
+        # Footer/header lines of the deck, left out of the slide-text fallback.
+        self.template = template_lines([s.page.text_layer for s in material.slides])
 
     # ----- helpers -----
 
     def call(self, task: str, inputs: dict) -> dict:
         return call_llm(self.llm, task, inputs, self.deps.prep.llm_timeout_seconds)
 
-    def retrieve(self, query: str, base: list[dict]) -> list[dict]:
-        """`base` chunks plus the top retrieved lesson chunks, without duplicates."""
+    def retrieve(self, query: str, base: list[dict], min_references: int = 0) -> list[dict]:
+        """`base` chunks plus the top `retrieval_top_k` retrieved lesson chunks, without
+        duplicates, plus further reference chunks from the same search until there are
+        `min_references` (Stage 7: examples in the readings did not reach the writer)."""
+        prep = self.deps.prep
+        depth = max(prep.retrieval_top_k, prep.retrieval_search_k if min_references else 0)
         try:
-            hits = self.deps.retriever.search(
-                query, self.deps.prep.retrieval_top_k, self.m.lesson_id
-            )
+            hits = self.deps.retriever.search(query, depth, self.m.lesson_id)
         except RetrievalError:
             hits = []
         seen = {c["chunk_id"] for c in base}
-        extra = []
+        ranked = []
         for hit in hits:
             chunk = self.m.chunks.get(hit.chunk_id)
             if chunk is not None and hit.chunk_id not in seen:
                 seen.add(hit.chunk_id)
+                ranked.append(chunk)
+        extra = ranked[: prep.retrieval_top_k]
+        refs = sum(c["slide_id"] is None for c in [*base, *extra])
+        for chunk in ranked[prep.retrieval_top_k :]:
+            if refs >= min_references:
+                break
+            if chunk["slide_id"] is None:
                 extra.append(chunk)
+                refs += 1
         return [*base, *extra]
 
     def cited(self, ids: list[str]) -> list[dict]:
@@ -359,7 +371,8 @@ class Generator:
         position = (
             f"slide {s.order} of {total}; slide {n_in_seg} of {len(seg.slides)} in {seg.segment_id}"
         )
-        chunks = self.retrieve(" ".join(c["text"] for c in s.chunks)[:500], s.chunks)
+        query = f"{seg.objective} {' '.join(c['text'] for c in s.chunks)}"[:500]
+        chunks = self.retrieve(query, s.chunks, self.deps.prep.script_reference_chunks)
         allowed = {c["chunk_id"] for c in chunks}
         inputs = {
             "objective": seg.objective,
@@ -391,7 +404,7 @@ class Generator:
         return out.script.strip(), status
 
     def fallback_script(self, page: ParsedPage) -> tuple[str, str]:
-        text = clean_for_tts(clean_text(page.text_layer))
+        text = clean_for_tts(strip_lines(clean_text(page.text_layer), self.template))
         if text:
             return text, "slide_text"
         vision = page.llm_description

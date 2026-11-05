@@ -174,7 +174,7 @@ is no longer updated)
 - 2026-11-05 [result] `prep convert` handles the fixture deck and the real deck (14
   slides, aligned, 3 image slides) and reference (3 pages); 204 tests. No Snowflake use.
 
-## Stage 5: Parse layer in Snowflake, chunks, and search
+## Stage 5: Parse layer in Snowflake, chunks, and search — accepted 2026-11-05
 
 - 2026-11-05 [decision] User: SQL object names are rendered client-side
   (`scripts/run_sql.py`), no `IDENTIFIER($var)` probe. The v1 service is only a
@@ -202,3 +202,5 @@ is no longer updated)
   embedding 0.0002, serving 0.0000, `CLASSPILOT_WH` 0.0715. Total about 0.098 credits;
   warehouse time is again the largest item. `sql/probes/stage5_cost_reading.sql`.
 
+- 2026-11-05 [decision] User: re-chunk the Stage 5 live lessons in Stage 7 (first real
+  v2 use), not now.

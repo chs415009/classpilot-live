@@ -145,3 +145,6 @@ is no longer updated)
   live run, although the Stage 1 teardown was meant to suspend it; serving may have been
   billed since. Check WAREHOUSE / Cortex Search usage in the cost reading. Suspended
   again after the run (`scripts/search_service.py`).
+- 2026-11-05 [decision] User: keep `llm.timeout_seconds` at 10 s for now (revisit after
+  compiling in Stage 9). gc-07 stays as is: a useful edge case for Stage 9, no prompt
+  change now.

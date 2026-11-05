@@ -84,34 +84,9 @@ def run_prep_convert(args) -> int:
 
 def build_parse_deps(settings):
     """Mock adapters and local tables, or Snowflake (BACKEND=cortex)."""
-    from classpilot.adapters import parse as adapters
-    from classpilot.prep.parse import ParseDeps
-    from classpilot.prep.tables import LocalTables, SnowflakeTables
+    from classpilot.prep.backends import make_parse_deps
 
-    cfg = settings.parse
-    if settings.backend == "mock":
-        stage = adapters.MockStage()
-        return ParseDeps(
-            stage,
-            adapters.MockParser(stage),
-            adapters.MockVision(),
-            LocalTables(PREP_TABLES_DIR),
-            cfg,
-            CONVERT_DIR,
-        )
-    from classpilot.adapters.snowflake import shared_connection
-
-    conn, stage_name = shared_connection(), settings.objects.raw_stage
-    return ParseDeps(
-        adapters.SnowflakeStage(conn, stage_name),
-        adapters.CortexParser(conn, stage_name, cfg.parse_timeout_seconds),
-        adapters.CortexVision(
-            conn, stage_name, cfg.vision_model, cfg.vision_max_tokens, cfg.vision_timeout_seconds
-        ),
-        SnowflakeTables(conn, settings.objects),
-        cfg,
-        CONVERT_DIR,
-    )
+    return make_parse_deps(settings, PREP_TABLES_DIR, CONVERT_DIR)
 
 
 def prep_settings(args):
@@ -167,47 +142,16 @@ def run_prep_parse(args) -> int:
 
 
 def build_generate_deps(settings, tables, material):
-    """Mock generators and retrieval, or DSPy on Cortex and Cortex Search (BACKEND=cortex)."""
-    from classpilot.adapters.retrieval import CortexSearchRetriever, MockRetriever
-    from classpilot.prep.generate import GenerateDeps
+    from classpilot.prep.backends import make_generate_deps
 
-    if settings.backend == "mock":
-        from classpilot.adapters.mock_prep import MockPrepLLM
-
-        llm, retriever = MockPrepLLM(), MockRetriever(material.retrieval_rows())
-    else:
-        from classpilot.adapters.cortex_engine import make_prep_lm
-        from classpilot.agents.prep_program import DSPyPrepAgents
-
-        llm = DSPyPrepAgents(make_prep_lm(settings))
-        retriever = CortexSearchRetriever(settings, service_name=settings.objects.search_service)
-    return GenerateDeps(llm, retriever, settings.prep, settings.poll)
-
-
-def copy_slide_images(lesson_id: str, tables, out_dir: Path) -> tuple[int, int]:
-    """Slide PNGs from the local conversion into <out>/slides/<slide_id>.png."""
-    import shutil
-
-    copied = missing = 0
-    (out_dir / "slides").mkdir(parents=True, exist_ok=True)
-    for parsed in tables.lesson_files(lesson_id):
-        if parsed.kind != "slides":
-            continue
-        for page in parsed.pages:
-            png = CONVERT_DIR / parsed.file_id[:16] / "pages" / f"p{page.page_index:02d}.png"
-            if png.is_file():
-                shutil.copyfile(png, out_dir / "slides" / f"{page.page_id}.png")
-                copied += 1
-            else:
-                missing += 1
-    return copied, missing
+    return make_generate_deps(settings, material)
 
 
 def generate_step(lesson_id: str, settings, tables) -> bool:
     from collections import Counter
-    from dataclasses import asdict
 
     from classpilot.prep.generate import GenerateError, Generator, load_material
+    from classpilot.prep.outputs import copy_slide_images, write_generation
 
     try:
         material = load_material(lesson_id, tables)
@@ -219,16 +163,8 @@ def generate_step(lesson_id: str, settings, tables) -> bool:
         print(f"error: {exc}")
         return False
     out_dir = PREP_DIR / lesson_id
-    out_dir.mkdir(parents=True, exist_ok=True)
-    (out_dir / "manifest.json").write_text(result.manifest.model_dump_json(indent=2))
-    report = {
-        "backend": settings.backend,
-        "seconds": seconds,
-        **asdict(result.report),
-        "summary": result.report.summary(),
-    }
-    (out_dir / "generation_report.json").write_text(json.dumps(report, indent=2))
-    copied, missing = copy_slide_images(lesson_id, tables, out_dir)
+    write_generation(out_dir, result, settings.backend, seconds)
+    copied, missing = copy_slide_images(lesson_id, tables, CONVERT_DIR, out_dir)
 
     m = result.manifest
     print(
@@ -253,31 +189,23 @@ def generate_step(lesson_id: str, settings, tables) -> bool:
 
 def check_step(lesson_id: str, tables, poll_count: int) -> bool:
     """Stage 7 checks on the stored manifest, then the review sheet."""
-    from classpilot.contracts.manifest import load_manifest
-    from classpilot.prep.checks import manifest_check_problems
-    from classpilot.prep.review import render_review
+    from classpilot.prep.outputs import check_and_review
 
     out_dir = PREP_DIR / lesson_id
     if not (out_dir / "manifest.json").is_file():
         print(f"error: no manifest for {lesson_id!r}; run prep generate first")
         return False
     try:
-        manifest = load_manifest(out_dir / "manifest.json")
+        problems, n_chunks = check_and_review(out_dir, lesson_id, tables, poll_count)
     except ValueError as exc:
         print(f"check: manifest does not validate: {exc}")
         return False
-    report = json.loads((out_dir / "generation_report.json").read_text())
-    chunks = tables.lesson_chunks(lesson_id)
-    pages = {c.chunk_id: c.page_id for c in chunks}
-    problems = manifest_check_problems(manifest, report, pages, poll_count)
-    review = render_review(manifest, report, {c.chunk_id: c.text for c in chunks})
-    (out_dir / "review.md").write_text(review)
     if problems:
         print(f"check: {len(problems)} problem(s)")
         for problem in problems:
             print(f"  - {problem}")
     else:
-        print(f"check: OK (manifest, statuses, {len(pages)} lesson chunks, show_slide, TTS lint)")
+        print(f"check: OK (manifest, statuses, {n_chunks} lesson chunks, show_slide, TTS lint)")
     print(f"wrote {out_dir}/review.md")
     return not problems
 
@@ -292,13 +220,9 @@ def run_prep_check(args) -> int:
 
 
 def prep_tables(settings):
-    from classpilot.prep.tables import LocalTables, SnowflakeTables
+    from classpilot.prep.backends import make_tables
 
-    if settings.backend == "mock":
-        return LocalTables(PREP_TABLES_DIR)
-    from classpilot.adapters.snowflake import shared_connection
-
-    return SnowflakeTables(shared_connection(), settings.objects)
+    return make_tables(settings, PREP_TABLES_DIR)
 
 
 def run_prep_generate(args) -> int:

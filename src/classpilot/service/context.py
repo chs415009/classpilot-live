@@ -1,0 +1,213 @@
+"""Everything the endpoints share: settings, stores, backends, live lesson cache, poll guard."""
+
+import shutil
+import threading
+import time
+from collections.abc import Callable
+from dataclasses import dataclass, field
+from pathlib import Path
+
+from classpilot.adapters.llm import LLMClient
+from classpilot.adapters.retrieval import Retriever
+from classpilot.content import Content
+from classpilot.contracts import Decision
+from classpilot.contracts.manifest import Manifest, load_manifest
+from classpilot.prep.generate import GenerateDeps, Generator, LessonMaterial, load_material
+from classpilot.prep.outputs import check_and_review, copy_slide_images, write_generation
+from classpilot.prep.parse import ParseDeps, parse_lesson
+from classpilot.prep.tables import PrepTables
+from classpilot.service.schemas import ItemFailure, Progress
+from classpilot.service.store import JobStore, LessonStore, now, redact
+from classpilot.settings import PROJECT_ROOT, Settings
+from classpilot.text import content_words
+from classpilot.trace import RunOutput, write_run
+
+MAX_KEYWORDS = 40  # per objective, for the mock Analyst only
+
+
+@dataclass
+class Backends:
+    """Adapter factories. The defaults follow `settings.backend`; tests replace them."""
+
+    parse_deps: Callable[[], ParseDeps]
+    generate_deps: Callable[[Settings, LessonMaterial], GenerateDeps]
+    tables: Callable[[], PrepTables]
+    live_llm: Callable[[], LLMClient]
+    live_retriever: Callable[[Content], Retriever]
+
+
+def default_backends(settings: Settings, data_dir: Path) -> Backends:
+    from classpilot.prep.backends import make_generate_deps, make_parse_deps, make_tables
+
+    tables_dir, convert_dir = data_dir / "tables", data_dir / "convert"
+
+    def live_llm() -> LLMClient:
+        if settings.backend == "cortex":
+            from classpilot.adapters.cortex_engine import make_cortex_lm
+            from classpilot.agents.program import DSPyAgents
+
+            return DSPyAgents(make_cortex_lm(settings))
+        from classpilot.adapters.llm import MockLLM
+
+        return MockLLM()
+
+    def live_retriever(content: Content) -> Retriever:
+        from classpilot.adapters.retrieval import CortexSearchRetriever, MockRetriever
+
+        if settings.backend == "cortex":
+            return CortexSearchRetriever(settings, service_name=settings.objects.search_service)
+        return MockRetriever(content.chunks)
+
+    return Backends(
+        parse_deps=lambda: make_parse_deps(settings, tables_dir, convert_dir),
+        generate_deps=make_generate_deps,
+        tables=lambda: make_tables(settings, tables_dir),
+        live_llm=live_llm,
+        live_retriever=live_retriever,
+    )
+
+
+@dataclass
+class ServiceContext:
+    settings: Settings
+    data_dir: Path
+    backends: Backends
+    lessons: LessonStore = field(init=False)
+    jobs: JobStore = field(default_factory=JobStore)
+    poll_decisions: dict[tuple[str, str], Decision] = field(default_factory=dict)
+    lock: threading.Lock = field(default_factory=threading.Lock)
+    _live: dict[str, Content] = field(default_factory=dict)
+    _llm: LLMClient | None = None
+
+    def __post_init__(self):
+        self.lessons = LessonStore(self.data_dir)
+
+    @classmethod
+    def build(cls, settings: Settings, data_dir: Path | None = None, backends=None):
+        root = data_dir or (PROJECT_ROOT / settings.service.data_dir)
+        return cls(settings, root, backends or default_backends(settings, root))
+
+    @property
+    def trace_path(self) -> Path:
+        return self.data_dir / "traces.jsonl"
+
+    @property
+    def log_path(self) -> Path:
+        return self.data_dir / "decision_log.jsonl"
+
+    def write_run(self, output: RunOutput) -> None:
+        with self.lock:  # one writer at a time: lines never interleave
+            write_run(output, self.trace_path, self.log_path)
+
+    # ---------- live ----------
+
+    def manifest(self, lesson_id: str) -> Manifest | None:
+        path = self.lessons.prep_dir(lesson_id) / "manifest.json"
+        return load_manifest(path) if path.is_file() else None
+
+    def live_content(self, lesson_id: str) -> Content | None:
+        """The lesson's manifest, objectives (from its segments), and chunks; cached."""
+        with self.lock:
+            if lesson_id in self._live:
+                return self._live[lesson_id]
+        manifest = self.manifest(lesson_id)
+        if manifest is None:
+            return None
+        chunks = self.backends.tables().lesson_chunks(lesson_id)
+        rows = [{"chunk_id": c.chunk_id, "text": c.text, "lesson_id": lesson_id} for c in chunks]
+        objectives = []
+        for seg in manifest.segments:
+            words = content_words(seg.objective)
+            words += [w for c in chunks if c.page_id in seg.slides for w in content_words(c.text)]
+            keywords = list(dict.fromkeys(words))[:MAX_KEYWORDS]
+            objectives.append(
+                {"objective_id": seg.segment_id, "title": seg.objective, "keywords": keywords}
+            )
+        content = Content(lesson_id, objectives, rows, manifest)
+        with self.lock:
+            self._live[lesson_id] = content
+        return content
+
+    def live_llm(self) -> LLMClient:
+        with self.lock:
+            if self._llm is None:
+                self._llm = self.backends.live_llm()
+            return self._llm
+
+    def forget_lesson(self, lesson_id: str) -> None:
+        with self.lock:
+            self._live.pop(lesson_id, None)
+
+    # ---------- prep job ----------
+
+    def run_job(self, job_id: str) -> None:
+        """Background task: parse -> generate -> check -> assemble. Never raises."""
+        job = self.jobs.get(job_id)
+        lesson = self.lessons.get(job.lesson_id)
+        update = lambda **f: self.jobs.update(job_id, **f)  # noqa: E731
+
+        def progress(step: str, done: int, total: int, detail: str = "") -> None:
+            update(step=step, progress=Progress(done=done, total=total, detail=detail))
+
+        update(status="running", started_at=now())
+        lesson_id = lesson.lesson_id
+        out_dir = self.lessons.prep_dir(lesson_id)
+        tmp_dir = out_dir.with_name("prep.tmp")
+        try:
+            parse_deps = self.backends.parse_deps()
+            uploads = self.lessons.uploads(lesson_id)
+            slides = [uploads / f.name for f in lesson.files if f.kind == "slides"]
+            refs = [uploads / f.name for f in lesson.files if f.kind == "reference"]
+            parse_lesson(lesson_id, slides, refs, parse_deps, progress=progress)
+
+            tables = parse_deps.tables
+            material = load_material(lesson_id, tables)
+            prep = self.settings.prep.model_copy(update={"poll_count": job.poll_count})
+            settings = self.settings.model_copy(update={"prep": prep})
+            start = time.perf_counter()
+            generator = Generator(
+                material, self.backends.generate_deps(settings, material), progress
+            )
+            result = generator.run()
+            seconds = round(time.perf_counter() - start, 1)
+
+            progress("checking", 0, 1)
+            shutil.rmtree(tmp_dir, ignore_errors=True)
+            write_generation(tmp_dir, result, self.settings.backend, seconds)
+            problems, _ = check_and_review(tmp_dir, lesson_id, tables, job.poll_count)
+            if problems:
+                raise RuntimeError(f"manifest checks failed: {'; '.join(problems[:5])}")
+
+            progress("assembling", 0, 1)
+            copy_slide_images(lesson_id, tables, parse_deps.convert_root, tmp_dir)
+            shutil.rmtree(out_dir, ignore_errors=True)
+            tmp_dir.rename(out_dir)  # a failed job never replaces the last good manifest
+            self.forget_lesson(lesson_id)
+            update(
+                status="done",
+                step="done",
+                progress=Progress(done=1, total=1),
+                failures=failures(result.report.items),
+                llm_calls=result.report.llm_calls,
+                ended_at=now(),
+            )
+        except Exception as exc:  # the job reports every failure; the service keeps running
+            shutil.rmtree(tmp_dir, ignore_errors=True)
+            message = redact(f"{type(exc).__name__}: {exc}")[:1000]
+            update(status="failed", step="failed", error=message, ended_at=now())
+
+
+def failures(items) -> list[ItemFailure]:
+    out = []
+    for item in items:
+        if item.status in ("fallback", "dropped"):
+            last = item.attempts[-1].problems if item.attempts else []
+            out.append(
+                ItemFailure(
+                    item=item.item,
+                    status=item.status,
+                    detail=redact(item.detail),
+                    problems=[redact(p) for p in last],
+                )
+            )
+    return out

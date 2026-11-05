@@ -88,3 +88,26 @@ def test_prep_generate_unknown_lesson_fails_cleanly(dirs, capsys):
 
 def test_prep_run_needs_files(dirs):
     assert run_cli("prep", "run", "--lesson", LESSON) == 2  # argparse error
+
+
+def test_prep_check_reruns_the_checks_and_writes_the_review(dirs, capsys):
+    assert run_cli("prep", "run", "--lesson", LESSON, str(DECK_PPTX)) == 0
+    out_dir = dirs / "prep" / LESSON
+    (out_dir / "review.md").unlink()
+    capsys.readouterr()
+    assert run_cli("prep", "check", "--lesson", LESSON) == 0
+    assert "check: OK" in capsys.readouterr().out
+    assert (out_dir / "review.md").read_text().startswith(f"# Generation review: {LESSON}")
+    report = json.loads((out_dir / "generation_report.json").read_text())
+    assert report["summary"]["script"]["items"] == 6 and "seconds" in report
+
+    manifest = json.loads((out_dir / "manifest.json").read_text())
+    manifest["remediations"]["R-01"]["show_slide"] = "fixture-deck-p06"
+    (out_dir / "manifest.json").write_text(json.dumps(manifest))
+    assert run_cli("prep", "check", "--lesson", LESSON) == 1
+    assert "R-01: show_slide" in capsys.readouterr().out
+
+
+def test_prep_check_without_a_manifest(dirs, capsys):
+    assert run_cli("prep", "check", "--lesson", "nope") == 1
+    assert "run prep generate first" in capsys.readouterr().out

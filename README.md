@@ -81,9 +81,14 @@ python -m classpilot.cli prep convert deck.pptx --ref reading.pdf   # local only
 python -m classpilot.cli prep parse --lesson l1 deck.pptx --ref reading.pdf
 python -m classpilot.cli prep search --lesson l1 "why keep raw data"
 python -m classpilot.cli prep generate --lesson l1 --poll-count 3   # from the stored parse
+python -m classpilot.cli prep check --lesson l1                     # checks + review sheet
 ```
 
-`--backend mock|cortex` overrides `BACKEND` (default mock). A file hash that was parsed
+`prep generate` and `prep run` end with the same checks as `prep check`: the manifest
+validates, every item has a status, every citation is a chunk of the lesson, every
+`show_slide` is a slide of a cited chunk, scripts and explanations pass the TTS lint,
+and no `active_poll` points to a dropped poll. `--backend mock|cortex` overrides
+`BACKEND` (default mock). A file hash that was parsed
 before is never parsed again, also for another lesson, and `prep generate` reads only
 the stored parse, so changing `--poll-count` costs no parse calls.
 
@@ -93,7 +98,8 @@ the stored parse, so changing `--poll-count` costs no parse calls.
 | `prep_tables/` | mock-mode tables (RAW_FILES, PARSED_PAGES, LESSON_CHUNKS_V2 as JSON) |
 | `parse/<lesson>.json` | parse report and chunks |
 | `prep/<lesson>/manifest.json` | the team manifest (`docs/v2/IMPLEMENTATION_NOTES.md` section 5) |
-| `prep/<lesson>/generation_report.json` | every attempt of every generated item, with its problems |
+| `prep/<lesson>/generation_report.json` | every attempt of every item (problems, Guardian reply, calls, latency) and readings per item type |
+| `prep/<lesson>/review.md` | review sheet: readings, placement, scripts, polls with misconceptions and explanations, Guardian decisions, cited chunks |
 | `prep/<lesson>/slides/` | slide PNGs named by slide id |
 
 Settings (thresholds, `poll_count`, retries, timeouts, models, object names):

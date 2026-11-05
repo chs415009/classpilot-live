@@ -8,11 +8,13 @@ python -m classpilot.cli prep convert deck.pptx --ref reading.pdf --ref notes.do
 python -m classpilot.cli prep parse --lesson l1 deck.pptx --ref reading.pdf
 python -m classpilot.cli prep search --lesson l1 "why keep raw data"
 python -m classpilot.cli prep generate --lesson l1 --poll-count 3
+python -m classpilot.cli prep check --lesson l1
 python -m classpilot.cli prep run --backend mock --lesson l1 deck.pptx --ref reading.pdf
 """
 
 import argparse
 import json
+import time
 from pathlib import Path
 
 from classpilot.runner import OUTPUT_DIR, run_eval, run_guardian_eval, run_scenario, scenario_files
@@ -210,14 +212,21 @@ def generate_step(lesson_id: str, settings, tables) -> bool:
     try:
         material = load_material(lesson_id, tables)
         deps = build_generate_deps(settings, tables, material)
+        start = time.perf_counter()
         result = Generator(material, deps).run()
+        seconds = round(time.perf_counter() - start, 1)
     except GenerateError as exc:
         print(f"error: {exc}")
         return False
     out_dir = PREP_DIR / lesson_id
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "manifest.json").write_text(result.manifest.model_dump_json(indent=2))
-    report = {"backend": settings.backend, **asdict(result.report)}
+    report = {
+        "backend": settings.backend,
+        "seconds": seconds,
+        **asdict(result.report),
+        "summary": result.report.summary(),
+    }
     (out_dir / "generation_report.json").write_text(json.dumps(report, indent=2))
     copied, missing = copy_slide_images(lesson_id, tables, out_dir)
 
@@ -235,10 +244,51 @@ def generate_step(lesson_id: str, settings, tables) -> bool:
     active = [s.active_poll for s in m.segments if s.active_poll]
     print(f"  active polls: {len(active)} {active}")
     print(
-        f"  LLM calls: {result.report.llm_calls}; slide images: {copied} copied, {missing} missing"
+        f"  LLM calls: {result.report.llm_calls} in {seconds} s; "
+        f"slide images: {copied} copied, {missing} missing"
     )
     print(f"wrote {out_dir}/manifest.json and generation_report.json")
-    return True
+    return check_step(lesson_id, tables, deps.prep.poll_count)
+
+
+def check_step(lesson_id: str, tables, poll_count: int) -> bool:
+    """Stage 7 checks on the stored manifest, then the review sheet."""
+    from classpilot.contracts.manifest import load_manifest
+    from classpilot.prep.checks import manifest_check_problems
+    from classpilot.prep.review import render_review
+
+    out_dir = PREP_DIR / lesson_id
+    if not (out_dir / "manifest.json").is_file():
+        print(f"error: no manifest for {lesson_id!r}; run prep generate first")
+        return False
+    try:
+        manifest = load_manifest(out_dir / "manifest.json")
+    except ValueError as exc:
+        print(f"check: manifest does not validate: {exc}")
+        return False
+    report = json.loads((out_dir / "generation_report.json").read_text())
+    chunks = tables.lesson_chunks(lesson_id)
+    pages = {c.chunk_id: c.page_id for c in chunks}
+    problems = manifest_check_problems(manifest, report, pages, poll_count)
+    review = render_review(manifest, report, {c.chunk_id: c.text for c in chunks})
+    (out_dir / "review.md").write_text(review)
+    if problems:
+        print(f"check: {len(problems)} problem(s)")
+        for problem in problems:
+            print(f"  - {problem}")
+    else:
+        print(f"check: OK (manifest, statuses, {len(pages)} lesson chunks, show_slide, TTS lint)")
+    print(f"wrote {out_dir}/review.md")
+    return not problems
+
+
+def run_prep_check(args) -> int:
+    settings = prep_settings(args)
+    report = PREP_DIR / args.lesson / "generation_report.json"
+    poll_count = settings.prep.poll_count
+    if report.is_file():
+        poll_count = json.loads(report.read_text()).get("poll_count", poll_count)
+    return 0 if check_step(args.lesson, prep_tables(settings), poll_count) else 1
 
 
 def prep_tables(settings):
@@ -333,7 +383,11 @@ def main(argv: list[str] | None = None) -> None:
         "generate", help="generate scripts, polls, explanations and the manifest from the parse"
     )
     generate_cmd.add_argument("--lesson", required=True, help="lesson id")
-    for cmd in (parse_cmd, run_cmd_p, generate_cmd):
+    check_cmd = prep_sub.add_parser(
+        "check", help="check a generated manifest against the lesson chunks; write review.md"
+    )
+    check_cmd.add_argument("--lesson", required=True, help="lesson id")
+    for cmd in (parse_cmd, run_cmd_p, generate_cmd, check_cmd):
         cmd.add_argument("--backend", choices=["mock", "cortex"], help="overrides BACKEND")
     for cmd in (run_cmd_p, generate_cmd):
         cmd.add_argument("--poll-count", type=int, help="overrides prep.poll_count")
@@ -349,6 +403,8 @@ def main(argv: list[str] | None = None) -> None:
             raise SystemExit(run_prep_search(args))
         if args.prep_command == "generate":
             raise SystemExit(run_prep_generate(args))
+        if args.prep_command == "check":
+            raise SystemExit(run_prep_check(args))
         if not args.files and not args.ref:
             parser.error(f"prep {args.prep_command} needs at least one file")
         run = {"parse": run_prep_parse, "run": run_prep_run, "convert": run_prep_convert}

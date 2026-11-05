@@ -22,6 +22,7 @@ Generation reads only the stored parse (`PrepTables`), never the parser, so a ch
 `poll_count` or another generation parameter regenerates without re-parsing.
 """
 
+import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Literal
@@ -131,6 +132,9 @@ Outcome = Literal["pass", "structure", "guardian", "llm_error"]
 class Attempt:
     outcome: Outcome
     problems: list[str] = field(default_factory=list)
+    latency_ms: int = 0  # generator + structure check + Guardian
+    calls: int = 0  # LLM calls of this attempt (timed-out calls included)
+    guardian: dict | None = None  # the Guardian's own reply (claims, verdict, reason)
 
 
 @dataclass
@@ -138,7 +142,12 @@ class ItemReport:
     item: str  # "segments", "script <slide>", "placement", "poll <q> <seg>", "explanation ..."
     status: Status
     attempts: list[Attempt] = field(default_factory=list)
-    detail: str = ""  # fallback level or drop reason
+    detail: str = ""  # fallback level, drop reason, or the placement ranking
+    citations: list[str] = field(default_factory=list)  # of the kept output
+
+    @property
+    def kind(self) -> str:
+        return self.item.split()[0]
 
 
 @dataclass
@@ -150,6 +159,32 @@ class GenerationReport:
 
     def statuses(self, prefix: str) -> list[Status]:
         return [i.status for i in self.items if i.item.startswith(prefix)]
+
+    def summary(self) -> dict[str, dict]:
+        """Per item kind: statuses, retries, LLM calls, and latency (Stage 7 readings)."""
+        out: dict[str, dict] = {}
+        for item in self.items:
+            row = out.setdefault(
+                item.kind,
+                {
+                    "items": 0,
+                    "statuses": {},
+                    "retries": 0,
+                    "llm_errors": 0,
+                    "calls": 0,
+                    "latency_ms": 0,
+                    "max_item_latency_ms": 0,
+                },
+            )
+            latency = sum(a.latency_ms for a in item.attempts)
+            row["items"] += 1
+            row["statuses"][item.status] = row["statuses"].get(item.status, 0) + 1
+            row["retries"] += max(0, len(item.attempts) - 1)
+            row["llm_errors"] += sum(a.outcome == "llm_error" for a in item.attempts)
+            row["calls"] += sum(a.calls for a in item.attempts)
+            row["latency_ms"] += latency
+            row["max_item_latency_ms"] = max(row["max_item_latency_ms"], latency)
+        return out
 
 
 @dataclass
@@ -179,23 +214,29 @@ def format_feedback(problems: list[str]) -> str:
 
 
 def with_retries(
-    generate: Callable[[str], dict], check: Check, max_retries: int
+    generate: Callable[[str], dict],
+    check: Check,
+    max_retries: int,
+    call_count: Callable[[], int] = lambda: 0,
 ) -> tuple[object | None, Status | None, list[Attempt]]:
     """Up to 1 + max_retries attempts. Returns (output, ok | ok_after_retry, attempts);
     output and status are None when every attempt failed."""
     attempts: list[Attempt] = []
     feedback = ""
     for n in range(1 + max_retries):
+        start, calls = time.perf_counter(), call_count()
         try:
             raw = generate(feedback)
         except LLMError as exc:
-            attempts.append(Attempt("llm_error", [str(exc)]))
-            feedback = ""  # nothing the generator can fix
-            continue
-        output, attempt = check(raw)
+            output, attempt = None, Attempt("llm_error", [str(exc)])
+        else:
+            output, attempt = check(raw)
+        attempt.latency_ms = round((time.perf_counter() - start) * 1000)
+        attempt.calls = call_count() - calls
         attempts.append(attempt)
         if attempt.outcome == "pass":
             return output, ("ok" if n == 0 else "ok_after_retry"), attempts
+        # After an LLM error there is nothing the generator can fix.
         feedback = format_feedback(attempt.problems) if attempt.outcome != "llm_error" else ""
     return None, None, attempts
 
@@ -239,11 +280,13 @@ class Generator:
             return Attempt("llm_error", [f"Guardian: {exc}"])
         check = check_prep_guardian(raw, cited, **rule)
         if check.passed is None:
-            return Attempt("llm_error", check.problems)
-        return Attempt("pass" if check.passed else "guardian", check.problems)
+            return Attempt("llm_error", check.problems, guardian=raw)
+        return Attempt("pass" if check.passed else "guardian", check.problems, guardian=raw)
 
     def loop(self, generate, check):
-        return with_retries(generate, check, self.deps.prep.max_retries)
+        return with_retries(
+            generate, check, self.deps.prep.max_retries, call_count=lambda: self.llm.calls
+        )
 
     # ----- 1. segments -----
 
@@ -344,7 +387,7 @@ class Generator:
             text, level = self.fallback_script(s.page)
             self.report.items.append(ItemReport(item, "fallback", attempts, level))
             return text, "fallback"
-        self.report.items.append(ItemReport(item, status, attempts))
+        self.report.items.append(ItemReport(item, status, attempts, citations=out.citations))
         return out.script.strip(), status
 
     def fallback_script(self, page: ParsedPage) -> tuple[str, str]:
@@ -384,7 +427,8 @@ class Generator:
         if out is None:
             self.report.items.append(ItemReport("placement", "fallback", attempts, "deck order"))
             return ids
-        self.report.items.append(ItemReport("placement", status, attempts))
+        ranking = f"ranked: {', '.join(out.segment_ids)}; {out.reason.strip()}"
+        self.report.items.append(ItemReport("placement", status, attempts, ranking))
         return list(out.segment_ids)
 
     # ----- 4. polls and explanations -----
@@ -451,7 +495,10 @@ class Generator:
         for mis in sorted(out.misconceptions, key=lambda m: m.option):
             expl, expl_status, expl_attempts = self.explanation(out, mis)
             report = ItemReport(
-                f"explanation {qid} {mis.option}", expl_status or "dropped", expl_attempts
+                f"explanation {qid} {mis.option}",
+                expl_status or "dropped",
+                expl_attempts,
+                citations=list(expl.citations) if expl else [],
             )
             explained.append((mis.option, expl, expl_status, report))
             if expl is None:
@@ -464,7 +511,7 @@ class Generator:
             self.report.items.extend(r for *_, r in explained)
             return self.dropped_question(seg, [out]), {}, {}
 
-        self.report.items.append(ItemReport(item, status, attempts))
+        self.report.items.append(ItemReport(item, status, attempts, citations=out.citations))
         self.report.items.extend(r for *_, r in explained)
         known_wrong, new_mis, new_rem = {}, {}, {}
         by_option = {m.option: m for m in out.misconceptions}

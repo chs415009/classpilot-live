@@ -1,0 +1,105 @@
+{
+  "lesson_id": "lesson-dbt-medallion",
+  "params": {"poll_answer_seconds": 60, "min_responses": 5, "wrong_ratio_threshold": 0.60},
+  "slides": {
+    "dbt-medallion-p01": {"order": 1, "image_ref": "slides/dbt-medallion-p01.png", "status": "ok",
+      "script": "Today we look at the medallion architecture: three layers called Bronze, Silver, and Gold."},
+    "dbt-medallion-p02": {"order": 2, "image_ref": "slides/dbt-medallion-p02.png", "status": "ok",
+      "script": "Silver holds cleaned data, and Gold holds business-level tables such as daily aggregates."},
+    "dbt-medallion-p03": {"order": 3, "image_ref": "slides/dbt-medallion-p03.png", "status": "ok",
+      "script": "Bronze stores raw data exactly as it arrived from the source, including rows with errors."},
+    "dbt-medallion-p04": {"order": 4, "image_ref": "slides/dbt-medallion-p04.png", "status": "ok_after_retry",
+      "script": "Because Bronze is unchanged, we can replay and reprocess it when a cleaning rule changes."},
+    "dbt-medallion-p05": {"order": 5, "image_ref": "slides/dbt-medallion-p05.png", "status": "ok",
+      "script": "A dbt model is a select statement in a dot s q l file. The ref function points to another model."},
+    "dbt-medallion-p06": {"order": 6, "image_ref": "slides/dbt-medallion-p06.png", "status": "fallback",
+      "script": "Please look at the slide on screen."}
+  },
+  "segments": [
+    {
+      "segment_id": "seg-01",
+      "objective": "Explain the purpose of the Bronze, Silver and Gold layers",
+      "slides": ["dbt-medallion-p01", "dbt-medallion-p02"],
+      "questions": {},
+      "active_poll": null
+    },
+    {
+      "segment_id": "seg-02",
+      "objective": "Explain why the Bronze layer keeps raw data unchanged",
+      "slides": ["dbt-medallion-p03", "dbt-medallion-p04"],
+      "questions": {
+        "q-01": {
+          "text": "A source system sent some rows with wrong timestamps. What should happen to these rows in the Bronze layer?",
+          "options": {
+            "A": "Keep them exactly as they arrived",
+            "B": "Fix the timestamps before loading them into Bronze",
+            "C": "Delete the bad rows",
+            "D": "Move them directly to Gold"
+          },
+          "correct_option": "A",
+          "known_wrong": {"B": "M-01", "C": "M-02", "D": "M-03"},
+          "segment": "seg-02",
+          "status": "ok"
+        },
+        "q-02": {
+          "text": "Which layer is the best place to audit what a source really sent?",
+          "options": {"A": "Bronze", "B": "Silver", "C": "Gold", "D": "None of them"},
+          "correct_option": "A",
+          "known_wrong": {"B": "M-01", "C": "M-03", "D": "M-02"},
+          "segment": "seg-02",
+          "status": "dropped"
+        }
+      },
+      "active_poll": "q-01"
+    },
+    {
+      "segment_id": "seg-03",
+      "objective": "Build dbt models with ref() and add dbt tests",
+      "slides": ["dbt-medallion-p05", "dbt-medallion-p06"],
+      "questions": {
+        "q-03": {
+          "text": "Where do you declare a unique test for a dbt model?",
+          "options": {
+            "A": "In a SQL comment inside the model",
+            "B": "In the schema.yml file next to the model",
+            "C": "In the Airflow DAG",
+            "D": "In the Gold layer dashboard"
+          },
+          "correct_option": "B",
+          "known_wrong": {"A": "M-04", "C": "M-05", "D": "M-06"},
+          "segment": "seg-03",
+          "status": "ok"
+        }
+      },
+      "active_poll": "q-03"
+    }
+  ],
+  "misconceptions": {
+    "M-01": {"label": "Bronze is cleaned", "description": "Thinks Bronze should already hold cleaned data", "remediation": "R-01"},
+    "M-02": {"label": "Delete bad rows", "description": "Thinks bad rows should be thrown away instead of kept for reprocessing", "remediation": "R-02"},
+    "M-03": {"label": "Skip to Gold", "description": "Thinks raw rows can go straight to the business-level layer", "remediation": "R-03"},
+    "M-04": {"label": "Tests in model SQL", "description": "Thinks dbt tests are written inside the model SQL", "remediation": "R-04"},
+    "M-05": {"label": "Tests in the orchestrator", "description": "Thinks dbt tests are declared in the scheduler", "remediation": "R-05"},
+    "M-06": {"label": "Tests in the dashboard", "description": "Thinks data tests live in the reporting layer", "remediation": "R-06"}
+  },
+  "remediations": {
+    "R-01": {"type": "tts_explanation", "title": "Bronze is a raw copy, cleaning happens in Silver",
+      "text": "Bronze keeps raw data exactly as it arrived, including rows with errors. Errors found in Bronze are fixed or filtered in Silver, not in Bronze.",
+      "show_slide": "dbt-medallion-p03", "content_ref": null, "citations": ["chunk-01", "chunk-02"], "status": "ok"},
+    "R-02": {"type": "tts_explanation", "title": "Do not delete raw rows",
+      "text": "We keep raw data unchanged in Bronze so we can replay and reprocess it later when a cleaning rule changes. Deleted rows cannot be reprocessed.",
+      "show_slide": "dbt-medallion-p04", "content_ref": null, "citations": ["chunk-01"], "status": "ok_after_retry"},
+    "R-03": {"type": "tts_explanation", "title": "Gold is built from Silver",
+      "text": "The Gold layer holds business-level tables built from Silver. Raw rows first land in Bronze and are cleaned in Silver.",
+      "show_slide": "dbt-medallion-p02", "content_ref": null, "citations": ["chunk-03"], "status": "ok"},
+    "R-04": {"type": "tts_explanation", "title": "Where dbt tests live",
+      "text": "Generic tests such as unique and not null are declared in a schema dot y m l file next to the model, not inside the model SQL.",
+      "show_slide": "dbt-medallion-p06", "content_ref": null, "citations": ["chunk-05"], "status": "ok"},
+    "R-05": {"type": "tts_explanation", "title": "dbt declares its own tests",
+      "text": "dbt tests are declared in a schema dot y m l file next to the model, and running dbt test reports every row that fails.",
+      "show_slide": "dbt-medallion-p06", "content_ref": null, "citations": ["chunk-05"], "status": "ok"},
+    "R-06": {"type": "tts_explanation", "title": "Tests check data quality before dashboards",
+      "text": "dbt tests check data quality on the models themselves. They are declared in a schema dot y m l file next to the model.",
+      "show_slide": "dbt-medallion-p06", "content_ref": null, "citations": ["chunk-05"], "status": "fallback"}
+  }
+}

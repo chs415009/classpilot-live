@@ -32,6 +32,8 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# -rs: list skipped tests with the reason (the LibreOffice tests skip without Docker).
+addopts = "-rs"
 
 [tool.ruff]
 line-length = 100

@@ -204,3 +204,19 @@ is no longer updated)
 
 - 2026-11-05 [decision] User: re-chunk the Stage 5 live lessons in Stage 7 (first real
   v2 use), not now.
+
+## Stage 6: Generators and the prep-time Guardian (mock)
+
+- 2026-11-05 [decision] User agreed: one prep Guardian signature per item type (live
+  Guardian unchanged); Segmenter fallback = fixed 3-slide groups; dropped polls keep
+  their text but no misconceptions (validator relaxed, Q-13); a dropped poll moves to
+  the next segment in the PollPlacer's ranking; fallback sentence "Please look at the
+  slide on screen."
+- 2026-11-05 [change] Segmenter and PollPlacer cite no chunk ids (STAGES asked all
+  signatures to): they return structure only and no Guardian checks them.
+- 2026-11-05 [result] `prep run --backend mock` turns the fixture deck into a valid
+  manifest (38 mock calls: 3 segments, 6 scripts, 3 polls, 9 explanations); every
+  status, every script fallback level, and the poll drop path are covered by tests
+  (391 tests). No Snowflake use. Stage 7 estimate for a 14-slide deck: about 70 calls
+  if everything passes, up to about 140 with every retry.
+

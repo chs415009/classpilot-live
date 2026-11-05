@@ -216,6 +216,8 @@ approval before the next stage. Details are in `docs/v2/STAGES.md`.
   - local conversion: `python -m classpilot.cli prep convert <slides> --ref <reference>`
   - parse a lesson: `python -m classpilot.cli prep parse --lesson <id> <slides> --ref <ref>`
     (mock; `BACKEND=cortex` after approval); `prep search --lesson <id> "<query>"`
+  - generate a lesson: `python -m classpilot.cli prep generate --lesson <id> [--poll-count N]`
+    (from the stored parse); whole pipeline: `prep run --backend mock --lesson <id> <slides>`
   - SQL templates: `python scripts/run_sql.py sql/<file>.sql` (prints; `--execute` runs)
   - tests: `pytest`
   - lint / format: `ruff check .` and `ruff format --check .` (`ruff format .` to fix)

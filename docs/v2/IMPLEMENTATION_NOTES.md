@@ -269,6 +269,23 @@ Order:
 Each output goes through the Guardian (section 7.4). Generation uses retrieval over the
 lesson's chunks so citations exist for checking.
 
+Implemented in Stage 6 (`prep/generate.py`, signatures in `agents/prep_signatures.py`):
+- ScriptWriter, PollWriter, and ExplanationWriter cite chunk ids. Segmenter and
+  PollPlacer return structure (slide ids, a ranked list of segment ids), not text for
+  students, so they cite no chunks and no Guardian checks them; code checks their
+  structure and their fallbacks are fixed groups of `prep.fallback_segment_slides`
+  slides and deck order.
+- PollPlacer ranks every suitable segment, best first. Code takes them in that order
+  until `poll_count` polls are kept; a dropped poll moves on to the next ranked segment.
+- One ExplanationWriter call per misconception, so each remediation has its own status.
+  `show_slide` must be the slide of a cited slide chunk (reference pages do not count).
+- A slide without chunks skips the ScriptWriter and takes the script fallback.
+- Ids: `seg-NN`, `q-NN` (dropped polls included), `M-NN` / `R-NN` for kept polls, all
+  numbered per lesson. `image_ref` is `slides/<slide_id>.png`.
+- Outputs (`prep run` / `prep generate`): `outputs/prep/<lesson>/manifest.json`,
+  `generation_report.json` (every attempt of every item with its problems), and the
+  slide PNGs under `slides/`.
+
 ### Manifest: the team's structure **[team]**
 
 The manifest uses the team's existing structure. Every existing field name is kept.
@@ -341,7 +358,10 @@ Rules:
 - No `quality` summary field is added. The report counts the per-item `status` values.
 - A dropped poll stays in `questions` with `status: "dropped"`. `active_poll` points to
   another question of that segment or is `null`. **[team]** (Sai: the front end reads
-  only `active_poll`.)
+  only `active_poll`.) A dropped question keeps the text and options of its last poll
+  that passed the structure checks (empty when none did), has `known_wrong: {}`, and
+  its misconceptions and remediations are not written. The validator does not check
+  options or `known_wrong` coverage for dropped questions (Stage 6, Q-13).
 
 ---
 
@@ -423,6 +443,11 @@ Stage 2 draft (field names in `src/classpilot/contracts/trace.py`, examples in
   `ScriptWriter`, `PollPlacer`, `PollWriter` (with misconceptions),
   `ExplanationWriter` (remediation text + `show_slide`) (prep). Prep reuses the same
   `Guardian` module.
+- Stage 6 change: the prep Guardian has one signature per item type
+  (`ScriptGuardian`, `PollGuardian`, `ExplanationGuardian`), since each type has its
+  own rule and the poll check needs a per-wrong-option output. The live `Guardian`
+  signature is unchanged (Stage 3 parity), and the pass/fail rule is code in both
+  (`rules/question.py`, `rules/prep.py`).
 
 ### 7.2 LM connection (test first, Stage 1)
 - **Route A:** `dspy.LM("snowflake/<model>")` via LiteLLM → Cortex REST API.
@@ -480,6 +505,12 @@ Stage 2 draft (field names in `src/classpilot/contracts/trace.py`, examples in
 - Implement the loop in code (not left to the LLM) so the retry count and fallback stay
   deterministic. `dspy.Refine` is an option if it fits; **[verify]** current API.
 - Record every item's outcome as its `status`; the report counts the statuses.
+- Stage 6: an LLM timeout or error, or a Guardian reply that does not match its schema,
+  fails the attempt like a Guardian fail; its retry gets no feedback (there is nothing
+  for the generator to fix). Structure problems are fed back without a Guardian call.
+  A script with no claims passes (transitions only); polls and explanations need at
+  least one claim. Prep LLM calls use their own model, timeout (60 s), and token
+  limit (`prep` in `config/settings.yaml`), with `num_retries=0`.
 
 ### 7.5 Baseline comparison (main technical result)
 - Hand-written prompts (Stage 4 numbers) vs compiled modules: escalation recall,
@@ -724,4 +755,19 @@ Stage 5 (parse in Snowflake, chunks, search) decisions:
 - 2026-11-05 Vision reports `has_visuals`; code drops the description chunk when it is
   false, and key concepts are never chunked (user chose both). The `unsure` → vision
   routing stays, so real diagrams are not missed.
+
+Stage 6 (generators and prep Guardian, mock) decisions:
+- 2026-11-05 Prep Guardian: one signature per item type; the live Guardian is unchanged
+  (user agreed; a change from 7.1 "the same Guardian module").
+- 2026-11-05 Segmenter fallback after the retry: fixed groups of 3 slides
+  (`prep.fallback_segment_slides`), objective from the first slide title; recorded only
+  in the generation report, since segments have no status (user agreed).
+- 2026-11-05 Dropped polls keep the text of their last structurally valid attempt,
+  `known_wrong: {}`, and no misconceptions or remediations in the manifest; the
+  validator skips option checks for dropped questions (user agreed; Q-13).
+- 2026-11-05 "Next segment end" = the next segment in the PollPlacer's ranking; deck
+  order when the placer fails (user agreed).
+- 2026-11-05 Fixed fallback sentence: "Please look at the slide on screen." (user agreed).
+- 2026-11-05 Segmenter and PollPlacer cite no chunk ids (structure only, no Guardian).
+- 2026-11-05 One TTS rule table (`prep/tts.py`) for the script lint and the fallback text.
 

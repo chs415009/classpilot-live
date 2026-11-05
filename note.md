@@ -319,3 +319,6 @@ patterns from `main`.
   page, so haiku stays the proposal. (4) LLM calls for live Q&A and generation cost about
   0.0002-0.001 credits each; the $400 trial budget is not a constraint at this scale.
   Warehouse minutes are.
+- 2026-11-04 [decision] User confirmed: (a) Route B for all LLM calls on this account
+  (DSPy custom engine over `AI_COMPLETE`); (b) vision `claude-haiku-4-5`, live Q&A text
+  model `mistral-large3` for now.

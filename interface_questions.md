@@ -13,7 +13,7 @@ Each item records:
 3. **Suggested direction**: a proposal to discuss, not a decision.
 
 Status: `open` (not discussed yet), `agreed` (decision written under the item),
-`dropped`. Newest items at the bottom. Details and history stay in `note.md`.
+`dropped`. Newest items at the bottom. Details and history stay in `docs/agent/note.md`.
 
 ---
 

@@ -84,7 +84,7 @@ Decision log (text) + traces + poll evidence + manifest ──> report (mine)
 - The code is account-portable: account, region, model names, and object names come
   from `.env` / `config/settings.yaml`. SQL setup scripts are parameterized and can be
   rerun on a new account. Account-dependent findings (available models, cross-region
-  setting, costs) are recorded per account in `note.md`.
+  setting, costs) are recorded per account in `docs/agent/note.md`.
 
 ---
 
@@ -355,7 +355,7 @@ report needs (section 8).
 - **Result (Stage 1, current account):** Route A is blocked (REST returns 003001 "account
   not allowed"); **Route B is used.** Timeouts use `STATEMENT_TIMEOUT_IN_SECONDS` (the
   connector's per-query `timeout=` did not cancel `AI_COMPLETE`). Live Q&A sets
-  `num_retries=0`. Details in `note.md`, Stage 1.
+  `num_retries=0`. Details in `docs/agent/note.md`, Stage 1.
 - Check: models available on REST from the current account; whether DSPy's JSON/Chat
   adapter output is reliable with mistral-large3; malformed output still maps to
   `llm_error`.
@@ -477,7 +477,7 @@ stage runs.
   LLM-written reteach"; add prep-time generation + checks; account portability; public
   repo rules), scope (prep service and live endpoints now in scope), folder layout,
   stages.
-- `note.md`: log this direction change as a `change` entry with date.
+- `docs/agent/note.md`: log this direction change as a `change` entry with date.
 - `interface_questions.md` new items:
   - manifest: the team structure with the `new` / `changed` fields (section 5); dropped
     polls stay with `status: "dropped"` and the front end reads only `active_poll`

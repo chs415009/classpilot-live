@@ -34,9 +34,9 @@ runs.
   user, key path) live only in `.env`. Committed docs, SQL, and config use
   placeholders. `materials/` and real course content are never committed.
 - Code is account-portable: account, region, model and object names come from `.env`
-  or `config/settings.yaml`. Account-dependent findings go into note.md per account.
+  or `config/settings.yaml`. Account-dependent findings go into docs/agent/note.md per account.
 - `[verify]` items are checked in current docs or with an approved probe before code
-  relies on them. Findings go to note.md.
+  relies on them. Findings go to docs/agent/note.md.
 - `[team]` items go to interface_questions.md and use a clearly marked draft until
   agreed.
 - Cost estimates are rough until Stage 1 replaces them with real readings.
@@ -68,15 +68,15 @@ Tasks:
 - Add `ruff` as a dev dependency with its config in `pyproject.toml`. Format and fix
   the carried code in its own commit (no logic changes).
 - Move account-specific values out of committed files:
-  - account locator, region names, login user, and key path in `note.md`, the v1
+  - account locator, region names, login user, and key path in `docs/agent/note.md`, the v1
     archive, `docs/v2/`, `README.md`, `.env.example`, `config/settings.yaml` comments,
     and `sql/` → placeholders
   - SQL object names become variables set at the top of each script, so the scripts
     can be rerun on a new account (deferred to Stage 5: the docs do not confirm
-    `IDENTIFIER($var)` for every statement used; see note.md 2026-11-04)
+    `IDENTIFIER($var)` for every statement used; see docs/agent/note.md 2026-11-04)
 - Archive v1: `docs/v1/CLAUDE_v1.md`, `ARCHITECTURE_v1.html`, `DEMO_OVERVIEW_v1.html`,
   and `docs/v1/results/` (Stage 4 Cortex eval JSONs, mode 2 and mode 3).
-- `note.md`: copy (redacted) and add a dated v2 `change` entry.
+- `docs/agent/note.md`: copy (redacted) and add a dated v2 `change` entry.
 - `interface_questions.md`: add the items in IMPLEMENTATION_NOTES section 12. Archive
   the v1 items (Q-01 to Q-12) in `docs/v1/`; they are not carried into v2.
 - New `CLAUDE.md`: goal, architecture, hard rules (the project rules, the replacement
@@ -96,7 +96,7 @@ Automated checks:
 Human review:
 - The `ruff` dependency.
 - Repo visibility (private for now) and the full `git ls-files` list before the push.
-- New `CLAUDE.md`, the note.md entry, and the interface_questions changes.
+- New `CLAUDE.md`, the docs/agent/note.md entry, and the interface_questions changes.
 - The placeholder replacements (is anything account-specific left?).
 Live Snowflake usage: none
 Done when: the new repo has a green v1 under `classpilot`, ruff passes, the secret
@@ -112,7 +112,7 @@ before code is built on them.
 Depends on: Stage 0; approval to add `dspy` (and `PyJWT` if Route A needs it; and
 `pymupdf` early if the vision probe needs a text layer).
 Tasks:
-- Docs check (no credits). Record each finding with a link and date in note.md:
+- Docs check (no credits). Record each finding with a link and date in docs/agent/note.md:
   - current `dspy.LM` and `dspy.BaseLM` API
   - the LiteLLM `snowflake/` provider and its auth (JWT / PAT)
   - Cortex REST models reachable from the current account
@@ -139,7 +139,7 @@ Tasks:
 - Record the decisions: route, the cheapest passing model per role (live Q&A,
   generation, vision).
 - Write account-dependent findings (models, cross-region setting, costs) under a
-  per-account heading in note.md.
+  per-account heading in docs/agent/note.md.
 Out of scope for this stage:
 - Product code. Probes live in `scripts/probes/` and are not imported by `src/`.
 - Compiling, generation, and chunking.
@@ -158,7 +158,7 @@ models, error probes), 1 parse call on a few pages, 2 ACCOUNT_USAGE queries, and
 minutes of XS warehouse. Expected under $3 (rough). Approval limit: 1.5× = about 38
 calls.
 Done when: every `[verify]` item in IMPLEMENTATION_NOTES 4.2, 4.3, 7.2, 7.4, and 9 has a
-finding in note.md (or "still open" with a reason), the route and models are chosen,
+finding in docs/agent/note.md (or "still open" with a reason), the route and models are chosen,
 and a cost per call is known.
 Exit gate: stop, report results of the automated checks, list what I need to review,
 and wait for my approval before starting the next stage.
@@ -596,7 +596,7 @@ Live Snowflake usage: the largest stage. Roughly:
 That is about 350–620 LLM calls in total. Expected $10–40 plus warehouse (rough).
 Approval limit: 1.5× the estimate confirmed at the stage start (about 930 at the upper
 estimate).
-Done when: the comparison table is in note.md (escalation recall, let-through, Guardian
+Done when: the comparison table is in docs/agent/note.md (escalation recall, let-through, Guardian
 catch rate and false fails, calls and latency per question), labeled exploratory, and
 you have decided on the compiled programs.
 Exit gate: stop, report results of the automated checks, list what I need to review,

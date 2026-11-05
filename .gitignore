@@ -1,5 +1,7 @@
 # Secrets and local config
 .env
+CLAUDE.local.md
+.claude/settings.local.json
 *.p8
 *.pem
 *.pub

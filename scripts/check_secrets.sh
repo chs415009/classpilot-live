@@ -43,7 +43,7 @@ report() {  # $1 = heading; stdin = findings
 # 1. Files that must never be in the repo.
 report "forbidden files present (tracked or not ignored)" < <(
   git ls-files -co --exclude-standard \
-    | $GREP -E '(^|/)\.env$|^outputs/|^materials/|^\.venv/|\.(p8|pem|pub)$|(^|/)rsa_key')
+    | $GREP -E '(^|/)\.env$|^outputs/|^materials/|^\.venv/|\.(p8|pem|pub)$|(^|/)rsa_key|(^|/)CLAUDE\.local\.md$|settings\.local\.json$')
 
 # 2. Content of every file in the work tree that git would see.
 report "secrets or account-specific values in files" < <(

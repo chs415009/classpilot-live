@@ -24,7 +24,8 @@ exploratory (small, synthetic data).
 | `docs/v2/IMPLEMENTATION_NOTES.md` | How: components, manifest, trace records, API, DSPy plan, decisions log |
 | `docs/v2/STAGES.md` | Stage plan with checks and exit gates |
 | `docs/v2/ANALYSIS.md` | v1 reuse map and repository decision |
-| `note.md` | Dev log: changes, findings, results per stage |
+| `docs/agent/note.md` | Agent part dev log: changes, findings, results per stage |
+| `CLAUDE.md`, `.claude/rules/` | Instructions for Claude Code: shared rules, per-part rules |
 | `interface_questions.md` | Interface items to agree with the team |
 | `docs/v1/` | v1 archive: design, dev log, interface items, diagrams, Stage 4 Cortex results |
 

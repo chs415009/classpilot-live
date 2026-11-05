@@ -1,4 +1,4 @@
-# Development notes (v2)
+# Development notes — agent part (v2)
 
 Log of changes, decisions, findings, and open questions per stage. Newest entries at the
 bottom of each stage. Stage plan: `docs/v2/STAGES.md`. The v1 log (Stages 1-4, including
@@ -331,4 +331,13 @@ patterns from `main`.
   (AGPL-3.0). PyMuPDF stays only for the Stage 1 probe scripts and is removed from the
   dependencies in Stage 4. Stage 4 must reproduce the image-area signal with pypdfium2
   page objects.
+- 2026-11-04 [change] Repo will be shared with teammates (own branches, merged into `main`
+  by pull request; Han-Sheng uses `main` directly early on). Split the instructions:
+  root `CLAUDE.md` = team-shared rules and folder ownership; `.claude/rules/agent.md` =
+  agent-part rules (path-scoped); `CLAUDE.local.md` = personal preferences (gitignored).
+  This log moved from `note.md` to `docs/agent/note.md`. Per the Claude Code memory docs:
+  project CLAUDE.md is "shared with team members via source control", CLAUDE.local.md is
+  "only you (current project)" and should be gitignored, and `.claude/rules/` files with
+  `paths:` load when Claude reads or edits a matching file.
+  https://code.claude.com/docs/en/memory
 

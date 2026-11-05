@@ -167,3 +167,41 @@ def test_write_run_appends(tmp_path, deps, make_question):
         write_run(output, trace_path, log_path)
     assert len(trace_path.read_text().splitlines()) == sum(len(o.records) for o in outputs)
     assert len(log_path.read_text().splitlines()) == 2
+
+
+# ---------- trace consistency (Stage 3) ----------
+
+CONSISTENCY_QUESTIONS = [
+    REF,
+    KAFKA,
+    "Why do we keep raw data in Bronze if it has errors?",
+    "What time is the midterm exam next week?",
+    "How does dbt handle snapshots for slowly changing dimensions?",
+]
+
+
+@pytest.mark.parametrize("text", CONSISTENCY_QUESTIONS)
+def test_trace_counts_agree(deps, make_question, text):
+    details: dict = {}
+    output = run_question(make_question(text), deps, details)
+    calls = [r for r in output.records if r.record_type == "llm_call"]
+    nodes = output.of_type(NodeRecord)
+
+    assert output.run.llm_call_count == len(calls)
+    for node in nodes:
+        assert node.llm_call_count == sum(c.node_name == node.node_name for c in calls)
+
+    retrieval = [r for r in output.records if r.record_type == "retrieval"]
+    retrieved = deps.retriever.search(
+        text, deps.settings.question.retrieval_top_k, "lesson-dbt-medallion"
+    )
+    ran_retrieval = any(n.node_name == "retrieval" and n.status != "skip" for n in nodes)
+    expected = [(c.chunk_id, c.score) for c in retrieved] if ran_retrieval else []
+    assert [(r.chunk_id, r.similarity_score) for r in retrieval] == expected
+    citations = set((details.get("responder") or {}).get("citations") or [])
+    assert {r.chunk_id for r in retrieval if r.cited} == citations & {c for c, _ in expected}
+
+    claims = output.of_type(ClaimRecord)
+    guardian_claims = (details.get("guardian") or {}).get("claims") or []
+    assert [c.supporting_chunk_id for c in claims] == [g["chunk_id"] for g in guardian_claims]
+    assert [c.claim_seq for c in claims] == list(range(1, len(guardian_claims) + 1))

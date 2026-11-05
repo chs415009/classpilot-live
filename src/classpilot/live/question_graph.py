@@ -303,6 +303,7 @@ def question_records(
             started_at=started_at,
             ended_at=ended_at,
             latency_ms=total_ms,
+            llm_call_count=state["llm_calls"],
             confidence=decision.confidence,
             backend=settings.backend,
         )

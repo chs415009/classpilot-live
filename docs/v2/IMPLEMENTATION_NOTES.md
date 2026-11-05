@@ -326,7 +326,7 @@ trace carries enough raw records for these facts (Yaksha's dbt derives the rest)
 
 | Fact | Grain | What my trace must provide |
 |---|---|---|
-| `FACT_PIPELINE_RUN` | one live decision | run id, session id, path (poll / question), segment id, misconception / remediation id (poll), final action, escalation reason, deciding node, start/end time, confidence |
+| `FACT_PIPELINE_RUN` | one live decision | run id, session id, path (poll / question), segment id, misconception / remediation id (poll), final action, escalation reason, deciding node, start/end time, LLM call count, confidence |
 | `FACT_NODE_EXECUTION` | one node per run | node sequence, node name, status (pass / fail / block / skip), latency, LLM call count |
 | `FACT_LLM_CALL` | one LLM call | call id, node, model, prompt version, latency, retry count, error count |
 | `FACT_RETRIEVAL` | one retrieved chunk | rank, chunk id, similarity score (cosine), cited or not, query hash |

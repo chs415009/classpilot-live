@@ -55,6 +55,7 @@ class RunRecord(_Record):
     started_at: str
     ended_at: str
     latency_ms: int
+    llm_call_count: int  # counted by the graph; equals the run's llm_call records
     confidence: float | None
     backend: Backend
 

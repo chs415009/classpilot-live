@@ -154,7 +154,7 @@ claim | poll_evidence`; Q-21). Two examples:
  "misconception_id": null, "remediation_id": null, "final_action": "answer",
  "escalation_reason": null, "deciding_node": "validator",
  "started_at": "2026-10-22T18:31:05.120Z", "ended_at": "2026-10-22T18:31:09.480Z",
- "latency_ms": 4360, "confidence": 0.84, "backend": "cortex"}
+ "latency_ms": 4360, "llm_call_count": 3, "confidence": 0.84, "backend": "cortex"}
 ```
 ```json
 {"schema_version": "v2-draft", "run_id": "dec-5e6f7a8b", "session_id": "session-001",

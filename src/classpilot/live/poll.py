@@ -100,6 +100,7 @@ def run_poll(evidence: PollEvidence, manifest: Manifest, backend: str) -> RunOut
             started_at=started_at,
             ended_at=utc_now_ms(),
             latency_ms=elapsed_ms(start),
+            llm_call_count=0,
             confidence=None,
             backend=backend,
         )

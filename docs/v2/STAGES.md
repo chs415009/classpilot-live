@@ -248,7 +248,7 @@ Tasks:
 - Fill the trace records with real values:
   - LLM call: model, prompt version, latency, retry and error counts
   - retrieval: rank, chunk id, cosine score, cited or not, query hash
-  - claims: sequence, hash, supporting chunk id or -1, supported or not
+  - claims: sequence, hash, supporting chunk id or null (decided in Stage 2), supported or not
 - After the live runs, suspend the v1 search service (SQL shown first).
 Out of scope for this stage:
 - Compiling, the expanded eval, and the generators.

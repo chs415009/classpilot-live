@@ -52,6 +52,20 @@ python -m classpilot.cli guardian-eval                 # Guardian-only cases
 scripts/check_secrets.sh --history                     # before every push
 ```
 
+## Local conversion (slides and references)
+
+Nothing is installed on the host besides Python and Docker: PPTX → PDF runs in a
+LibreOffice Docker image. Without the image, PDF slides and references still convert,
+and the two LibreOffice tests are skipped.
+
+```bash
+scripts/libreoffice/build.sh                           # once: builds classpilot-libreoffice:1
+python -m classpilot.cli prep convert deck.pptx --ref reading.pdf --ref notes.docx
+```
+
+Output goes to `outputs/convert/<file_id[:16]>/`: `convert.json` (page ids, text, notes,
+image-page flag) and one PNG per page.
+
 ## Snowflake (optional, Cortex backend)
 
 Account-specific values go only into `.env` (copy `.env.example`); never commit them.

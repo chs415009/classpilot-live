@@ -88,3 +88,22 @@ def make_cortex_lm(settings: Settings, connection=None) -> dspy.LM:
         connection = shared_connection()
     engine = CortexCompleteEngine(connection, settings.llm.timeout_seconds)
     return dspy.LM(settings.llm.model, engine=engine, cache=False, num_retries=0)
+
+
+def make_prep_lm(settings: Settings, connection=None) -> dspy.LM:
+    """LM for prep generation: its own model, timeout, and token limit (`prep` settings).
+
+    Also `num_retries=0`: the prep retry loop is our own code (one retry with the
+    Guardian's feedback), so a transport retry would only add calls.
+    """
+    model = settings.prep.model or settings.llm.model
+    if not model:
+        raise ValueError("Set prep.model or llm.model in config/settings.yaml for BACKEND=cortex.")
+    if connection is None:
+        from classpilot.adapters.snowflake import shared_connection
+
+        connection = shared_connection()
+    engine = CortexCompleteEngine(
+        connection, settings.prep.llm_timeout_seconds, max_tokens=settings.prep.max_tokens
+    )
+    return dspy.LM(model, engine=engine, cache=False, num_retries=0)

@@ -34,3 +34,17 @@ parse:
     unsure_image_area: 0.02  # -> unsure (unsure pages go to vision)
     unsure_drawing_area: 0.10
     min_text_chars: 10
+  # Snowflake step (prep parse, BACKEND=cortex)
+  vision_model: claude-haiku-4-5
+  vision_max_tokens: 800
+  vision_timeout_seconds: 60
+  parse_timeout_seconds: 300
+  chunk_max_chars: 1500      # Cortex Search: <= 512 tokens per chunk (default embedding model)
+
+objects:
+  # Parse-layer Snowflake objects (sql/04, sql/05). Role, warehouse, database, schema: .env
+  raw_stage: RAW_MATERIALS
+  raw_files: RAW_FILES
+  parsed_pages: PARSED_PAGES
+  chunks: LESSON_CHUNKS_V2
+  search_service: LESSON_SEARCH_V2

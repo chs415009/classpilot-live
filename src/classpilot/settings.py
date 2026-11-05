@@ -49,6 +49,24 @@ class ParseSettings(BaseModel):
     alignment_min_overlap: float = 0.6
     alignment_min_words: int = 3  # slides with fewer words are not compared
     image_page: ImagePageSettings = ImagePageSettings()
+    # Snowflake step (Stage 5): vision for image/unsure pages, AI_PARSE_DOCUMENT for
+    # references. Timeouts are STATEMENT_TIMEOUT_IN_SECONDS (server-side cancel).
+    vision_model: str = "claude-haiku-4-5"
+    vision_max_tokens: int = 800
+    vision_timeout_seconds: int = 60
+    parse_timeout_seconds: int = 300
+    # Cortex Search: at most 512 tokens per chunk (default embedding model), ~4 chars each.
+    chunk_max_chars: int = 1500
+
+
+class ObjectNames(BaseModel):
+    # Snowflake object names of the parse layer (IMPLEMENTATION_NOTES 4.4, Q-17).
+    # Role, warehouse, database, and schema come from .env.
+    raw_stage: str = "RAW_MATERIALS"
+    raw_files: str = "RAW_FILES"
+    parsed_pages: str = "PARSED_PAGES"
+    chunks: str = "LESSON_CHUNKS_V2"
+    search_service: str = "LESSON_SEARCH_V2"
 
 
 class Settings(BaseModel):
@@ -57,6 +75,7 @@ class Settings(BaseModel):
     question: QuestionSettings = QuestionSettings()
     llm: LLMSettings = LLMSettings()
     parse: ParseSettings = ParseSettings()
+    objects: ObjectNames = ObjectNames()
 
 
 def _deep_merge(base: dict, extra: dict) -> dict:

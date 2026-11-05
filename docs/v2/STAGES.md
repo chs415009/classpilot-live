@@ -574,6 +574,22 @@ Tasks:
 - Save programs to `compiled/*.json` with an id. Load them at runtime behind a setting.
   The id is written as `prompt_version` in the LLM-call records.
 - Measure latency after compiling.
+- Prep fixes carried from Stage 7 (docs/agent/note.md, Stage 7):
+  - ExplanationWriter: the ScriptWriter rule (reword chunk content, use only the
+    chunks' examples, nothing of its own, no claims about later lessons).
+  - One rule for "this option is wrong" in PollGuardian and ExplanationGuardian (a
+    poll passed because a complete list in a chunk excludes an option; its explanation
+    then failed for saying exactly that).
+  - Guardian false passes on prep items: Stage 7 passed a script with claims the
+    chunks lack (`l1-slides-p06`) and failed the same claims on the next slide. Label
+    prep cases from the Stage 7 runs (`outputs/prep/info6205-l1*/generation_report.json`)
+    among the Guardian cases, measure, then decide between instruction changes,
+    compiling, or another model for the prep Guardian.
+  - Malformed replies (2 in Stage 7: an empty PollWriter reply, an unparsable claims
+    list): measure their rate; keep the safe path.
+  - Then one live prep run on the Stage 7 deck to confirm (about 80-100 calls).
+  - Cases built from `materials/` are real course content: keep them in a gitignored
+    file unless the content may go public.
 Out of scope for this stage:
 - Joint compile and MIPRO (Stage 11, only if there is time).
 - Compiling the generators (only if time is left here; ask first).
@@ -597,9 +613,11 @@ Live Snowflake usage: the largest stage. Roughly:
 - compiled dev run: about 60 calls
 - Guardian eval: about 2 × 40 calls
 
-That is about 350–620 LLM calls in total. Expected $10–40 plus warehouse (rough).
-Approval limit: 1.5× the estimate confirmed at the stage start (about 930 at the upper
-estimate).
+- prep confirmation run (Stage 7 fixes): about 80–100 calls
+
+That is about 430–720 LLM calls in total. Expected $10–40 plus warehouse (rough).
+Approval limit: 1.5× the estimate confirmed at the stage start (about 1,080 at the
+upper estimate).
 Done when: the comparison table is in docs/agent/note.md (escalation recall, let-through, Guardian
 catch rate and false fails, calls and latency per question), labeled exploratory, and
 you have decided on the compiled programs.

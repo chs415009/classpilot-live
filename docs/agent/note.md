@@ -257,4 +257,16 @@ is no longer updated)
 - 2026-11-05 [decision] User: generated examples and explanations of the writer's own
   stay out (only content the chunks contain), for quality and a small scope; an
   `illustration` item type is a possible Stage 9 topic if scripts stay too dry.
-
+- 2026-11-05 [result] Run 2 (after fixes A-H): 82 calls, 284 s (158 in both runs, of
+  200 approved); 7 segments; scripts ok 3, ok_after_retry 6, fallback 5; 4 of 5 polls
+  passed their own checks, but each had an explanation fail twice, so all 5 were
+  dropped and no active poll remains. `prep check` passed; search service suspended.
+- 2026-11-05 [finding] Run 2 causes: ExplanationWriter adds content of its own (fix D
+  was applied to the ScriptWriter only); PollGuardian accepts "not in the complete list"
+  as showing an option wrong, ExplanationGuardian rejects the same statement; the
+  script Guardian passed invented claims on one slide (p06) and failed the same claims
+  on the next (p07), so mistral-large3 as prep Guardian is not consistent; 2 malformed
+  replies (safe path). Scripts now use the reading's own examples (car analogy).
+- 2026-11-05 [decision] User: close Stage 7 without a third run; the fixes go to Stage 9
+  (STAGES.md, Stage 9 tasks), where labeled prep Guardian cases decide between
+  instruction changes, compiling, or another model.

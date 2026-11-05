@@ -771,3 +771,12 @@ Stage 6 (generators and prep Guardian, mock) decisions:
 - 2026-11-05 Segmenter and PollPlacer cite no chunk ids (structure only, no Guardian).
 - 2026-11-05 One TTS rule table (`prep/tts.py`) for the script lint and the fallback text.
 
+Stage 7 (live prep run) decisions:
+- 2026-11-05 Generation on `mistral-large3`; two runs on the Stage 5 deck (158 calls).
+  Fixes after run 1: the Guardian's wrong options are matched by key; writers use only
+  the chunks' content and examples (no examples of their own, user decision); script
+  retrieval adds reading chunks; the slide-text fallback drops the deck's footer, page
+  numbers, bullet-only lines, and URLs; placement and polls leave out course logistics.
+- 2026-11-05 Stage 7 closed with 0 active polls (every poll lost an explanation). The
+  explanation fixes, one wrong-option rule for both Guardians, and measuring the prep
+  Guardian on labeled cases move to Stage 9 (user decision).

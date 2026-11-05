@@ -23,7 +23,7 @@ are exploratory (small, synthetic data).
 | Trace records (JSONL) and decision log for every live decision | Stage 2 | — |
 | Local conversion: PPTX/PDF/DOCX → page text, notes, PNGs, image-page flag | Stage 4 | local + Docker |
 | Parse layer: vision for image pages, AI_PARSE_DOCUMENT for references, chunks, Cortex Search | Stage 5 | mock, Cortex |
-| Generators: segments, scripts, polls, explanations, each checked by the prep Guardian, retried once, then a fallback; team manifest | Stage 6 | mock (Cortex in Stage 7) |
+| Generators: segments, scripts, polls, explanations, each checked by the prep Guardian, retried once, then a fallback; team manifest | Stage 6-7 | mock, Cortex (live: scripts work; polls do not pass their checks yet, Stage 9) |
 
 Not yet: the HTTP service (Stage 8), compiled DSPy programs (Stage 9), the post-class
 report (Stage 10).
@@ -144,6 +144,13 @@ python scripts/search_service.py status                         # also: resume |
 
 Suspend the search service when it is not in use. Cost readings:
 `sql/probes/stage5_cost_reading.sql` (ACCOUNT_USAGE views, which lag behind real time).
+
+Read-only checks with the agent's connection (only SHOW, DESC, SELECT run; output stays
+in the terminal):
+
+```bash
+python scripts/probes/readonly_sql.py sql/probes/stage7_account_inventory.sql
+```
 
 All Cortex runs use Snowflake credits; this is a shared account, so ask before running
 them.

@@ -222,7 +222,7 @@ is no longer updated)
 - 2026-11-05 [change] User: README is updated in every stage (features, setup and
   deployment steps, commands run again).
 
-## Stage 7: Live prep run on one deck
+## Stage 7: Live prep run on one deck — accepted 2026-11-05
 
 - 2026-11-05 [decision] User: generation model `mistral-large3` (prep.model null), up to
   200 LLM calls (limit 300), at most 2 runs, poll_count 5. Leftover data (v1 table and

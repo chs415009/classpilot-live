@@ -47,7 +47,7 @@ pytest
 ruff check . && ruff format --check .
 python -m classpilot.cli run-all                       # all scenarios, mock
 python -m classpilot.cli run scenarios/02_question_in_scope.json
-python -m classpilot.cli eval --mode 3                 # labeled eval set
+python -m classpilot.cli eval                          # labeled eval set
 python -m classpilot.cli guardian-eval                 # Guardian-only cases
 scripts/check_secrets.sh --history                     # before every push
 ```

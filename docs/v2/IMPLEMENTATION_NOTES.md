@@ -230,6 +230,8 @@ Fields marked `new` are added; `changed` means same field, new meaning.
              "wrong_ratio_threshold": 0.60},                       // new
   "slides": {                                                      // new
     "deck1-p01": {"order": 1, "image_ref": "slides/deck1-p01.png",
+                  "script": "...", "status": "ok"},
+    "deck1-p02": {"order": 2, "image_ref": "slides/deck1-p02.png",
                   "script": "...", "status": "ok"}
   },
   "segments": [{
@@ -249,7 +251,9 @@ Fields marked `new` are added; `changed` means same field, new meaning.
     "active_poll": "q-01"
   }],
   "misconceptions": {
-    "M1": {"label": "...", "description": "...", "remediation": "R-01"}
+    "M1": {"label": "...", "description": "...", "remediation": "R-01"},
+    "M2": {"label": "...", "description": "...", "remediation": "R-02"},
+    "M3": {"label": "...", "description": "...", "remediation": "R-03"}
   },
   "remediations": {
     "R-01": {
@@ -260,10 +264,19 @@ Fields marked `new` are added; `changed` means same field, new meaning.
       "content_ref": null,                                         // changed
       "citations": ["deck1-p02-c1"],                               // changed: chunk ids
       "status": "ok_after_retry"                                   // new
-    }
+    },
+    "R-02": {"type": "tts_explanation", "title": "...", "text": "...",
+             "show_slide": "deck1-p01", "content_ref": null,
+             "citations": ["deck1-p01-c1"], "status": "ok"},
+    "R-03": {"type": "tts_explanation", "title": "...", "text": "...",
+             "show_slide": "deck1-p02", "content_ref": null,
+             "citations": ["deck1-p02-c2"], "status": "fallback"}
   }
 }
 ```
+
+Model and validation: `src/classpilot/contracts/manifest.py` (draft); fixture:
+`content/manifest.json`. A test checks that the example above validates.
 
 Rules:
 - Slide ids are system-generated (`<source>-p<NN>`).
@@ -316,7 +329,7 @@ trace carries enough raw records for these facts (Yaksha's dbt derives the rest)
 | `FACT_NODE_EXECUTION` | one node per run | node sequence, node name, status (pass / fail / block / skip), latency, LLM call count |
 | `FACT_LLM_CALL` | one LLM call | call id, node, model, prompt version, latency, retry count, error count |
 | `FACT_RETRIEVAL` | one retrieved chunk | rank, chunk id, similarity score (cosine), cited or not, query hash |
-| `FACT_CLAIM_CHECK` | one Guardian claim | claim sequence, claim hash, supporting chunk id (or -1), supported or not |
+| `FACT_CLAIM_CHECK` | one Guardian claim | claim sequence, claim hash, supporting chunk id (or null), supported or not |
 | `FACT_POLL_EVIDENCE` | one option per poll | poll id, option, response count; connected students (optional, pending Yaksha) |
 
 **Not provided** (removed from the model by agreement): scenario key, assignment key,
@@ -331,6 +344,20 @@ Values:
 
 Decisions are also stored with their text in the decision log (section 6.2), which the
 report needs (section 8).
+
+Stage 2 draft (field names in `src/classpilot/contracts/trace.py`, examples in
+`.claude/rules/agent.md`):
+- One file `outputs/traces.jsonl`; each line has `record_type` (`run`, `node`,
+  `llm_call`, `retrieval`, `claim`, `poll_evidence`), `schema_version` (`v2-draft`),
+  `run_id` (= decision id), `session_id` (= BATCH), and `created_at`. Records forbid
+  extra fields, so removed fields cannot appear.
+- Node status: `pass` (flow continues), `block` (the node's output leads to escalation,
+  e.g. out of scope, low confidence, Guardian fail), `fail` (LLM or search error,
+  unusable output), `skip` (not run; still written). `deciding_node` = the first node
+  that blocked or failed, else the validator (question) or `decide_poll` (poll).
+- The trace holds hashes of the question and claims, not their text; the text is in
+  `outputs/decision_log.jsonl` (one entry per decision: decision + the question or the
+  poll evidence).
 
 ---
 
@@ -601,4 +628,17 @@ Stage 1 (live probes) decisions:
 - 2026-11-04 Repo license MIT; PDF handling with pypdfium2 instead of PyMuPDF (AGPL-3.0).
 - 2026-11-04 Cost readings use `CORTEX_AI_FUNCTIONS_USAGE_HISTORY` (the old
   `CORTEX_FUNCTIONS_QUERY_USAGE_HISTORY` is no longer updated).
+
+Stage 2 (live paths on v2 contracts) decisions:
+- 2026-11-04 Modules move to the ANALYSIS 2.6 layout as they change: `contracts/`,
+  `rules/`, `live/`. Fixture lessons and the fixture manifest stay in `content/`
+  (the CLI and the Stage 3 parity check read them); objective ids are segment ids.
+- 2026-11-04 Path A is `run_poll(evidence, manifest)`: the caller loads the manifest
+  (poll evidence has no lesson id, Q-14); the rule uses the manifest `params`. Unknown
+  or dropped poll, or a different correct option, is an input error; a missing
+  explanation link (impossible after validation) reveals.
+- 2026-11-04 Cortex Search always filters on `LESSON_ID` (the v1 `LESSON_SEARCH`
+  already has it as an attribute).
+- 2026-11-04 Trace v2: one JSONL file with `record_type`; claim support `null`, not
+  `-1`; hashes are the first 16 hex digits of sha256.
 

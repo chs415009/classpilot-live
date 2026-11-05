@@ -214,7 +214,8 @@ Automated checks:
 - Contract test: a fixture run of each path produces one valid record of each trace
   type that applies (poll: run, node, poll evidence; question: run, node, LLM call,
   retrieval, claim), and no removed field appears.
-- The JSON examples in the new CLAUDE.md validate against their pydantic models (poll
+- The JSON examples in `.claude/rules/agent.md` (and the manifest example in
+  IMPLEMENTATION_NOTES section 5) validate against their pydantic models (poll
   evidence, question, decision, trace records, manifest).
 - The schema-sync test (`TASK_SCHEMAS` ↔ pydantic) still passes.
 - grep finds no `reteach`, `no_mapping`, `remediation_limit`, `protected`, or

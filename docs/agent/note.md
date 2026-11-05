@@ -101,3 +101,15 @@ is no longer updated)
   Probe scripts: `scripts/probes/`, SQL: `sql/probes/`.
 
 ## Stage 2: Live paths, manifest, and trace on v2 contracts (mock)
+
+- 2026-11-04 [decision] Modules move to the ANALYSIS 2.6 layout as they change
+  (`contracts/`, `rules/`, `live/`). Fixture lessons and manifest stay in `content/`
+  (the CLI and the Stage 3 parity check read them); objective ids are now segment ids.
+- 2026-11-04 [decision] Path A takes the manifest from its caller, since poll evidence has
+  no lesson id (Q-14), and uses the manifest `params` for the threshold.
+- 2026-11-04 [finding] The v1 `LESSON_SEARCH` already has `LESSON_ID` as an attribute
+  (`sql/03_search_service.sql`), so Cortex Search always filters by lesson and the
+  Stage 3 parity check still works. The planned `filter_by_lesson` switch was dropped.
+- 2026-11-04 [decision] Trace v2: one JSONL file with `record_type`; claim support is
+  `null` instead of `-1`; question and claim text only as hashes (text in the decision
+  log). Draft, Q-21.

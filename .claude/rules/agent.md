@@ -101,20 +101,21 @@ handling, the future-work list in BEHAVIOR section 9.
 
 ## Data contracts
 
-Drafts until the team agrees (`interface_questions.md` Q-13 to Q-21). Full definitions:
-manifest in IMPLEMENTATION_NOTES section 5, trace records in section 6.3, API in
-section 3. **The code still implements the v1 contracts until Stage 2.**
+Drafts until the team agrees (`interface_questions.md` Q-13 to Q-21). Code: live shapes
+in `src/classpilot/contracts/live.py`, manifest in `contracts/manifest.py`, trace and
+decision log in `contracts/trace.py`. Full definitions: manifest in IMPLEMENTATION_NOTES
+section 5, trace records in section 6.3, API in section 3. A test validates every JSON
+block below against its model, so keep them current.
 
-Poll evidence (draft: v1 fields plus `poll_id`, without `remediations_used`; see Q-14):
+Poll evidence (v1 fields plus `poll_id`, without `remediations_used`; Q-14):
 ```json
-{"session_id": "session-001", "poll_id": "q-01", "objective_id": "seg-01",
+{"session_id": "session-001", "poll_id": "q-01", "objective_id": "seg-02",
  "question_id": "q-01", "snapshot_time": "2026-10-22T18:30:40Z",
  "connected_students": 24, "answers_received": 21,
  "option_counts": {"A": 3, "B": 13, "C": 4, "D": 1}, "correct_option": "A"}
 ```
 
-Student question (draft: v1 fields; retrieval needs the lesson, so a `lesson_id` is
-proposed; see Q-19):
+Student question (v1 fields plus `lesson_id` for the retrieval filter; Q-19):
 ```json
 {"session_id": "session-001", "event_id": "evt-123", "lesson_id": "dbt-basics-01",
  "anonymous_learner_id": "learner-017", "objective_id": "seg-01",
@@ -122,10 +123,44 @@ proposed; see Q-19):
  "submitted_at": "2026-10-22T18:31:05Z"}
 ```
 
-Decision (draft): `action` is `explain | reveal | answer | escalate`; `escalation_reason`
-is `out_of_scope | assignment_like | low_confidence | unsupported | llm_error`; explain
-decisions carry the misconception and remediation ids, the remediation text, and
-`show_slide`. Unused fields are `null`.
+Decision: `action` is `explain | reveal | answer | escalate`; `escalation_reason` is
+`out_of_scope | assignment_like | low_confidence | unsupported | llm_error`. Explain
+carries the option, the misconception and remediation ids, the remediation text, and
+`show_slide`; explain and reveal carry `correct_option`. Unused fields are `null`.
+```json
+{"decision_id": "dec-1a2b3c4d", "session_id": "session-001", "path": "poll",
+ "action": "explain", "poll_id": "q-01", "option": "B", "misconception_id": "M-01",
+ "remediation_id": "R-01", "remediation_text": "Bronze keeps raw data exactly as it arrived.",
+ "show_slide": "deck1-p03", "correct_option": "A", "answer_text": null, "citations": null,
+ "escalation_reason": null, "confidence": null}
+```
+```json
+{"decision_id": "dec-5e6f7a8b", "session_id": "session-001", "path": "question",
+ "action": "answer", "poll_id": null, "option": null, "misconception_id": null,
+ "remediation_id": null, "remediation_text": null, "show_slide": null,
+ "correct_option": null, "answer_text": "We keep raw data unchanged so we can replay it.",
+ "citations": ["deck1-p03-c1"], "escalation_reason": null, "confidence": 0.84}
+```
+
+Trace records (one JSONL line each; `record_type` is `run | node | llm_call | retrieval |
+claim | poll_evidence`; Q-21). Two examples:
+```json
+{"schema_version": "v2-draft", "run_id": "dec-5e6f7a8b", "session_id": "session-001",
+ "created_at": "2026-10-22T18:31:09Z", "record_type": "run", "path": "question",
+ "lesson_id": "dbt-basics-01", "input_ref": "evt-123", "segment_id": "seg-01",
+ "misconception_id": null, "remediation_id": null, "final_action": "answer",
+ "escalation_reason": null, "deciding_node": "validator",
+ "started_at": "2026-10-22T18:31:05.120Z", "ended_at": "2026-10-22T18:31:09.480Z",
+ "latency_ms": 4360, "confidence": 0.84, "backend": "cortex"}
+```
+```json
+{"schema_version": "v2-draft", "run_id": "dec-5e6f7a8b", "session_id": "session-001",
+ "created_at": "2026-10-22T18:31:09Z", "record_type": "node", "node_seq": 4,
+ "node_name": "guardian", "status": "pass", "latency_ms": 1210, "llm_call_count": 1}
+```
+
+The decision log (`outputs/decision_log.jsonl`) has one entry per decision: the
+decision plus the question or the poll evidence it answered.
 
 ## Folder layout
 
@@ -138,9 +173,9 @@ classpilot-live/
   docs/v1/  docs/v2/         # v1 archive + results; v2 design and plan
   sql/                       # setup scripts; shown before they run
   scripts/                   # smoke test, probes, check_secrets.sh
-  src/classpilot/            # package (v1 modules for now; moves to the v2 layout in
-                             #   ANALYSIS 2.6 stage by stage)
-  content/ scenarios/ eval/  # v1 sample lesson, scenarios, eval sets (replaced in Stage 2+)
+  src/classpilot/            # package; contracts/, rules/, live/ are in the ANALYSIS 2.6
+                             #   layout, the rest moves there stage by stage
+  content/ scenarios/ eval/  # fixture lessons + manifest (v1 lesson), scenarios, eval sets
   tests/
   compiled/                  # saved DSPy programs (from Stage 9)
   materials/                 # gitignored: real course slides and references
@@ -164,7 +199,7 @@ classpilot-live/
 | 10 | Post-class report |
 | 11 | Integration, rehearsal, handoff |
 
-**Current stage: Stage 2 (not started).** Stages 0 and 1 accepted 2026-11-04. Every stage ends at its exit gate: run the
+**Current stage: Stage 2 (at the exit gate, waiting for approval).** Stages 0 and 1 accepted 2026-11-04. Every stage ends at its exit gate: run the
 automated checks, report the results, list what the user must review, and wait for
 approval before the next stage. Details are in `docs/v2/STAGES.md`.
 
@@ -177,7 +212,7 @@ approval before the next stage. Details are in `docs/v2/STAGES.md`.
   - tests: `pytest`
   - lint / format: `ruff check .` and `ruff format --check .` (`ruff format .` to fix)
   - scenarios: `python -m classpilot.cli run-all`
-  - eval: `python -m classpilot.cli eval --mode 3`; Guardian-only: `python -m classpilot.cli guardian-eval`
+  - eval: `python -m classpilot.cli eval`; Guardian-only: `python -m classpilot.cli guardian-eval`
   - secret check: `scripts/check_secrets.sh` (add `--history` before a push)
 
 Standard automated checks for every stage: `pytest` (mock only, no network), `cli run-all`

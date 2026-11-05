@@ -25,8 +25,9 @@ are exploratory (small, synthetic data).
 | Parse layer: vision for image pages, AI_PARSE_DOCUMENT for references, chunks, Cortex Search | Stage 5 | mock, Cortex |
 | Generators: segments, scripts, polls, explanations, each checked by the prep Guardian, retried once, then a fallback; team manifest | Stage 6-7 | mock, Cortex (live: scripts work; polls do not pass their checks yet, Stage 9) |
 
-Not yet: the HTTP service (Stage 8), compiled DSPy programs (Stage 9), the post-class
-report (Stage 10).
+| Service API: lessons, uploads, background prep jobs with progress, manifest, slide images, `POST /questions`, `POST /polls/result` | Stage 8 | mock (Cortex: same code, not yet run live) |
+
+Not yet: compiled DSPy programs (Stage 9), the post-class report (Stage 10).
 
 ## Docs
 
@@ -104,6 +105,27 @@ the stored parse, so changing `--poll-count` costs no parse calls.
 
 Settings (thresholds, `poll_count`, retries, timeouts, models, object names):
 `config/settings.yaml`. An example manifest from the mock: `tests/fixtures/deck/manifest_mock.json`.
+
+## Service (FastAPI)
+
+```bash
+uvicorn classpilot.service.app:create_app --factory --port 8000   # BACKEND=mock by default
+# API docs: http://localhost:8000/docs
+L=lesson-demo
+curl -X POST localhost:8000/lessons -H 'content-type: application/json' -d "{\"lesson_id\":\"$L\"}"
+curl -X POST localhost:8000/lessons/$L/files -F kind=slides -F file=@deck.pptx
+curl -X POST localhost:8000/lessons/$L/files -F kind=reference -F file=@reading.pdf
+curl -X POST localhost:8000/lessons/$L/process -H 'content-type: application/json' -d '{"poll_count":5}'
+curl localhost:8000/jobs/<job_id>                 # step, progress, failures
+curl localhost:8000/lessons/$L/manifest
+curl -o p01.png localhost:8000/lessons/$L/slides/<slide_id>
+```
+
+Live: `POST /questions` (StudentQuestion → Decision) and `POST /polls/result`
+(PollEvidence → Decision). Shapes and error codes: `interface_questions.md` Q-18, Q-19.
+Data (lessons, uploads, manifests, slide images, `traces.jsonl`, `decision_log.jsonl`)
+goes to `outputs/service/` (`service.data_dir`); CORS origins are `service.cors_origins`.
+Credentials stay in the service's `.env` and never appear in a response.
 
 ## Snowflake (optional, Cortex backend)
 

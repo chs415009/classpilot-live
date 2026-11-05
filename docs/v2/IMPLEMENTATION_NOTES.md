@@ -110,6 +110,11 @@ serves the live and report endpoints.
 Job steps: `queued → converting → uploading → parsing → chunking → generating →
 checking → assembling → done | failed`.
 
+Implemented in Stage 8 (`src/classpilot/service/`); exact shapes in interface_questions
+Q-18 and Q-19. Step mapping: `generating` covers each item's generation, structure
+check, and prep Guardian (they run per item); `checking` is the manifest check against
+the lesson chunks (`prep/checks.py`); `assembling` writes the manifest and slide images.
+
 Implementation notes:
 - Run the pipeline in a background task. Job state is an in-memory dict; it does not
   need to survive a restart for the demo.
@@ -780,3 +785,17 @@ Stage 7 (live prep run) decisions:
 - 2026-11-05 Stage 7 closed with 0 active polls (every poll lost an explanation). The
   explanation fixes, one wrong-option rule for both Guardians, and measuring the prep
   Guardian on labeled cases move to Stage 9 (user decision).
+
+Stage 8 (service API, mock) decisions:
+- 2026-11-05 `fastapi`, `uvicorn`, `python-multipart` added; `httpx` in dev (user approved).
+- 2026-11-05 Lessons, uploads, manifests, slide images, and live traces under
+  `service.data_dir` (`outputs/service`), so lessons survive a restart; jobs and the
+  poll guard are in memory. A failed job never replaces the previous manifest.
+- 2026-11-05 `parse_lesson` runs in phases over all files (convert, upload, parse, chunk)
+  so the job step only moves forward; one stage refresh after all uploads.
+- 2026-11-05 Upload checks before any work: extension per kind, magic bytes, size
+  (`service.max_upload_mb`, 100); the name is reduced to its base name.
+- 2026-11-05 Live Q&A objectives come from the manifest segments; the mock Analyst's
+  keywords come from the segment's slide chunks.
+- 2026-11-05 `SNOWFLAKE_*` values are replaced by their variable names in job errors and
+  item problems. The repeated-poll guard is implemented (it was trivial).

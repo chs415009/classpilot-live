@@ -217,7 +217,9 @@ approval before the next stage. Details are in `docs/v2/STAGES.md`.
   - parse a lesson: `python -m classpilot.cli prep parse --lesson <id> <slides> --ref <ref>`
     (mock; `BACKEND=cortex` after approval); `prep search --lesson <id> "<query>"`
   - generate a lesson: `python -m classpilot.cli prep generate --lesson <id> [--poll-count N]`
-    (from the stored parse); whole pipeline: `prep run --backend mock --lesson <id> <slides>`
+    (from the stored parse); whole pipeline: `prep run --backend mock --lesson <id> <slides>`;
+    checks + review sheet: `prep check --lesson <id>`
+  - service: `uvicorn classpilot.service.app:create_app --factory --port 8000` (docs at `/docs`)
   - SQL templates: `python scripts/run_sql.py sql/<file>.sql` (prints; `--execute` runs)
   - tests: `pytest`
   - lint / format: `ruff check .` and `ruff format --check .` (`ruff format .` to fix)

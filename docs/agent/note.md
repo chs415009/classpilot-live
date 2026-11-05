@@ -276,3 +276,15 @@ is no longer updated)
   warehouse up for the whole run (4-5 min each); search embedding 0.0003, serving
   0.0000. AI credits (query 1) not yet read.
 
+## Stage 8: Service API (prep and live endpoints)
+
+- 2026-11-05 [decision] User approved `fastapi`, `uvicorn`, `python-multipart` (and
+  `httpx` for tests). Agent side: lessons on disk under `outputs/service`, jobs and the
+  poll guard in memory; upload limit 100 MB; CORS origins are a setting (Sai to confirm).
+- 2026-11-05 [change] `parse_lesson` now works in phases over all files, so job steps
+  never go back, and refreshes the stage once per run instead of once per new file.
+- 2026-11-05 [result] Service on mock: 29 TestClient tests (uploads, reuse, steps,
+  failures, 404s, Q&A timeout -> escalate, poll explain/reveal/repeat, no credential
+  values in responses, traces, or logs); 448 tests in all. Local uvicorn run: fixture
+  PPTX (LibreOffice in Docker) to manifest in about 1 s, one question (answer), one
+  poll result (explain with the manifest's text and slide). No Snowflake use.

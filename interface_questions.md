@@ -65,6 +65,15 @@ Details and history stay in `docs/agent/note.md`.
 - **Why change:** New service; nothing agreed yet.
 - **Suggested direction:** Agree request/response shapes, the upload size limit, and the CORS origin.
 - **Decision (agent side, 2026-11-04):** The endpoints in IMPLEMENTATION_NOTES section 3; the agent side fixes the exact shapes in Stage 8 and documents them here. The allowed CORS origin and the upload size limit are settings, so the front end only needs to tell us its origin.
+- **Update (agent side, 2026-11-05, Stage 8): implemented** in `src/classpilot/service/` (models in `service/schemas.py`; run with `uvicorn classpilot.service.app:create_app --factory`). Errors are `{"detail": "<message>"}`.
+  - `POST /lessons` body `{"lesson_id"?: "info6205-l1", "title"?: "..."}` (id: lowercase letters, digits, `-`; generated as `lesson-<8 hex>` if left out) → 201 `Lesson` `{lesson_id, title, created_at, files: [LessonFile], has_manifest, last_job_id}`; 409 if the id exists.
+  - `GET /lessons/{id}` → `Lesson`; 404.
+  - `POST /lessons/{id}/files` multipart: `kind` = `slides` (pptx, pdf) or `reference` (pdf, docx), `file` → 201 `LessonFile` `{file_id (SHA-256), name, kind, format, size_bytes, reused}`. `reused: true` means these bytes were uploaded or parsed before (no parse cost). 415 for a wrong extension or content, 413 over `service.max_upload_mb` (100), 404 for no lesson; nothing is stored on an error. The same name or bytes again replaces the entry.
+  - `POST /lessons/{id}/process` body `{"poll_count"?: 0-20}` (default 5) → 202 `{job_id, lesson_id, status: "queued"}`; 409 without slides or while a job of the lesson runs.
+  - `GET /jobs/{job_id}` → `{job_id, lesson_id, status: queued|running|done|failed, step, steps: [...], progress: {done, total, detail}, poll_count, failures: [{item, status: fallback|dropped, detail, problems}], error, created_at, started_at, ended_at, llm_calls}`. Steps in order: `queued, converting, uploading, parsing, chunking, generating, checking, assembling, done` (or `failed` with `error`). `progress` counts files, then pages while parsing (e.g. 12/40), then generated items. Poll it every 1-2 s. Jobs live in memory (lost on restart).
+  - `GET /lessons/{id}/manifest` → the manifest (Q-13); 404 until a job is done. A failed job keeps the previous manifest.
+  - `GET /lessons/{id}/slides/{slide_id}` (`.png` optional) → `image/png`; 404. `image_ref` in the manifest is `slides/<slide_id>.png`, so the URL is `/lessons/{id}/` + `image_ref`.
+  - CORS origins: `service.cors_origins` in `config/settings.yaml` (now `http://localhost:3000`, `http://localhost:5173`). **Sai: tell us the real origin.**
 
 ## Q-19 Live endpoints: student question and poll result
 - **Status:** decided · **Area:** HTTP API · **Affects:** front end / backend (Sai) · **Raised:** 2026-11-04
@@ -72,6 +81,10 @@ Details and history stay in `docs/agent/note.md`.
 - **Why change:** v1 had no HTTP interface.
 - **Suggested direction:** Agree paths, payloads, and timeouts. The front end needs a waiting state: v1 measured about 4–8 s for answered questions, and the worst case is roughly the sum of the per-call timeouts (about 30 s). The question payload needs the lesson for the retrieval filter: proposed `lesson_id` in the question (or the agent maps `session_id` to a lesson).
 - **Decision (agent side, 2026-11-04):** `POST /questions` and `POST /polls/result` as above. `StudentQuestion.lesson_id` is required, and retrieval always filters on it (mock and Cortex Search `{"@eq": {"LESSON_ID": ...}}`). The agent always answers within the sum of its per-call timeouts (about 30 s); the front end shows a waiting state until then.
+- **Update (agent side, 2026-11-05, Stage 8): implemented.** Both take and return the contracts in `.claude/rules/agent.md` (examples there) and `contracts/live.py`.
+  - `POST /questions` body `StudentQuestion` → 200 `Decision` with `action` `answer` or `escalate`. An LLM timeout or error is a 200 `escalate` with `escalation_reason: "llm_error"`, never a 5xx. 404 if the lesson has no manifest; 422 for a malformed body.
+  - `POST /polls/result` body `PollEvidence` → 200 `Decision` with `action` `explain` (`option`, `misconception_id`, `remediation_id`, `remediation_text` for TTS, `show_slide` to display, `correct_option`) or `reveal` (`correct_option`). 404 for an unknown lesson or poll, or a dropped one; 422 when `correct_option` differs from the manifest. The same (`session_id`, `poll_id`) again returns the first decision unchanged and is not traced twice (kept in memory).
+  - Every decision appends its trace records to `<service.data_dir>/traces.jsonl` and one line to `decision_log.jsonl` (Q-21).
 
 ## Q-20 Post-class report: trigger and data source
 - **Status:** decided · **Area:** HTTP API, report · **Affects:** front end / backend (Sai), pipeline (Yaksha) · **Raised:** 2026-11-04

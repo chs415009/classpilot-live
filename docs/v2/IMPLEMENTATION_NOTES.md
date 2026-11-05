@@ -642,4 +642,10 @@ Stage 2 (live paths on v2 contracts) decisions:
   already has it as an attribute).
 - 2026-11-04 Trace v2: one JSONL file with `record_type`; claim support `null`, not
   `-1`; hashes are the first 16 hex digits of sha256.
+- 2026-11-04 Interface items the agent side can settle are decided by it and recorded
+  as `decided` in `interface_questions.md` (teammates can reopen them). Q-13 to Q-21
+  are decided: poll evidence carries `lesson_id`; the agent keys on `poll_id` and
+  ignores `question_id`; mismatched evidence is a 404/422 request error; a repeated
+  (`session_id`, `poll_id`) returns the stored decision (Stage 8); no manifest version
+  field for now.
 

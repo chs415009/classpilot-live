@@ -32,9 +32,12 @@ def deps(settings, content):
 
 @pytest.fixture
 def make_evidence():
-    def _make(option_counts, answers=None, correct="A", poll_id="q-01"):
+    def _make(
+        option_counts, answers=None, correct="A", poll_id="q-01", lesson_id="lesson-dbt-medallion"
+    ):
         return PollEvidence(
             session_id="session-001",
+            lesson_id=lesson_id,
             poll_id=poll_id,
             objective_id="seg-02",
             question_id=poll_id,

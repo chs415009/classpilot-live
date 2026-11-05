@@ -45,6 +45,7 @@ def test_missing_link_reveals_instead(content, make_evidence):
 @pytest.mark.parametrize(
     ("kwargs", "message"),
     [
+        ({"lesson_id": "lesson-dbt-advanced"}, "evidence is for lesson"),
         ({"poll_id": "q-99"}, "not in lesson"),
         ({"poll_id": "q-02"}, "dropped"),
         ({"correct": "B"}, "manifest says 'A'"),

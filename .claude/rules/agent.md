@@ -61,7 +61,7 @@ manifest
 - Snowflake Cortex provides the LLM, parsing, and Cortex Search. All Snowflake code sits
   behind adapters; everything runs offline in mock mode.
 - One FastAPI service: prep endpoints, live endpoints (question, poll result), report
-  endpoint. Shapes are `[team]` drafts.
+  endpoint. Shapes are decided by the agent side and recorded in `interface_questions.md`.
 
 ## Hard rules
 
@@ -85,8 +85,10 @@ manifest
 - Items marked **[verify]**: check current official docs, or run a small live probe with
   approval, before relying on them. Record findings in `docs/agent/note.md`. Do not guess Snowflake,
   LiteLLM, or DSPy API names.
-- Items marked **[team]**: do not decide alone. Record them in `interface_questions.md`
-  and use a clearly marked draft until agreed.
+- Items marked **[team]** (interfaces another part reads or sends): if the agent side
+  can settle it, decide it, implement it, and record it in `interface_questions.md`
+  with status `decided` and the reason; teammates can reopen it. Leave it `open` only
+  when it needs a value or choice that only another part has.
 - Keep changes small and focused on the current stage. Every new node, rule, generator,
   parser step, and endpoint has a unit test with mocks.
 
@@ -101,15 +103,16 @@ handling, the future-work list in BEHAVIOR section 9.
 
 ## Data contracts
 
-Drafts until the team agrees (`interface_questions.md` Q-13 to Q-21). Code: live shapes
+Decided by the agent side, open to change requests (`interface_questions.md` Q-13 to Q-21). Code: live shapes
 in `src/classpilot/contracts/live.py`, manifest in `contracts/manifest.py`, trace and
 decision log in `contracts/trace.py`. Full definitions: manifest in IMPLEMENTATION_NOTES
 section 5, trace records in section 6.3, API in section 3. A test validates every JSON
 block below against its model, so keep them current.
 
-Poll evidence (v1 fields plus `poll_id`, without `remediations_used`; Q-14):
+Poll evidence (v1 fields plus `lesson_id` and `poll_id`, without `remediations_used`; Q-14):
 ```json
-{"session_id": "session-001", "poll_id": "q-01", "objective_id": "seg-02",
+{"session_id": "session-001", "lesson_id": "dbt-basics-01", "poll_id": "q-01",
+ "objective_id": "seg-02",
  "question_id": "q-01", "snapshot_time": "2026-10-22T18:30:40Z",
  "connected_students": 24, "answers_received": 21,
  "option_counts": {"A": 3, "B": 13, "C": 4, "D": 1}, "correct_option": "A"}

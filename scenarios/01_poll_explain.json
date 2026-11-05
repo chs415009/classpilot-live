@@ -12,6 +12,7 @@
   },
   "input": {
     "session_id": "session-001",
+    "lesson_id": "lesson-dbt-medallion",
     "poll_id": "q-01",
     "objective_id": "seg-02",
     "question_id": "q-01",

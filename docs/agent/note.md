@@ -118,3 +118,6 @@ is no longer updated)
   formats (decision log, prep-only validation) are recorded in IMPLEMENTATION_NOTES.
 - 2026-11-04 [decision] The fixture manifest cites v1 chunk ids (`chunk-01`), not
   `<slide>-c<N>`, so the Stage 3 parity check can use the v1 search index.
+- 2026-11-04 [change] The agent side decides the interface items it can settle and
+  records them as `decided` (teammates can reopen them); it no longer waits for team
+  agreement. Q-13 to Q-21 decided; poll evidence now carries `lesson_id`.

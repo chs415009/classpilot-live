@@ -19,11 +19,15 @@ POLL_NODES = ["threshold_check", "decide_poll", "explanation_lookup"]
 
 
 class PollInputError(ValueError):
-    """The poll evidence does not match the manifest (unknown poll, wrong answer key)."""
+    """The poll evidence does not match the manifest (other lesson, unknown poll, wrong key)."""
 
 
 def run_poll(evidence: PollEvidence, manifest: Manifest, backend: str) -> RunOutput:
     started_at, start = utc_now_ms(), time.perf_counter()
+    if evidence.lesson_id != manifest.lesson_id:
+        raise PollInputError(
+            f"evidence is for lesson {evidence.lesson_id!r}, manifest is {manifest.lesson_id!r}"
+        )
     found = manifest.find_question(evidence.poll_id)
     if found is None:
         raise PollInputError(f"poll {evidence.poll_id!r} is not in lesson {manifest.lesson_id!r}")

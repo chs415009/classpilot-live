@@ -37,8 +37,9 @@ runs.
   or `config/settings.yaml`. Account-dependent findings go into docs/agent/note.md per account.
 - `[verify]` items are checked in current docs or with an approved probe before code
   relies on them. Findings go to docs/agent/note.md.
-- `[team]` items go to interface_questions.md and use a clearly marked draft until
-  agreed.
+- `[team]` items: the agent side decides what it can settle and records it in
+  interface_questions.md as `decided` (teammates can reopen it); only items that need
+  another part's input stay `open`.
 - Cost estimates are rough until Stage 1 replaces them with real readings.
 
 **Standard automated checks** ("standard checks" in each stage below):

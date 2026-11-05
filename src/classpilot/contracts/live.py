@@ -26,6 +26,7 @@ Backend = Literal["mock", "cortex"]
 
 class PollEvidence(BaseModel):
     session_id: str
+    lesson_id: str  # selects the manifest (decided, Q-14)
     poll_id: str  # manifest question id of the poll that ran
     objective_id: str
     question_id: str

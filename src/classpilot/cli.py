@@ -7,6 +7,8 @@ python -m classpilot.cli guardian-eval
 python -m classpilot.cli prep convert deck.pptx --ref reading.pdf --ref notes.docx
 python -m classpilot.cli prep parse --lesson l1 deck.pptx --ref reading.pdf
 python -m classpilot.cli prep search --lesson l1 "why keep raw data"
+python -m classpilot.cli prep generate --lesson l1 --poll-count 3
+python -m classpilot.cli prep run --backend mock --lesson l1 deck.pptx --ref reading.pdf
 """
 
 import argparse
@@ -19,6 +21,7 @@ from classpilot.settings import load_settings
 CONVERT_DIR = OUTPUT_DIR / "convert"
 PREP_TABLES_DIR = OUTPUT_DIR / "prep_tables"  # mock-mode tables
 PARSE_REPORT_DIR = OUTPUT_DIR / "parse"
+PREP_DIR = OUTPUT_DIR / "prep"  # <lesson>/manifest.json, generation_report.json, slides/
 
 
 def print_scenario(result: dict) -> None:
@@ -109,7 +112,16 @@ def build_parse_deps(settings):
     )
 
 
-def run_prep_parse(args) -> int:
+def prep_settings(args):
+    overrides = {}
+    if getattr(args, "backend", None):
+        overrides["backend"] = args.backend
+    if getattr(args, "poll_count", None) is not None:
+        overrides["prep"] = {"poll_count": args.poll_count}
+    return load_settings(overrides=overrides)
+
+
+def parse_step(args, settings, deps) -> bool:
     from dataclasses import asdict
 
     from classpilot.prep.convert import ConvertError
@@ -117,13 +129,11 @@ def run_prep_parse(args) -> int:
     from classpilot.prep.pages import AlignmentError
     from classpilot.prep.parse import ParseError, parse_lesson
 
-    settings = load_settings()
-    deps = build_parse_deps(settings)
     try:
         reports = parse_lesson(args.lesson, args.files, args.ref, deps, source=args.source)
     except (ParseError, ConvertError, LibreOfficeError, AlignmentError) as exc:
         print(f"error: {exc}")
-        return 1
+        return False
     print(f"backend={settings.backend} lesson={args.lesson}")
     for r in reports:
         state = "reused (known hash)" if r.reused else f"parsed, {r.parse_calls} parse calls"
@@ -146,7 +156,113 @@ def run_prep_parse(args) -> int:
         )
     )
     print(f"wrote {out}")
-    return 0
+    return True
+
+
+def run_prep_parse(args) -> int:
+    settings = prep_settings(args)
+    return 0 if parse_step(args, settings, build_parse_deps(settings)) else 1
+
+
+def build_generate_deps(settings, tables, material):
+    """Mock generators and retrieval, or DSPy on Cortex and Cortex Search (BACKEND=cortex)."""
+    from classpilot.adapters.retrieval import CortexSearchRetriever, MockRetriever
+    from classpilot.prep.generate import GenerateDeps
+
+    if settings.backend == "mock":
+        from classpilot.adapters.mock_prep import MockPrepLLM
+
+        llm, retriever = MockPrepLLM(), MockRetriever(material.retrieval_rows())
+    else:
+        from classpilot.adapters.cortex_engine import make_prep_lm
+        from classpilot.agents.prep_program import DSPyPrepAgents
+
+        llm = DSPyPrepAgents(make_prep_lm(settings))
+        retriever = CortexSearchRetriever(settings, service_name=settings.objects.search_service)
+    return GenerateDeps(llm, retriever, settings.prep, settings.poll)
+
+
+def copy_slide_images(lesson_id: str, tables, out_dir: Path) -> tuple[int, int]:
+    """Slide PNGs from the local conversion into <out>/slides/<slide_id>.png."""
+    import shutil
+
+    copied = missing = 0
+    (out_dir / "slides").mkdir(parents=True, exist_ok=True)
+    for parsed in tables.lesson_files(lesson_id):
+        if parsed.kind != "slides":
+            continue
+        for page in parsed.pages:
+            png = CONVERT_DIR / parsed.file_id[:16] / "pages" / f"p{page.page_index:02d}.png"
+            if png.is_file():
+                shutil.copyfile(png, out_dir / "slides" / f"{page.page_id}.png")
+                copied += 1
+            else:
+                missing += 1
+    return copied, missing
+
+
+def generate_step(lesson_id: str, settings, tables) -> bool:
+    from collections import Counter
+    from dataclasses import asdict
+
+    from classpilot.prep.generate import GenerateError, Generator, load_material
+
+    try:
+        material = load_material(lesson_id, tables)
+        deps = build_generate_deps(settings, tables, material)
+        result = Generator(material, deps).run()
+    except GenerateError as exc:
+        print(f"error: {exc}")
+        return False
+    out_dir = PREP_DIR / lesson_id
+    out_dir.mkdir(parents=True, exist_ok=True)
+    (out_dir / "manifest.json").write_text(result.manifest.model_dump_json(indent=2))
+    report = {"backend": settings.backend, **asdict(result.report)}
+    (out_dir / "generation_report.json").write_text(json.dumps(report, indent=2))
+    copied, missing = copy_slide_images(lesson_id, tables, out_dir)
+
+    m = result.manifest
+    print(
+        f"generate: backend={settings.backend} lesson={lesson_id} poll_count={deps.prep.poll_count}"
+    )
+    print(f"  segments: {len(m.segments)} ({result.report.items[0].status})")
+    kinds = {"slides": [s.status for s in m.slides.values()]}
+    kinds["polls"] = [q.status for s in m.segments for q in s.questions.values()]
+    kinds["explanations"] = [r.status for r in m.remediations.values()]
+    for kind, statuses in kinds.items():
+        counts = ", ".join(f"{k} {v}" for k, v in sorted(Counter(statuses).items())) or "none"
+        print(f"  {kind}: {counts}")
+    active = [s.active_poll for s in m.segments if s.active_poll]
+    print(f"  active polls: {len(active)} {active}")
+    print(
+        f"  LLM calls: {result.report.llm_calls}; slide images: {copied} copied, {missing} missing"
+    )
+    print(f"wrote {out_dir}/manifest.json and generation_report.json")
+    return True
+
+
+def prep_tables(settings):
+    from classpilot.prep.tables import LocalTables, SnowflakeTables
+
+    if settings.backend == "mock":
+        return LocalTables(PREP_TABLES_DIR)
+    from classpilot.adapters.snowflake import shared_connection
+
+    return SnowflakeTables(shared_connection(), settings.objects)
+
+
+def run_prep_generate(args) -> int:
+    settings = prep_settings(args)
+    return 0 if generate_step(args.lesson, settings, prep_tables(settings)) else 1
+
+
+def run_prep_run(args) -> int:
+    """convert -> parse -> chunk -> generate -> check -> manifest, in one command."""
+    settings = prep_settings(args)
+    deps = build_parse_deps(settings)
+    if not parse_step(args, settings, deps):
+        return 1
+    return 0 if generate_step(args.lesson, settings, deps.tables) else 1
 
 
 def run_prep_search(args) -> int:
@@ -204,6 +320,23 @@ def main(argv: list[str] | None = None) -> None:
         "--ref", action="append", default=[], type=Path, help="reference (PDF or DOCX)"
     )
     parse_cmd.add_argument("--source", help="source id for a single new file")
+    run_cmd_p = prep_sub.add_parser(
+        "run", help="the whole prep pipeline: parse (as prep parse), then generate"
+    )
+    run_cmd_p.add_argument("--lesson", required=True, help="lesson id")
+    run_cmd_p.add_argument("files", nargs="*", type=Path, help="slides (PPTX or PDF)")
+    run_cmd_p.add_argument(
+        "--ref", action="append", default=[], type=Path, help="reference (PDF or DOCX)"
+    )
+    run_cmd_p.add_argument("--source", help="source id for a single new file")
+    generate_cmd = prep_sub.add_parser(
+        "generate", help="generate scripts, polls, explanations and the manifest from the parse"
+    )
+    generate_cmd.add_argument("--lesson", required=True, help="lesson id")
+    for cmd in (parse_cmd, run_cmd_p, generate_cmd):
+        cmd.add_argument("--backend", choices=["mock", "cortex"], help="overrides BACKEND")
+    for cmd in (run_cmd_p, generate_cmd):
+        cmd.add_argument("--poll-count", type=int, help="overrides prep.poll_count")
     search_cmd = prep_sub.add_parser("search", help="search a lesson's chunks")
     search_cmd.add_argument("--lesson", required=True)
     search_cmd.add_argument("queries", nargs="+")
@@ -214,10 +347,12 @@ def main(argv: list[str] | None = None) -> None:
     if args.command == "prep":
         if args.prep_command == "search":
             raise SystemExit(run_prep_search(args))
+        if args.prep_command == "generate":
+            raise SystemExit(run_prep_generate(args))
         if not args.files and not args.ref:
             parser.error(f"prep {args.prep_command} needs at least one file")
-        run = run_prep_parse if args.prep_command == "parse" else run_prep_convert
-        raise SystemExit(run(args))
+        run = {"parse": run_prep_parse, "run": run_prep_run, "convert": run_prep_convert}
+        raise SystemExit(run[args.prep_command](args))
     if args.command == "run":
         result = run_scenario(args.scenario)
         print(json.dumps({key: result[key] for key in ("decision", "records")}, indent=2))

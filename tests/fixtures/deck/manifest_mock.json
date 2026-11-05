@@ -1,0 +1,280 @@
+{
+  "lesson_id": "fixture-lesson",
+  "params": {
+    "poll_answer_seconds": 60,
+    "min_responses": 5,
+    "wrong_ratio_threshold": 0.6
+  },
+  "slides": {
+    "fixture-deck-p01": {
+      "order": 1,
+      "image_ref": "slides/fixture-deck-p01.png",
+      "script": "Welcome. Today we look at the bronze, silver, and gold layers.",
+      "status": "ok"
+    },
+    "fixture-deck-p02": {
+      "order": 2,
+      "image_ref": "slides/fixture-deck-p02.png",
+      "script": "Stress that bronze is never edited, so every load can be replayed.",
+      "status": "ok"
+    },
+    "fixture-deck-p03": {
+      "order": 3,
+      "image_ref": "slides/fixture-deck-p03.png",
+      "script": "Data moves left to right, each step adds structure.",
+      "status": "ok"
+    },
+    "fixture-deck-p04": {
+      "order": 4,
+      "image_ref": "slides/fixture-deck-p04.png",
+      "script": "The chart shows record counts growing from bronze to gold.",
+      "status": "ok"
+    },
+    "fixture-deck-p05": {
+      "order": 5,
+      "image_ref": "slides/fixture-deck-p05.png",
+      "script": "Read the model top to bottom: select, cast, then filter null statuses.",
+      "status": "ok"
+    },
+    "fixture-deck-p06": {
+      "order": 6,
+      "image_ref": "slides/fixture-deck-p06.png",
+      "script": "Summary. Keep bronze unchanged for replay. Clean once in silver. Aggregate for consumers in gold. ClassPilot fixture deck.",
+      "status": "ok"
+    }
+  },
+  "segments": [
+    {
+      "segment_id": "seg-01",
+      "objective": "Explain Medallion Architecture Basics",
+      "slides": [
+        "fixture-deck-p01",
+        "fixture-deck-p02"
+      ],
+      "questions": {
+        "q-01": {
+          "text": "Which statement matches the slide Three Layers?",
+          "options": {
+            "A": "It applies only to spreadsheets",
+            "B": "Bronze keeps raw data exactly as it arrived",
+            "C": "It is optional and usually skipped",
+            "D": "It was replaced by manual checks"
+          },
+          "correct_option": "B",
+          "known_wrong": {
+            "A": "M-01",
+            "C": "M-02",
+            "D": "M-03"
+          },
+          "segment": "seg-01",
+          "status": "ok"
+        }
+      },
+      "active_poll": "q-01"
+    },
+    {
+      "segment_id": "seg-02",
+      "objective": "Explain Data Flow",
+      "slides": [
+        "fixture-deck-p03",
+        "fixture-deck-p04"
+      ],
+      "questions": {
+        "q-02": {
+          "text": "Which statement matches the slide Three Layers?",
+          "options": {
+            "A": "It applies only to spreadsheets",
+            "B": "Bronze keeps raw data exactly as it arrived",
+            "C": "It is optional and usually skipped",
+            "D": "It was replaced by manual checks"
+          },
+          "correct_option": "B",
+          "known_wrong": {
+            "A": "M-04",
+            "C": "M-05",
+            "D": "M-06"
+          },
+          "segment": "seg-02",
+          "status": "ok"
+        }
+      },
+      "active_poll": "q-02"
+    },
+    {
+      "segment_id": "seg-03",
+      "objective": "Explain A Silver Model in dbt",
+      "slides": [
+        "fixture-deck-p05",
+        "fixture-deck-p06"
+      ],
+      "questions": {
+        "q-03": {
+          "text": "Which statement matches the slide Summary?",
+          "options": {
+            "A": "It applies only to spreadsheets",
+            "B": "Keep bronze unchanged for replay",
+            "C": "It is optional and usually skipped",
+            "D": "It was replaced by manual checks"
+          },
+          "correct_option": "B",
+          "known_wrong": {
+            "A": "M-07",
+            "C": "M-08",
+            "D": "M-09"
+          },
+          "segment": "seg-03",
+          "status": "ok"
+        }
+      },
+      "active_poll": "q-03"
+    }
+  ],
+  "misconceptions": {
+    "M-01": {
+      "label": "Believes: It applies only to spreadsheets",
+      "description": "The student thinks that it applies only to spreadsheets.",
+      "remediation": "R-01"
+    },
+    "M-02": {
+      "label": "Believes: It is optional and usually skipped",
+      "description": "The student thinks that it is optional and usually skipped.",
+      "remediation": "R-02"
+    },
+    "M-03": {
+      "label": "Believes: It was replaced by manual checks",
+      "description": "The student thinks that it was replaced by manual checks.",
+      "remediation": "R-03"
+    },
+    "M-04": {
+      "label": "Believes: It applies only to spreadsheets",
+      "description": "The student thinks that it applies only to spreadsheets.",
+      "remediation": "R-04"
+    },
+    "M-05": {
+      "label": "Believes: It is optional and usually skipped",
+      "description": "The student thinks that it is optional and usually skipped.",
+      "remediation": "R-05"
+    },
+    "M-06": {
+      "label": "Believes: It was replaced by manual checks",
+      "description": "The student thinks that it was replaced by manual checks.",
+      "remediation": "R-06"
+    },
+    "M-07": {
+      "label": "Believes: It applies only to spreadsheets",
+      "description": "The student thinks that it applies only to spreadsheets.",
+      "remediation": "R-07"
+    },
+    "M-08": {
+      "label": "Believes: It is optional and usually skipped",
+      "description": "The student thinks that it is optional and usually skipped.",
+      "remediation": "R-08"
+    },
+    "M-09": {
+      "label": "Believes: It was replaced by manual checks",
+      "description": "The student thinks that it was replaced by manual checks.",
+      "remediation": "R-09"
+    }
+  },
+  "remediations": {
+    "R-01": {
+      "type": "tts_explanation",
+      "title": "Why option A is wrong",
+      "text": "Bronze keeps raw data exactly as it arrived.",
+      "show_slide": "fixture-deck-p02",
+      "content_ref": null,
+      "citations": [
+        "fixture-deck-p02-c1"
+      ],
+      "status": "ok"
+    },
+    "R-02": {
+      "type": "tts_explanation",
+      "title": "Why option C is wrong",
+      "text": "Bronze keeps raw data exactly as it arrived.",
+      "show_slide": "fixture-deck-p02",
+      "content_ref": null,
+      "citations": [
+        "fixture-deck-p02-c1"
+      ],
+      "status": "ok"
+    },
+    "R-03": {
+      "type": "tts_explanation",
+      "title": "Why option D is wrong",
+      "text": "Bronze keeps raw data exactly as it arrived.",
+      "show_slide": "fixture-deck-p02",
+      "content_ref": null,
+      "citations": [
+        "fixture-deck-p02-c1"
+      ],
+      "status": "ok"
+    },
+    "R-04": {
+      "type": "tts_explanation",
+      "title": "Why option A is wrong",
+      "text": "Bronze keeps raw data exactly as it arrived.",
+      "show_slide": "fixture-deck-p02",
+      "content_ref": null,
+      "citations": [
+        "fixture-deck-p02-c1"
+      ],
+      "status": "ok"
+    },
+    "R-05": {
+      "type": "tts_explanation",
+      "title": "Why option C is wrong",
+      "text": "Bronze keeps raw data exactly as it arrived.",
+      "show_slide": "fixture-deck-p02",
+      "content_ref": null,
+      "citations": [
+        "fixture-deck-p02-c1"
+      ],
+      "status": "ok"
+    },
+    "R-06": {
+      "type": "tts_explanation",
+      "title": "Why option D is wrong",
+      "text": "Bronze keeps raw data exactly as it arrived.",
+      "show_slide": "fixture-deck-p02",
+      "content_ref": null,
+      "citations": [
+        "fixture-deck-p02-c1"
+      ],
+      "status": "ok"
+    },
+    "R-07": {
+      "type": "tts_explanation",
+      "title": "Why option A is wrong",
+      "text": "Keep bronze unchanged for replay.",
+      "show_slide": "fixture-deck-p06",
+      "content_ref": null,
+      "citations": [
+        "fixture-deck-p06-c1"
+      ],
+      "status": "ok"
+    },
+    "R-08": {
+      "type": "tts_explanation",
+      "title": "Why option C is wrong",
+      "text": "Keep bronze unchanged for replay.",
+      "show_slide": "fixture-deck-p06",
+      "content_ref": null,
+      "citations": [
+        "fixture-deck-p06-c1"
+      ],
+      "status": "ok"
+    },
+    "R-09": {
+      "type": "tts_explanation",
+      "title": "Why option D is wrong",
+      "text": "Keep bronze unchanged for replay.",
+      "show_slide": "fixture-deck-p06",
+      "content_ref": null,
+      "citations": [
+        "fixture-deck-p06-c1"
+      ],
+      "status": "ok"
+    }
+  }
+}

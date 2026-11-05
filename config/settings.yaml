@@ -57,6 +57,14 @@ prep:
   fallback_segment_slides: 3    # used only when the Segmenter fails twice
   fallback_script: "Please look at the slide on screen."
 
+service:
+  # FastAPI service (uvicorn classpilot.service.app:app). Paths relative to the repo root.
+  data_dir: outputs/service     # uploads, mock tables, manifests, slide images, traces
+  max_upload_mb: 100            # AI_PARSE_DOCUMENT limit per file
+  cors_origins:                 # the front end's origin(s); Sai sets the real one
+    - http://localhost:3000
+    - http://localhost:5173
+
 objects:
   # Parse-layer Snowflake objects (sql/04, sql/05). Role, warehouse, database, schema: .env
   raw_stage: RAW_MATERIALS

@@ -270,3 +270,9 @@ is no longer updated)
 - 2026-11-05 [decision] User: close Stage 7 without a third run; the fixes go to Stage 9
   (STAGES.md, Stage 9 tasks), where labeled prep Guardian cases decide between
   instruction changes, compiling, or another model.
+- 2026-11-05 [result] Stage 7 cost (ACCOUNT_USAGE, `sql/probes/stage7_cost_reading.sql`):
+  `CLASSPILOT_WH` 0.1757 (20:00 UTC hour: inventory, re-chunk, run 1) + 0.1339 (21:00
+  hour: run 2, checks) = 0.31 credits, about 4x Stage 5, since AI_COMPLETE keeps the
+  warehouse up for the whole run (4-5 min each); search embedding 0.0003, serving
+  0.0000. AI credits (query 1) not yet read.
+

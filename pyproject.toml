@@ -14,10 +14,14 @@ dependencies = [
     "python-pptx>=1.0",  # slide text and speaker notes
     "pypdfium2>=5",      # PDF text layer, page objects, PNG rendering
     "pillow>=10",        # PNG encoding and downscaling, fixture images
+    # Service API (Stage 8): prep, live, and (Stage 10) report endpoints.
+    "fastapi>=0.115",
+    "uvicorn>=0.30",
+    "python-multipart>=0.0.9",  # file uploads (UploadFile / Form)
 ]
 
 [project.optional-dependencies]
-dev = ["pytest", "ruff"]
+dev = ["pytest", "ruff", "httpx"]  # httpx: FastAPI TestClient
 # Only for scripts/ and BACKEND=cortex. Tests and mock mode do not need it.
 # snowflake-core = Cortex Search Python API. Do not add Snowpark or snowflake-ml-python:
 # they require connector < 5.

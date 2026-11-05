@@ -87,6 +87,13 @@ class PrepSettings(BaseModel):
     fallback_script: str = "Please look at the slide on screen."
 
 
+class ServiceSettings(BaseModel):
+    # FastAPI service (Stage 8). Paths are relative to the repo root.
+    data_dir: str = "outputs/service"  # uploads, tables (mock), manifests, slide images, traces
+    max_upload_mb: int = 100  # AI_PARSE_DOCUMENT accepts up to 100 MB per file
+    cors_origins: list[str] = ["http://localhost:3000", "http://localhost:5173"]
+
+
 class Settings(BaseModel):
     backend: Literal["mock", "cortex"] = "mock"
     poll: PollSettings = PollSettings()
@@ -94,6 +101,7 @@ class Settings(BaseModel):
     llm: LLMSettings = LLMSettings()
     parse: ParseSettings = ParseSettings()
     prep: PrepSettings = PrepSettings()
+    service: ServiceSettings = ServiceSettings()
     objects: ObjectNames = ObjectNames()
 
 

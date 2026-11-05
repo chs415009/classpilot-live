@@ -474,3 +474,16 @@ def test_no_reference_chunks_needed_keeps_the_top_hits_only(tables):
     run(tables, llm, material, retrieval_top_k=1, script_reference_chunks=0)
     p02 = next(i for i in llm.inputs_of("script_writer") if i["slide_id"] == f"{P}02")
     assert len(p02["chunks"]) <= 2  # its own chunk + 1 retrieved
+
+
+def test_generation_progress_counts_items(tables):
+    events = []
+    material = load_material(LESSON, tables)
+    deps = GenerateDeps(
+        MockPrepLLM(), MockRetriever(material.retrieval_rows()), PrepSettings(), PollSettings()
+    )
+    Generator(material, deps, progress=lambda *e: events.append(e)).run()
+    assert events[0][:2] == ("generating", 0)
+    assert [e[3] for e in events[1:3]] == ["segments", f"script {P}01"]
+    assert events[-1][1:3] == (11, 11)  # segments + 6 scripts + placement + 3 polls
+    assert all(step == "generating" and done <= total for step, done, total, _ in events)

@@ -102,9 +102,9 @@ def test_only_image_and_unsure_pages_reach_vision(tmp_path):
         f"{ref_id}/pages/p03.png",
         f"{ref_id}/pages/p04.png",
     ]
-    # Only the flagged PNGs and the originals were uploaded; one refresh per file.
+    # Only the flagged PNGs and the originals were uploaded; one refresh after all uploads.
     pngs = sorted(p for p in deps.stage.files if p.endswith(".png"))
-    assert len(pngs) == 4 and deps.stage.refreshes == 2
+    assert len(pngs) == 4 and deps.stage.refreshes == 1
     assert reports[1].parse_calls == 1 and reports[0].parse_calls == 0
 
 
@@ -275,3 +275,24 @@ def test_cli_prep_parse_and_search_mock(tmp_path, monkeypatch, capsys):
     with pytest.raises(SystemExit):
         cli.main(["prep", "search", "--lesson", "l1", "dbt model select"])
     assert "fixture-deck-p05-c1" in capsys.readouterr().out
+
+
+def test_parse_progress_moves_forward_through_the_steps(tmp_path, docx):
+    events = []
+    deps = make_deps(tmp_path)
+    parse_lesson("lesson-a", [DECK_PPTX], [docx], deps, progress=lambda *e: events.append(e))
+    steps = [e[0] for e in events]
+    order = ["converting", "uploading", "parsing", "chunking"]
+    assert [s for i, s in enumerate(steps) if i == 0 or steps[i - 1] != s] == order
+    parsing = [(done, total) for step, done, total, _ in events if step == "parsing"]
+    assert parsing[0] == (0, 6) and parsing[-1] == (7, 7)  # 6 slides, then 1 DOCX page
+    assert events[-1][:3] == ("chunking", 2, 2)
+
+
+def test_known_files_skip_upload_and_parse_progress(tmp_path):
+    deps = make_deps(tmp_path)
+    parse_lesson("lesson-a", [DECK_PPTX], [], deps)
+    events = []
+    parse_lesson("lesson-b", [DECK_PPTX], [], deps, progress=lambda *e: events.append(e))
+    assert ("uploading", 0, 0, "") in events and ("parsing", 0, 0, "") in events
+    assert deps.stage.refreshes == 1  # only the first lesson uploaded anything

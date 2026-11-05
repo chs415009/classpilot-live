@@ -242,8 +242,17 @@ def with_retries(
 
 
 class Generator:
-    def __init__(self, material: LessonMaterial, deps: GenerateDeps):
+    def __init__(
+        self,
+        material: LessonMaterial,
+        deps: GenerateDeps,
+        progress: Callable[[str, int, int, str], None] | None = None,
+    ):
         self.m = material
+        self.progress = progress or (lambda step, done, total, detail: None)
+        self.done = 0
+        # segments + scripts + placement + polls; grows if dropped polls bring backups
+        self.total = 2 + len(material.slides) + deps.prep.poll_count
         self.deps = deps
         self.llm = CountingLLM(deps.llm)
         self.report = GenerationReport(material.lesson_id, deps.prep.poll_count)
@@ -251,6 +260,11 @@ class Generator:
         self.template = template_lines([s.page.text_layer for s in material.slides])
 
     # ----- helpers -----
+
+    def tick(self, detail: str) -> None:
+        self.done += 1
+        self.total = max(self.total, self.done)
+        self.progress("generating", self.done, self.total, detail)
 
     def call(self, task: str, inputs: dict) -> dict:
         return call_llm(self.llm, task, inputs, self.deps.prep.llm_timeout_seconds)
@@ -355,6 +369,7 @@ class Generator:
         for s in self.m.slides:
             seg = by_slide[s.slide_id]
             script, status = self.script(s, seg, total)
+            self.tick(f"script {s.slide_id}")
             slides[s.slide_id] = Slide(
                 order=s.order, image_ref=f"slides/{s.slide_id}.png", script=script, status=status
             )
@@ -459,6 +474,7 @@ class Generator:
             q_n += 1
             qid = f"q-{q_n:02d}"
             question, new_mis, new_rem = self.poll(seg, qid, len(misconceptions))
+            self.tick(f"poll {qid}")
             seg.questions[qid] = question
             if question.status != "dropped":
                 seg.active_poll = qid
@@ -610,11 +626,15 @@ class Generator:
     # ----- all -----
 
     def run(self) -> GenerationResult:
+        self.progress("generating", 0, self.total, "")
         segments = self.segments()
+        self.total = 2 + len(self.m.slides) + min(self.deps.prep.poll_count, len(segments))
+        self.tick("segments")
         slides = self.scripts(segments)
         misconceptions, remediations = {}, {}
         if self.deps.prep.poll_count > 0:
             candidates = self.placement(segments)
+            self.tick("placement")
             misconceptions, remediations = self.polls(segments, candidates)
         poll = self.deps.poll
         try:

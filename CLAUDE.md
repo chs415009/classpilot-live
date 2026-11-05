@@ -50,10 +50,12 @@ Shared files: `CLAUDE.md`, `README.md`, `interface_questions.md`, `LICENSE`, `.g
 - Ask before adding any dependency.
 - Tests never call Snowflake or other network services.
 - **Interfaces between parts** (manifest, HTTP API shapes, decision and trace records,
-  table names) are agreed in `interface_questions.md`. Do not change a shared contract
-  alone; use a clearly marked draft until it is agreed.
+  table names) are recorded in `interface_questions.md`. The part that owns an interface
+  may decide it first and record it there as `decided`, with the reason; any other part
+  can reopen it by writing what it needs changed. Items that need another part's input
+  stay `open`.
 - `[verify]`: check current official docs (or a small approved probe) before relying on
-  it; do not guess API names. `[team]`: decided by the team, not by one person.
+  it; do not guess API names. `[team]`: an interface between parts, recorded in `interface_questions.md` as above.
 - Docs, code, comments, and commit messages are in English.
 
 ## Where things are

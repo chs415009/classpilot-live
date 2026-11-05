@@ -100,7 +100,7 @@ is no longer updated)
   Probe stage dropped; v1 `LESSON_SEARCH` suspended (Stage 3 asks before `RESUME`).
   Probe scripts: `scripts/probes/`, SQL: `sql/probes/`.
 
-## Stage 2: Live paths, manifest, and trace on v2 contracts (mock)
+## Stage 2: Live paths, manifest, and trace on v2 contracts (mock) — accepted 2026-11-04
 
 - 2026-11-04 [decision] Modules move to the ANALYSIS 2.6 layout as they change
   (`contracts/`, `rules/`, `live/`). Fixture lessons and manifest stay in `content/`
@@ -121,3 +121,8 @@ is no longer updated)
 - 2026-11-04 [change] The agent side decides the interface items it can settle and
   records them as `decided` (teammates can reopen them); it no longer waits for team
   agreement. Q-13 to Q-21 decided; poll evidence now carries `lesson_id`.
+- 2026-11-04 [result] Both live paths run on the v2 contracts in mock mode (12 scenarios,
+  126 tests); v1-only code and data removed; trace v2 and the decision log are written
+  for every run. No Snowflake use.
+
+## Stage 3: Live agents as DSPy modules

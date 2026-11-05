@@ -214,6 +214,9 @@ approval before the next stage. Details are in `docs/v2/STAGES.md`.
   - install: `pip install -e ".[dev]"` (add `,snowflake` for the Cortex backend)
   - LibreOffice (PPTX → PDF, Docker only, nothing on the host): `scripts/libreoffice/build.sh`
   - local conversion: `python -m classpilot.cli prep convert <slides> --ref <reference>`
+  - parse a lesson: `python -m classpilot.cli prep parse --lesson <id> <slides> --ref <ref>`
+    (mock; `BACKEND=cortex` after approval); `prep search --lesson <id> "<query>"`
+  - SQL templates: `python scripts/run_sql.py sql/<file>.sql` (prints; `--execute` runs)
   - tests: `pytest`
   - lint / format: `ruff check .` and `ruff format --check .` (`ruff format .` to fix)
   - scenarios: `python -m classpilot.cli run-all`

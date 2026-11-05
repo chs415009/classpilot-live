@@ -56,6 +56,7 @@ Details and history stay in `docs/agent/note.md`.
 - **Why change:** Names must not clash with Yaksha's Bronze/Silver/Gold models.
 - **Suggested direction:** Agree names and schema; Yaksha's dbt does not build these tables.
 - **Decision (agent side, 2026-11-04):** The names above. The prep service creates and writes them (SQL shown before it runs, Stage 5); the pipeline's dbt does not build or write them.
+- **Update (agent side, 2026-11-05, Stage 5):** Created by `sql/04_parse_objects.sql`, columns there. `RAW_FILES` key (`LESSON_ID`, `FILE_ID`); `PARSED_PAGES` key (`FILE_ID`, `PAGE_INDEX`, 1-based), lesson-independent; `LESSON_CHUNKS_V2` key (`LESSON_ID`, `CHUNK_ID`), text column `CHUNK_TEXT`, `ORIGIN` `text_layer | llm_description`. Search service `LESSON_SEARCH_V2` (`sql/05`) filters on `LESSON_ID`. Names are configurable (`config/settings.yaml` `objects`).
 
 ## Q-18 Prep service API and slide image delivery
 - **Status:** decided · **Area:** HTTP API · **Affects:** front end (Sai) · **Raised:** 2026-11-04

@@ -334,8 +334,9 @@ of slides and references get a vision `AI_COMPLETE` description. The results bec
 stable chunks in `LESSON_CHUNKS_V2` with a `lesson_id`-filtered search service.
 Depends on: Stages 1 and 4; draft table names (`[team]`, Yaksha).
 Tasks:
-- SQL (parameterized object names, shown before running). First check with a small
-  probe which statements accept `IDENTIFIER($var)` (deferred from Stage 0):
+- SQL (parameterized object names, shown before running). Object names are filled in
+  client-side by `scripts/run_sql.py` from `.env` and settings (user decision
+  2026-11-05; replaces the planned `IDENTIFIER($var)` probe):
   - stage `@RAW_MATERIALS` with a directory table
   - `RAW_FILES`, `PARSED_PAGES`
   - `LESSON_CHUNKS_V2` with change tracking

@@ -174,3 +174,23 @@ is no longer updated)
 - 2026-11-05 [result] `prep convert` handles the fixture deck and the real deck (14
   slides, aligned, 3 image slides) and reference (3 pages); 204 tests. No Snowflake use.
 
+## Stage 5: Parse layer in Snowflake, chunks, and search
+
+- 2026-11-05 [decision] User: SQL object names are rendered client-side
+  (`scripts/run_sql.py`), no `IDENTIFIER($var)` probe. The v1 service is only a
+  development aid and is not re-checked.
+- 2026-11-05 [finding] Docs: `AI_PARSE_DOCUMENT` supports page_split for PDF, PPTX, DOCX;
+  `index` is 0-based; 100 MB and 2,000 pages per file. Cortex Search recommends at most
+  512 tokens per chunk (default embedding model truncates beyond that); `PRIMARY KEY`
+  columns must be TEXT. https://docs.snowflake.com/en/sql-reference/functions/ai_parse_document
+  https://docs.snowflake.com/en/user-guide/snowflake-cortex/cortex-search/cortex-search-overview
+- 2026-11-05 [finding] Live (current account): 1 `AI_PARSE_DOCUMENT` (3 pages) and 7 vision
+  calls, none failed; the real deck plus reference took about 61 s. Creating
+  `LESSON_SEARCH_V2` over 57 rows took 7 s.
+- 2026-11-05 [finding] The 2 reference pages flagged `unsure` (text callout boxes) got
+  "No diagrams ... only text" descriptions, and those chunks ranked first for an ADT
+  query. Vision on text-only pages wastes calls and adds noise chunks.
+- 2026-11-05 [result] Real deck + reference parsed into 25 chunks; a second lesson with
+  the same files made 0 calls with the same ids; `lesson_id` filter returned only the
+  queried lesson's chunks (4 queries). Service suspended. 245 tests.
+

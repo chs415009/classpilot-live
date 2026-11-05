@@ -4,8 +4,9 @@ Uses a separate connection so the session setting does not leak into other probe
 import json
 import time
 
-from classpilot.adapters.snowflake import connect
 from common import model_name, save
+
+from classpilot.adapters.snowflake import connect
 
 conn = connect()
 cur = conn.cursor()

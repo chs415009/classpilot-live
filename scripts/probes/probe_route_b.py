@@ -5,10 +5,10 @@ import json
 import warnings
 
 import dspy
-
-from classpilot.adapters.snowflake import shared_connection
 from common import QUESTION, Analyst, model_name, objectives_text, save, timed
 from cortex_engine import CortexCompleteEngine
+
+from classpilot.adapters.snowflake import shared_connection
 
 warnings.filterwarnings("ignore")
 
@@ -27,13 +27,21 @@ for name, adapter in [
 ]:
     engine = CortexCompleteEngine(conn, timeout_s=10)
     pred, err, secs = timed(ask, engine, adapter)
-    results[name] = {"prediction": dict(pred) if pred else None, "error": err,
-                     "seconds": secs, "calls": engine.calls}
+    results[name] = {
+        "prediction": dict(pred) if pred else None,
+        "error": err,
+        "seconds": secs,
+        "calls": engine.calls,
+    }
 
 engine = CortexCompleteEngine(conn, timeout_s=1)
 long_q = "Write a 2000-word essay on every layer of the medallion architecture. " + QUESTION
 pred, err, secs = timed(ask, engine, dspy.ChatAdapter(use_json_adapter_fallback=False), long_q)
-results["forced_timeout"] = {"error": err, "seconds": secs, "prediction": dict(pred) if pred else None}
+results["forced_timeout"] = {
+    "error": err,
+    "seconds": secs,
+    "prediction": dict(pred) if pred else None,
+}
 
 print(save("route_b", results))
 print(json.dumps(results, indent=2, default=str))

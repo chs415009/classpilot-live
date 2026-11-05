@@ -1,12 +1,9 @@
 """DSPy custom engine over AI_COMPLETE, shared by the Route B probes."""
 
-
 import json
 import warnings
 
-import dspy
 from dspy import lm15
-
 
 warnings.filterwarnings("ignore")
 SQL = (
@@ -46,6 +43,9 @@ class CortexCompleteEngine:
         value = result["value"]
         text = value if isinstance(value, str) else json.dumps(value)
         return lm15.Response(
-            id=None, model=request.model, message=lm15.Message.assistant(text),
-            finish_reason="stop", usage=lm15.Usage(),
+            id=None,
+            model=request.model,
+            message=lm15.Message.assistant(text),
+            finish_reason="stop",
+            usage=lm15.Usage(),
         )

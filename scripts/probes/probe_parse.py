@@ -5,9 +5,10 @@ page_split. Saves the full output to outputs/probes/ (gitignored; real course co
 import json
 import time
 
+from common import save
+
 from classpilot.adapters.snowflake import shared_connection
 from classpilot.settings import PROJECT_ROOT
-from common import save
 
 MATERIALS = PROJECT_ROOT / "materials"
 FILES = ["L1_pdf.pdf", "L1_slide.pdf"]
@@ -33,21 +34,30 @@ for name in FILES:
             (name,),
         ).fetchone()
         parsed = json.loads(row[0]) if isinstance(row[0], str) else row[0]
-        results[name] = {"seconds": round(time.perf_counter() - start, 2),
-                         "query_id": cur.sfqid, "output": parsed}
+        results[name] = {
+            "seconds": round(time.perf_counter() - start, 2),
+            "query_id": cur.sfqid,
+            "output": parsed,
+        }
     except Exception as exc:
-        results[name] = {"seconds": round(time.perf_counter() - start, 2),
-                         "error": f"{type(exc).__name__}: {str(exc)[:300]}"}
+        results[name] = {
+            "seconds": round(time.perf_counter() - start, 2),
+            "error": f"{type(exc).__name__}: {str(exc)[:300]}",
+        }
 
 print(save("parse", results))
 print("listing:", listing)
 for name in FILES:
     r = results[name]
     if "error" in r:
-        print(name, "ERROR", r["error"]); continue
+        print(name, "ERROR", r["error"])
+        continue
     out = r["output"]
     pages = out.get("pages", [])
-    print(f"{name}: {r['seconds']} s, keys={list(out)}, pageCount={out.get('metadata', {}).get('pageCount')}, pages={len(pages)}")
+    print(
+        f"{name}: {r['seconds']} s, keys={list(out)}, "
+        f"pageCount={out.get('metadata', {}).get('pageCount')}, pages={len(pages)}"
+    )
     for p in pages:
         c = p.get("content", "")
         print(f"  page index={p.get('index')} chars={len(c)} first={c[:70]!r}")

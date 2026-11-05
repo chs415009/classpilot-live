@@ -4,10 +4,10 @@
 import warnings
 
 import dspy
-
-from classpilot.adapters.snowflake import shared_connection
 from common import model_name, save, timed
 from cortex_engine import CortexCompleteEngine
+
+from classpilot.adapters.snowflake import shared_connection
 
 warnings.filterwarnings("ignore")
 

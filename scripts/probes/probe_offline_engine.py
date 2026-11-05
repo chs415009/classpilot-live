@@ -4,9 +4,8 @@ JSONAdapter, and how malformed output and engine errors surface to the caller.""
 import warnings
 
 import dspy
-from dspy import lm15
-
 from common import QUESTION, Analyst, objectives_text, save, timed
+from dspy import lm15
 
 warnings.filterwarnings("ignore")
 
@@ -20,8 +19,11 @@ class RecordingEngine:
         if self.error:
             raise self.error
         return lm15.Response(
-            id=None, model=request.model, message=lm15.Message.assistant(self.reply),
-            finish_reason="stop", usage=lm15.Usage(),
+            id=None,
+            model=request.model,
+            message=lm15.Message.assistant(self.reply),
+            finish_reason="stop",
+            usage=lm15.Usage(),
         )
 
 
@@ -42,8 +44,11 @@ for name, adapter, reply in [
     ("json_good", dspy.JSONAdapter(), GOOD_JSON),
     ("chat_malformed", dspy.ChatAdapter(use_json_adapter_fallback=False), "sorry, no idea"),
     ("json_malformed", dspy.JSONAdapter(), "not json at all"),
-    ("chat_bad_literal", dspy.ChatAdapter(use_json_adapter_fallback=False),
-     GOOD_CHAT.replace("in_scope", "maybe")),
+    (
+        "chat_bad_literal",
+        dspy.ChatAdapter(use_json_adapter_fallback=False),
+        GOOD_CHAT.replace("in_scope", "maybe"),
+    ),
 ]:
     engine = RecordingEngine(reply=reply)
     pred, err, _ = timed(run, engine, adapter)

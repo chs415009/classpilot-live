@@ -14,8 +14,14 @@ from classpilot.settings import PROJECT_ROOT
 
 OUT_DIR = PROJECT_ROOT / "outputs" / "probes"
 OBJECTIVES = [
-    {"objective_id": "objective-01", "title": "Explain the purpose of the Bronze, Silver and Gold layers"},
-    {"objective_id": "objective-02", "title": "Explain why the Bronze layer keeps raw data unchanged"},
+    {
+        "objective_id": "objective-01",
+        "title": "Explain the purpose of the Bronze, Silver and Gold layers",
+    },
+    {
+        "objective_id": "objective-02",
+        "title": "Explain why the Bronze layer keeps raw data unchanged",
+    },
     {"objective_id": "objective-03", "title": "Build dbt models with ref() and add dbt tests"},
 ]
 QUESTION = "Why do we keep raw data in Bronze if it has errors?"
@@ -54,6 +60,8 @@ def timed(fn, *args, **kwargs):
     try:
         return fn(*args, **kwargs), None, round(time.perf_counter() - start, 2)
     except Exception as exc:  # probes record every failure
-        return None, f"{type(exc).__module__}.{type(exc).__name__}: {exc}", round(
-            time.perf_counter() - start, 2
+        return (
+            None,
+            f"{type(exc).__module__}.{type(exc).__name__}: {exc}",
+            round(time.perf_counter() - start, 2),
         )

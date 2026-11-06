@@ -21,6 +21,7 @@ from classpilot.contracts import (
     StudentQuestion,
 )
 from classpilot.contracts.trace import (
+    PROMPT_VERSION,
     ClaimRecord,
     DecisionLogEntry,
     LLMCallRecord,
@@ -219,7 +220,14 @@ def run_question(
     )
     created_at = utc_now()
     records = question_records(
-        state, decision, deps.settings, created_at, started_at, utc_now_ms(), total_ms
+        state,
+        decision,
+        deps.settings,
+        created_at,
+        started_at,
+        utc_now_ms(),
+        total_ms,
+        prompt_version=getattr(deps.llm, "prompt_version", PROMPT_VERSION),
     )
     log = DecisionLogEntry(
         created_at=created_at, lesson_id=question.lesson_id, decision=decision, question=question
@@ -235,6 +243,7 @@ def question_records(
     started_at: str,
     ended_at: str,
     total_ms: int,
+    prompt_version: str = PROMPT_VERSION,
 ) -> list:
     """Trace v2 records for one question. Node statuses are read back from the state
     with the same rules the graph used; nothing here changes the decision."""
@@ -327,6 +336,7 @@ def question_records(
                     call_id=f"{decision.decision_id}-{name}",
                     node_name=name,
                     model=model or "unknown",
+                    prompt_version=prompt_version,
                     latency_ms=latency.get(name, 0),
                     retry_count=0,
                     error_count=1 if name in errors else 0,

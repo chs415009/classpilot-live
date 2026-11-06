@@ -30,6 +30,7 @@ class QuestionSettings(BaseModel):
 class LLMSettings(BaseModel):
     model: str | None = None
     timeout_seconds: float = 10
+    compiled_program: str | None = None  # id of compiled/<id>.json; None: uncompiled
 
 
 class ImagePageSettings(BaseModel):

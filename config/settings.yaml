@@ -19,6 +19,7 @@ llm:
   # Also tested: llama3.3-70b, claude-haiku-4-5. Not used in mock mode.
   model: mistral-large3
   timeout_seconds: 10
+  compiled_program: null   # id of a compiled/<id>.json program (Stage 9); null: uncompiled
 
 parse:
   # Local conversion before upload (prep convert). LibreOffice runs in Docker only:

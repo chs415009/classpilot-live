@@ -1,0 +1,52 @@
+{
+  "program_id": "fixture-compiled-v0",
+  "created_at": "2026-11-06T00:23:36Z",
+  "dspy_version": "3.4.1",
+  "modules": {
+    "analyst": {
+      "traces": [],
+      "train": [],
+      "demos": [
+        {
+          "objectives": "- seg-01: Stacks and queues",
+          "question": "Why is a stack called LIFO?",
+          "category": "in_scope",
+          "objective_id": "seg-01",
+          "reason": "Asks about stacks, an objective of this lesson."
+        }
+      ],
+      "signature": {
+        "instructions": "You help run a class session on this lesson.\nClassify the student question into exactly one category:\n- in_scope: about the lesson objectives below\n- out_of_scope: not about this lesson (logistics, other topics, personal requests)\n- assignment_like: asks for answers to graded work (assignments, homework, quizzes)",
+        "fields": [
+          {
+            "prefix": "Objectives:",
+            "description": "lesson objectives, one per line as '- <id>: <title>'"
+          },
+          {
+            "prefix": "Question:",
+            "description": "the student question"
+          },
+          {
+            "prefix": "Category:",
+            "description": "${category}"
+          },
+          {
+            "prefix": "Objective Id:",
+            "description": "id of the linked objective, or null"
+          },
+          {
+            "prefix": "Reason:",
+            "description": "one sentence"
+          }
+        ]
+      },
+      "lm": null
+    }
+  },
+  "meta": {
+    "note": "test fixture, synthetic",
+    "trainset": [
+      "fixture-1"
+    ]
+  }
+}

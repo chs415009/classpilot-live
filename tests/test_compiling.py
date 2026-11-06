@@ -7,6 +7,7 @@ import dspy
 import pytest
 from test_agents import FakeEngine, chat_reply
 
+from classpilot.adapters.llm import MockLLM
 from classpilot.adapters.mock_prep import MockPrepLLM
 from classpilot.agents.compiled import (
     COMPILED_DIR,
@@ -18,7 +19,14 @@ from classpilot.agents.compiled import (
 )
 from classpilot.agents.prep_signatures import PREP_SIGNATURES
 from classpilot.agents.program import DSPyAgents
-from classpilot.compiling import compile_writer, load_prep_trainset, writer_check
+from classpilot.compiling import (
+    compile_live,
+    compile_writer,
+    load_live_trainset,
+    load_prep_trainset,
+    responder_check,
+    writer_check,
+)
 from classpilot.settings import load_settings
 
 
@@ -93,3 +101,37 @@ def test_committed_programs_hold_only_synthetic_chunks():
         text = json.dumps(json.loads(path.read_text())["modules"])
         for marker in ("l1-", "info6205", "INFO 6205"):
             assert marker not in text, f"{path.name} holds course content ({marker})"
+
+
+# ---------- live Analyst and Responder ----------
+
+LIVE = load_live_trainset()
+
+
+def test_live_trainset_puts_the_dev_failure_patterns_first():
+    assert [i.item_id for i in LIVE["analyst"][:2]] == ["tr-09", "tr-06"]
+    labels = {i.item_id: i.expected for i in LIVE["analyst"]}
+    assert labels["tr-12"] == "out_of_scope" and labels["tr-15"] == "assignment_like"
+    assert labels["tr-16"] == "in_scope"  # low_confidence is decided after the Analyst
+    assert len(LIVE["responder"]) == 9 and all(i.chunks for i in LIVE["responder"])
+
+
+def test_analyst_compile_keeps_only_matching_categories():
+    reply = chat_reply(category="in_scope", objective_id="seg-05", reason="About the lesson.")
+    compiled = compile_live("analyst", LIVE["analyst"], lm(FakeEngine(reply)), max_demos=2)
+    assert len(compiled.demos) == 2
+    assert {d["category"] for d in compiled.demos} == {"in_scope"}
+
+
+def test_responder_check_runs_the_live_rules():
+    item = LIVE["responder"][0]
+    cited = item.chunks[0]
+    good = {
+        "answer_text": cited["text"],
+        "citations": [cited["chunk_id"]],
+        "confidence": 0.9,
+        "grounded": True,
+    }
+    assert responder_check(item, good, MockLLM(), 5, 0.7, 0.8) == []
+    low = {**good, "confidence": 0.2}
+    assert responder_check(item, low, MockLLM(), 5, 0.7, 0.8) == ["check_response: low_confidence"]

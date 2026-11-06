@@ -1,14 +1,19 @@
-"""Compile the prep writers with DSPy BootstrapFewShot (Stage 9).
+"""Compile the prep writers and the live Analyst and Responder with DSPy
+BootstrapFewShot (Stage 9).
 
-The trainset is synthetic (`eval/prep_train.json` + the synthetic lesson), so the demos
-saved to `compiled/` hold no course content. The metric is the same check a prep run
-makes: the structure check, then the prep Guardian on the cited chunks, then the
-Guardian rule in code (quotes included). Only writer outputs that pass become demos.
+Trainsets are synthetic (`eval/prep_train.json`, `eval/questions_train.json`), so the
+demos saved to `compiled/` hold no course content. Each metric is the check the system
+itself makes, so only outputs that pass become demos:
+- writers: structure check, then the uncompiled prep Guardian, then the Guardian rule;
+- analyst: the category matches the label (escalations other than out_of_scope and
+  assignment_like are decided later, so the Analyst should say in_scope);
+- responder (answer questions only): `rules.check_response`, then the uncompiled live
+  Guardian on the retrieved chunks, then `rules.check_guardian`.
 
-    python -m classpilot.cli compile --program-id prep-writers-v1   # BACKEND=cortex
+    python -m classpilot.cli compile --side prep --program-id prep-writers-v5
+    python -m classpilot.cli compile --side live --program-id live-qa-v1   # BACKEND=cortex
 
-Each tried example costs one writer call and one Guardian call; BootstrapFewShot stops
-after `max_demos` passing examples per writer.
+BootstrapFewShot goes through the items in order and stops after `max_demos` passes.
 """
 
 import json
@@ -19,14 +24,18 @@ import dspy
 from dspy.teleprompt import BootstrapFewShot
 
 from classpilot.adapters.llm import LLMClient, LLMError, call_llm
+from classpilot.adapters.retrieval import MockRetriever
 from classpilot.agents.prep_program import (
     NO_FEEDBACK,
     prep_prediction_dict,
     prep_signature_inputs,
 )
 from classpilot.agents.prep_signatures import PREP_SIGNATURES
-from classpilot.agents.program import RulesFirstChatAdapter
+from classpilot.agents.program import RulesFirstChatAdapter, prediction_dict, signature_inputs
+from classpilot.agents.signatures import SIGNATURES
+from classpilot.contracts import ResponderOutput
 from classpilot.contracts.prep import ExplanationOutput, ScriptOutput
+from classpilot.eval_sets import TRAIN_SET_PATH, load_question_set
 from classpilot.prep.tts import strip_emphasis
 from classpilot.rules.prep import (
     check_prep_guardian,
@@ -34,6 +43,7 @@ from classpilot.rules.prep import (
     parse_output,
     script_problems,
 )
+from classpilot.rules.question import check_guardian, check_response, parse_or_none
 from classpilot.settings import PROJECT_ROOT
 
 PREP_TRAIN_PATH = PROJECT_ROOT / "eval" / "prep_train.json"
@@ -181,16 +191,145 @@ def compile_writer(
         log.tried.append({"task": task, "item": item.item_id, "problems": problems})
         return not problems
 
+    trainset = [to_example(item, n) for n, item in enumerate(items)]
+    return bootstrap(PREP_SIGNATURES[task][0], trainset, metric, lm, max_demos)
+
+
+def bootstrap(signature, trainset: list[dspy.Example], metric, lm: dspy.LM, max_demos: int):
     optimizer = BootstrapFewShot(
         metric=metric,
         max_bootstrapped_demos=max_demos,
         max_labeled_demos=0,  # no hand-written outputs; demos come only from passing runs
         max_rounds=1,
-        max_errors=len(items),
+        max_errors=len(trainset),
     )
-    student = dspy.Predict(PREP_SIGNATURES[task][0])
-    trainset = [to_example(item, n) for n, item in enumerate(items)]
     adapter = RulesFirstChatAdapter(use_json_adapter_fallback=False)
     with dspy.context(lm=lm, adapter=adapter):
-        compiled = optimizer.compile(student, trainset=trainset)
-    return compiled
+        return optimizer.compile(dspy.Predict(signature), trainset=trainset)
+
+
+# ---------- live Analyst and Responder ----------
+
+LIVE_TASKS = ("analyst", "responder")
+# Tried first, so the demos show what the dev baseline got wrong: a question about an
+# example or a sub-topic the objective titles do not name is still in scope.
+ANALYST_FIRST = ("tr-09", "tr-06", "tr-08", "tr-12", "tr-15")
+RESPONDER_FIRST = ("tr-09", "tr-04", "tr-05")
+
+
+@dataclass
+class LiveItem:
+    task: str
+    item_id: str
+    inputs: dict  # structured node inputs, as the live graph passes them
+    expected: str | None = None  # analyst: the category to match
+    chunks: list[dict] = field(default_factory=list)  # responder: the retrieved chunks
+
+
+def analyst_category(expected_reason: str | None) -> str:
+    return expected_reason if expected_reason in ("out_of_scope", "assignment_like") else "in_scope"
+
+
+def _first(items: list[LiveItem], ids: tuple[str, ...]) -> list[LiveItem]:
+    rank = {item_id: n for n, item_id in enumerate(ids)}
+    return sorted(items, key=lambda i: rank.get(i.item_id, len(ids)))
+
+
+def load_live_trainset(path: Path = TRAIN_SET_PATH, top_k: int = 3) -> dict[str, list[LiveItem]]:
+    qset = load_question_set(path)
+    if qset.split != "train":
+        raise ValueError(f"{path}: split must be 'train'")
+    objectives = [
+        {"objective_id": o["objective_id"], "title": o["title"]} for o in qset.content.objectives
+    ]
+    retriever = MockRetriever(qset.content.chunks)
+    analyst, responder = [], []
+    for q in qset.questions:
+        analyst.append(
+            LiveItem(
+                "analyst",
+                q.id,
+                {"question_text": q.question_text, "objectives": objectives},
+                expected=analyst_category(q.expected_reason),
+            )
+        )
+        if q.expected_action == "answer":
+            hits = retriever.search(q.question_text, top_k, qset.content.lesson_id)
+            chunks = [{"chunk_id": h.chunk_id, "text": h.text, "score": h.score} for h in hits]
+            responder.append(
+                LiveItem(
+                    "responder",
+                    q.id,
+                    {"question_text": q.question_text, "chunks": chunks},
+                    chunks=chunks,
+                )
+            )
+    return {
+        "analyst": _first(analyst, ANALYST_FIRST),
+        "responder": _first(responder, RESPONDER_FIRST),
+    }
+
+
+def responder_check(
+    item: LiveItem,
+    raw: dict,
+    guardian: LLMClient,
+    timeout_s: float,
+    confidence_threshold: float,
+    rescue_coverage: float | None,
+) -> list[str]:
+    """Problems of one Responder output, as the live validator would find them."""
+    response = parse_or_none(ResponderOutput, raw)
+    if response is None:
+        return ["The output did not match the schema."]
+    ids = [c["chunk_id"] for c in item.chunks]
+    reason = check_response(response, ids, confidence_threshold)
+    if reason is not None:
+        return [f"check_response: {reason}"]
+    shown = sorted(item.chunks, key=lambda c: c["chunk_id"] not in response.citations)
+    inputs = {
+        "question_text": item.inputs["question_text"],
+        "answer_text": response.answer_text,
+        "cited_chunks": shown,
+    }
+    try:
+        raw_g = call_llm(guardian, "guardian", inputs, timeout_s)
+    except LLMError as exc:
+        return [f"Guardian: {exc}"]
+    texts = {c["chunk_id"]: c["text"] for c in item.chunks}
+    check = check_guardian(raw_g, ids, texts, rescue_coverage)
+    return [] if check.passed else [f"Guardian: {check.reason}"]
+
+
+def compile_live(
+    task: str,
+    items: list[LiveItem],
+    lm: dspy.LM,
+    max_demos: int = 2,
+    log: CompileLog | None = None,
+    guardian: LLMClient | None = None,
+    timeout_s: float = 10,
+    confidence_threshold: float = 0.7,
+    rescue_coverage: float | None = None,
+) -> dspy.Predict:
+    """BootstrapFewShot for the live Analyst or Responder (items in the order given)."""
+    log = log if log is not None else CompileLog()
+
+    def metric(example, prediction, trace=None) -> bool:
+        item = items[example.item_index]
+        raw = prediction_dict(task, prediction)
+        if task == "analyst":
+            got = raw.get("category")
+            problems = [] if got == item.expected else [f"category {got}, label {item.expected}"]
+        else:
+            problems = responder_check(
+                item, raw, guardian, timeout_s, confidence_threshold, rescue_coverage
+            )
+        log.tried.append({"task": task, "item": item.item_id, "problems": problems})
+        return not problems
+
+    trainset = []
+    for n, item in enumerate(items):
+        fields = signature_inputs(task, item.inputs)
+        trainset.append(dspy.Example(**fields, item_index=n).with_inputs(*fields))
+    return bootstrap(SIGNATURES[task][0], trainset, metric, lm, max_demos)

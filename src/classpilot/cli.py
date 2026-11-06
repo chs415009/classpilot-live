@@ -288,8 +288,43 @@ def run_guardian_eval_file(path: Path | None, overrides: dict | None) -> None:
     print(f"wrote {out}")
 
 
+def run_compile_live(args, settings) -> tuple[dict, dict]:
+    """Analyst and Responder on the synthetic train questions; returns (modules, meta)."""
+    from classpilot.adapters.cortex_engine import make_cortex_lm
+    from classpilot.agents.program import DSPyAgents
+    from classpilot.compiling import CompileLog, compile_live, load_live_trainset
+
+    items = load_live_trainset(args.train, settings.question.retrieval_top_k)
+    guardian = DSPyAgents(make_cortex_lm(settings))  # uncompiled live Guardian as the metric
+    log, modules = CompileLog(), {}
+    for task in args.task:
+        modules[task] = compile_live(
+            task,
+            items[task],
+            make_cortex_lm(settings),
+            args.max_demos,
+            log,
+            guardian,
+            settings.llm.timeout_seconds,
+            settings.question.confidence_threshold,
+            settings.question.guardian_rescue_coverage,
+        )
+        print(f"{task}: {len(modules[task].demos)} demos")
+    meta = {
+        "trainset": args.train.name,
+        "metric": "analyst: category label; responder: check_response + uncompiled Guardian "
+        "+ check_guardian (retrieved chunks, word rescue)",
+        "optimizer": "BootstrapFewShot",
+        "max_bootstrapped_demos": args.max_demos,
+        "model": settings.llm.model,
+        "tried": log.tried,
+    }
+    return modules, meta
+
+
 def run_compile(args) -> int:
-    """Compile the prep writers on the synthetic trainset and save compiled/<id>.json."""
+    """Compile the prep writers or the live Analyst/Responder on a synthetic trainset and
+    save compiled/<id>.json."""
     from classpilot.adapters.cortex_engine import make_prep_lm
     from classpilot.agents.compiled import COMPILED_DIR, program_path, save_program
     from classpilot.agents.prep_program import DSPyPrepAgents
@@ -303,10 +338,16 @@ def run_compile(args) -> int:
     if program_path(args.program_id).exists() and not args.overwrite:
         print(f"{program_path(args.program_id)} exists; pass --overwrite to replace it")
         return 2
+    start = time.perf_counter()
+    if args.side == "live":
+        modules, meta = run_compile_live(args, settings)
+        path = save_program(args.program_id, modules, meta, COMPILED_DIR)
+        seconds = round(time.perf_counter() - start, 1)
+        print(f"tried {len(meta['tried'])} examples in {seconds} s; wrote {path}")
+        return 0
     items = load_prep_trainset(args.train)
     guardian = DSPyPrepAgents(make_prep_lm(settings))  # uncompiled Guardian as the metric
     log, modules = CompileLog(), {}
-    start = time.perf_counter()
     for task in args.task:
         modules[task] = compile_writer(
             task,
@@ -365,16 +406,21 @@ def main(argv: list[str] | None = None) -> None:
     sheet_cmd.add_argument("cases", type=Path)
 
     compile_cmd = sub.add_parser(
-        "compile", help="compile the prep writers on the synthetic trainset (BACKEND=cortex)"
+        "compile", help="compile prep writers or live agents on a synthetic trainset (cortex)"
     )
     compile_cmd.add_argument("--program-id", required=True, help="compiled/<id>.json")
+    compile_cmd.add_argument("--side", choices=["prep", "live"], default="prep")
     compile_cmd.add_argument(
         "--task",
         action="append",
-        choices=["script_writer", "explanation_writer"],
-        help="writer to compile; repeat for both (default: both)",
+        choices=["script_writer", "explanation_writer", "analyst", "responder"],
+        help="module to compile; repeat for several (default: both of the side)",
     )
-    compile_cmd.add_argument("--train", type=Path, default=Path("eval/prep_train.json"))
+    compile_cmd.add_argument(
+        "--train",
+        type=Path,
+        help="trainset (default: eval/prep_train.json or eval/questions_train.json)",
+    )
     compile_cmd.add_argument("--max-demos", type=int, default=2)
     compile_cmd.add_argument("--overwrite", action="store_true")
 
@@ -429,7 +475,15 @@ def main(argv: list[str] | None = None) -> None:
 
     args = parser.parse_args(argv)
     if args.command == "compile":
-        args.task = args.task or ["script_writer", "explanation_writer"]
+        defaults = {
+            "prep": (["script_writer", "explanation_writer"], "eval/prep_train.json"),
+            "live": (["analyst", "responder"], "eval/questions_train.json"),
+        }
+        tasks, train = defaults[args.side]
+        args.task = args.task or tasks
+        args.train = args.train or Path(train)
+        if not set(args.task) <= set(tasks):
+            parser.error(f"--side {args.side} compiles {', '.join(tasks)}")
         raise SystemExit(run_compile(args))
 
     if args.command == "prep":

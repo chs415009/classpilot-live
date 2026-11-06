@@ -394,3 +394,11 @@ is no longer updated)
   explained. Spot check: nothing misleading; minor: p04 calls the lecture outline "the
   course outline", one recipe analogy is muddled, q-04's wrong options are too easy.
   Stage 9 calls so far about 676 (cap raised to about 800).
+- 2026-11-06 [decision] User: live answers follow the same bar (rewording and direct
+  inferences pass; nothing made up or beyond the syllabus). The live Guardian now sees
+  every retrieved chunk (cited first) and `rules.check_guardian` has the word rescue
+  (`question.guardian_rescue_coverage` 0.8). Live Guardian prompt unchanged.
+- 2026-11-06 [finding] The baseline live Guardian blocked dv-06/07/09 for the same three
+  causes as prep: an inference (dv-06), a missed rewording plus an uncited retrieved
+  chunk (dv-07), and a claim word for word in a cited chunk (dv-09). Retrieval had
+  every needed chunk in all three. Round 2: 13 live dev cases labeled (12 pass, 1 fail).

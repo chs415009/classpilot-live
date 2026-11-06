@@ -395,6 +395,12 @@ Rules:
 - No retry in class. Escalate reasons: `out_of_scope`, `assignment_like`,
   `low_confidence`, `unsupported`, `llm_error`.
 - Retrieval filtered by `lesson_id`.
+- Guardian (Stage 9, user decision): it sees every retrieved chunk, cited ones first, so
+  true content the Responder forgot to cite is not a failure. `rules.check_guardian`
+  passes a claim the Guardian could not tie when `question.guardian_rescue_coverage`
+  (0.8) of its content words are in one retrieved chunk and it adds no negation
+  (`rules/support.py`). The bar: rewording and direct inferences from the materials
+  pass; anything made up or beyond the syllabus escalates.
 - Every decision is also written to the decision log with its text (question, answer,
   citations, escalation reason) for the report.
 

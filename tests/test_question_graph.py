@@ -21,6 +21,21 @@ def test_question_answer_has_citations_and_trace(deps, make_question):
     assert {"analyst", "retrieval", "responder", "guardian", "total"} <= out.latency_ms.keys()
 
 
+def test_guardian_sees_every_retrieved_chunk_cited_first(settings, content, make_question):
+    class Recording(MockLLM):
+        def complete(self, task, inputs):
+            if task == "guardian":
+                self.guardian_inputs = inputs
+            return super().complete(task, inputs)
+
+    llm = Recording()
+    deps = Deps(settings, content, llm, MockRetriever(content.chunks))
+    out = run_question(make_question("Why do we keep raw data in Bronze if it has errors?"), deps)
+    shown = [c["chunk_id"] for c in llm.guardian_inputs["cited_chunks"]]
+    assert shown[0] == out.decision.citations[0]
+    assert sorted(shown) == sorted(out.retrieved_chunk_ids) and len(shown) > 1
+
+
 def test_assignment_question_stops_at_the_analyst(deps, make_question):
     question = make_question(
         "Can you write the dbt model that deduplicates the orders table for Assignment 1?"

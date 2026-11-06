@@ -172,7 +172,7 @@ question -> Question Analyst -> retrieval (Cortex Search) -> Grounded Responder
 | Question Analyst | LLM | Classifies the question as in scope, out of scope, or assignment-like; links it to a learning objective |
 | Retrieval | Search | Finds the most relevant knowledge chunks |
 | Grounded Responder | LLM | Answers only from the retrieved chunks, cites chunk ids, gives a confidence |
-| Guardian | LLM + rule | Lists each claim in the answer with the chunk that supports it; a rule fails the answer if any claim is unsupported |
+| Guardian | LLM + rule | Lists each claim in the answer with the retrieved chunk that supports it; a rule fails the answer if any claim is unsupported (a claim whose words code finds in a retrieved chunk counts as supported). Rewording and direct inferences pass; nothing beyond the materials |
 | Final validator | Rule | Makes the final decision: answer or escalate |
 
 **Answer:** the student sees the answer and which source pages it came from.

@@ -174,7 +174,11 @@ def prep_inputs(case: GuardianCase) -> dict:
 
 
 def run_case(
-    case: GuardianCase, llm: LLMClient, timeout_s: float, rule_options: dict | None = None
+    case: GuardianCase,
+    llm: LLMClient,
+    timeout_s: float,
+    rule_options: dict | None = None,
+    live_rescue: float | None = None,
 ) -> dict:
     """The Guardian's verdict on one case, decided by the same rule code as in use."""
     row = {"id": case.id, "kind": case.kind, "expected": case.expected, "note": case.note}
@@ -194,7 +198,12 @@ def run_case(
                 "raw": None,
                 "latency_ms": result.latency_ms,
             }
-        check = rules.check_guardian(result.raw, case.chunk_ids)
+        check = rules.check_guardian(
+            result.raw,
+            case.chunk_ids,
+            {c.chunk_id: c.text for c in case.chunks},
+            live_rescue,
+        )
         verdict = {True: "pass", False: "fail", None: "error"}[check.passed]
         return {
             **row,
@@ -315,7 +324,15 @@ def run_case_eval(
     for case in case_set.cases:
         live = case.kind == "live"
         timeout = settings.llm.timeout_seconds if live else settings.prep.llm_timeout_seconds
-        rows.append(run_case(case, llms[case.kind], timeout, prep_rule_options(settings.prep)))
+        rows.append(
+            run_case(
+                case,
+                llms[case.kind],
+                timeout,
+                prep_rule_options(settings.prep),
+                settings.question.guardian_rescue_coverage,
+            )
+        )
     return {
         "backend": settings.backend,
         "set_id": case_set.set_id,

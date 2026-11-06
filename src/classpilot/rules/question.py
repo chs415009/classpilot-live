@@ -1,6 +1,6 @@
 """Path B rules: the final validator and the checks it uses. The LLM never decides."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from pydantic import ValidationError
 
@@ -11,6 +11,7 @@ from classpilot.contracts import (
     GuardianOutput,
     ResponderOutput,
 )
+from classpilot.rules.support import rescued_by_words
 
 
 def parse_or_none(model: type, raw: dict | None):
@@ -26,27 +27,45 @@ def parse_or_none(model: type, raw: dict | None):
 class GuardianCheck:
     passed: bool | None  # None when the Guardian output does not match the schema
     reason: str
+    rescued: list[str] = field(default_factory=list)  # claims passed by the word check
 
 
-def check_guardian(guardian_raw: dict | None, cited_ids: list[str]) -> GuardianCheck:
+def check_guardian(
+    guardian_raw: dict | None,
+    chunk_ids: list[str],
+    chunk_texts: dict[str, str] | None = None,
+    rescue_coverage: float | None = None,
+) -> GuardianCheck:
     """Pass only if the Guardian says pass AND its own claim list backs that up.
 
     The LLM lists claims and their supporting chunks; this rule makes the call, so a
-    "pass" verdict next to an unsupported claim still fails.
+    "pass" verdict next to an unsupported claim still fails. `chunk_ids` are the chunks
+    the Guardian saw (Stage 9: every retrieved chunk, not only the cited ones). With
+    `chunk_texts` and `rescue_coverage`, a claim the Guardian left without a chunk
+    passes if code finds its words in one of those chunks (`rescued_by_words`); a "fail"
+    verdict whose only unsupported claims were rescued then passes too.
     """
     output = parse_or_none(GuardianOutput, guardian_raw)
     if output is None:
         return GuardianCheck(None, "Guardian output does not match the schema.")
-    if output.verdict != "pass":
-        return GuardianCheck(False, output.reason)
     if output.reveals_graded_work:
         return GuardianCheck(False, "Answer gives away graded work.")
     if not output.claims:
         return GuardianCheck(False, "Guardian listed no claims to check.")
-    unsupported = [c.claim for c in output.claims if c.chunk_id not in cited_ids]
+    texts = [chunk_texts[i] for i in chunk_ids if chunk_texts and i in chunk_texts]
+    unsupported, rescued = [], []
+    for c in output.claims:
+        if c.chunk_id in chunk_ids:
+            continue
+        if rescue_coverage is not None and rescued_by_words(c.claim, texts, rescue_coverage):
+            rescued.append(c.claim)
+        else:
+            unsupported.append(c.claim)
     if unsupported:
-        return GuardianCheck(False, f"Not supported by cited chunks: {unsupported[0]!r}")
-    return GuardianCheck(True, output.reason)
+        return GuardianCheck(False, f"Not supported by the chunks: {unsupported[0]!r}", rescued)
+    if output.verdict != "pass" and not rescued:
+        return GuardianCheck(False, output.reason)
+    return GuardianCheck(True, output.reason, rescued)
 
 
 def check_response(
@@ -80,6 +99,8 @@ def validate_final(
     guardian_raw: dict | None,
     retrieved_ids: list[str],
     confidence_threshold: float,
+    retrieved_texts: dict[str, str] | None = None,
+    rescue_coverage: float | None = None,
 ) -> ValidatorResult:
     """The only place where the final answer/escalate decision is made."""
     if early_reason is not None:
@@ -102,7 +123,7 @@ def validate_final(
     if reason is not None:
         return escalate(reason)
 
-    check = check_guardian(guardian_raw, response.citations)
+    check = check_guardian(guardian_raw, retrieved_ids, retrieved_texts, rescue_coverage)
     if check.passed is None:
         return escalate("llm_error")
     if not check.passed:

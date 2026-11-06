@@ -1,3 +1,5 @@
+import pytest
+
 from classpilot import rules
 
 GOOD_ANALYST = {"category": "in_scope", "objective_id": "seg-02", "reason": "x"}
@@ -166,7 +168,7 @@ def test_check_guardian_overrides_pass_with_unsupported_claim():
     assert "Kafka" in check.reason
 
 
-def test_check_guardian_rejects_claim_from_uncited_chunk():
+def test_check_guardian_rejects_claim_from_a_chunk_it_did_not_see():
     claims = (("Duplicates are removed in Silver.", "chunk-02"),)
     assert rules.check_guardian(guardian(claims=claims), ["chunk-05"]).passed is False
 
@@ -193,3 +195,33 @@ def test_check_response():
     assert check(citations=["chunk-09"]) == "unsupported"
     assert check(grounded=False) == "unsupported"
     assert check(confidence=0.3) == "low_confidence"
+
+
+# ---------- Stage 9: every retrieved chunk, word rescue ----------
+
+TEXTS = {"chunk-01": "Bronze keeps raw data exactly as it arrived, for replay."}
+
+
+def test_word_rescue_passes_a_claim_the_guardian_could_not_tie():
+    claims = (("Bronze keeps the raw data as it arrived.", None),)
+    check = rules.check_guardian(guardian("fail", claims), ["chunk-01"], TEXTS, 0.8)
+    assert check.passed is True and check.rescued == ["Bronze keeps the raw data as it arrived."]
+
+
+@pytest.mark.parametrize(
+    "claim",
+    ["Bronze does not keep raw data.", "Java has single inheritance only."],
+)
+def test_word_rescue_never_passes_negations_or_new_facts(claim):
+    check = rules.check_guardian(guardian("fail", ((claim, None),)), ["chunk-01"], TEXTS, 0.8)
+    assert check.passed is False
+
+
+def test_without_rescue_a_fail_verdict_still_fails():
+    claims = (("Bronze keeps the raw data as it arrived.", None),)
+    assert rules.check_guardian(guardian("fail", claims), ["chunk-01"], TEXTS).passed is False
+
+
+def test_validator_uses_retrieved_chunks_and_rescue():
+    claims = (("Bronze keeps raw data.", "chunk-02"),)  # retrieved, not cited
+    assert validate(guardian_raw=guardian(claims=claims)).action == "answer"

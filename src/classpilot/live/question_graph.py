@@ -123,13 +123,12 @@ def build_question_graph(deps: Deps):
 
     def guardian(state: QuestionState) -> dict:
         response = ResponderOutput.model_validate(state["responder_raw"])
-        cited = [
-            {"chunk_id": c.chunk_id, "text": c.text}
-            for c in state["retrieved"]
-            if c.chunk_id in response.citations
-        ]
+        # Stage 9 (user decision): the Guardian sees every retrieved chunk, cited first,
+        # so true content the Responder forgot to cite is not a failure.
+        ordered = sorted(state["retrieved"], key=lambda c: c.chunk_id not in response.citations)
+        shown = [{"chunk_id": c.chunk_id, "text": c.text} for c in ordered]
         result = run_guardian(
-            state["question"].question_text, response.answer_text, cited, deps.llm, timeout_s
+            state["question"].question_text, response.answer_text, shown, deps.llm, timeout_s
         )
         update = {
             "nodes_run": ["guardian"],
@@ -150,6 +149,8 @@ def build_question_graph(deps: Deps):
             guardian_raw=state.get("guardian_raw"),
             retrieved_ids=[c.chunk_id for c in state.get("retrieved", [])],
             confidence_threshold=settings.question.confidence_threshold,
+            retrieved_texts={c.chunk_id: c.text for c in state.get("retrieved", [])},
+            rescue_coverage=settings.question.guardian_rescue_coverage,
         )
         return {"result": result, "nodes_run": ["validator"]}
 
@@ -275,7 +276,13 @@ def question_records(
     if "guardian" not in ran:
         status["guardian"] = "skip"
     else:
-        check = rules.check_guardian(state.get("guardian_raw"), citations)
+        retrieved = state.get("retrieved", [])
+        check = rules.check_guardian(
+            state.get("guardian_raw"),
+            [c.chunk_id for c in retrieved],
+            {c.chunk_id: c.text for c in retrieved},
+            settings.question.guardian_rescue_coverage,
+        )
         if "guardian" in errors or check.passed is None:
             status["guardian"] = "fail"
         else:

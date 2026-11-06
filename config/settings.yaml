@@ -49,6 +49,7 @@ prep:
   # to the data model; each item's outcome is its manifest `status`.
   poll_count: 5                 # at most one poll per segment; fewer are accepted
   max_retries: 1                # retries with the Guardian's feedback, then the fallback
+  malformed_retries: 1          # same call again after an unparseable reply (not timeouts)
   model: null                   # Cortex model for generation; null: llm.model (Stage 7)
   llm_timeout_seconds: 60
   max_tokens: 1500

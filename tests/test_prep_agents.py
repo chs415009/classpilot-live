@@ -5,7 +5,7 @@ import pytest
 from dspy import lm15
 from test_agents import FakeEngine, chat_reply
 
-from classpilot.adapters.llm import LLMError, call_llm
+from classpilot.adapters.llm import LLMError, MalformedReplyError, call_llm
 from classpilot.adapters.mock_prep import MockPrepLLM, ScriptedPrepLLM
 from classpilot.agents.prep_program import DSPyPrepAgents, prep_signature_inputs
 from classpilot.agents.prep_signatures import GENERATORS, PREP_SIGNATURES
@@ -194,6 +194,20 @@ def test_rules_come_first_in_the_system_message():
 def test_timeout_error_or_bad_reply_is_llm_error(engine):
     with pytest.raises(LLMError):
         call_llm(agents(engine), "poll_writer", INPUTS["poll_writer"], timeout_s=0.1)
+
+
+def test_fenced_field_value_parses():
+    claims = '```json\n[{"claim": "Bronze keeps raw data.", "chunk_id": "d-p02-c1"}]\n```'
+    reply = chat_reply(claims=claims, verdict="pass", reason="ok")
+    engine = FakeEngine(reply)
+    raw = call_llm(agents(engine), "explanation_guardian", INPUTS["explanation_guardian"], 5)
+    assert raw["claims"][0]["chunk_id"] == "d-p02-c1"
+
+
+@pytest.mark.parametrize("reply", ["[[ ", "not the field format"])
+def test_unparseable_reply_is_a_malformed_reply_error(reply):
+    with pytest.raises(MalformedReplyError):
+        call_llm(agents(FakeEngine(reply)), "poll_writer", INPUTS["poll_writer"], 5)
 
 
 # ---------- mock ----------

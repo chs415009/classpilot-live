@@ -18,6 +18,10 @@ class LLMError(Exception):
     """Timeout, connection problem, or unusable output from the LLM."""
 
 
+class MalformedReplyError(LLMError):
+    """The model replied, but the reply could not be parsed into the output fields."""
+
+
 class LLMClient(Protocol):
     def complete(self, task: str, inputs: dict) -> dict:
         """Return the outputs of one task (analyst, responder, guardian) as a dict.

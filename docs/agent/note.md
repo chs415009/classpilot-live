@@ -343,3 +343,12 @@ is no longer updated)
   were checked on these dev cases, so the number is optimistic.
 - 2026-11-06 [finding] `claude-haiku-4-5` as prep Guardian on the same cases: 4/9
   caught, 6 false fails. Worse on both; prep Guardian stays on mistral-large3.
+- 2026-11-06 [result] Prep confirmation run on L1 after the fixes (76 calls): scripts
+  ok 8 / fallback 6 (Stage 7: 9 / 5); polls pass the Guardian more often (4 of 5 on a
+  first or second attempt, Stage 7: 2 of 5), but every poll is still dropped because
+  an explanation fails. The stored drafts show the writers still add their own
+  content (menu analogy, bank account, "car class inherits from vehicle"); the
+  Guardians caught those correctly. 3 malformed replies: 2 empty `[[ `, 1 fenced JSON.
+- 2026-11-06 [change] Malformed replies: the adapter drops ``` fence lines before
+  parsing (live and prep); prep asks the same call again once on an unparseable reply
+  (`prep.malformed_retries`), never on a timeout. Live keeps the safe path (escalate).

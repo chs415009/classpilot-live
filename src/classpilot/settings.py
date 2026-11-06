@@ -78,6 +78,7 @@ class PrepSettings(BaseModel):
     # Generation and the prep-time Guardian (Stage 6, IMPLEMENTATION_NOTES 5 and 7.4).
     poll_count: int = 5  # at most this many polls; fewer are accepted
     max_retries: int = 1  # retries with Guardian feedback before the fallback
+    malformed_retries: int = 1  # same call again after an unparseable reply (not timeouts)
     model: str | None = None  # Cortex model for generation; None: llm.model
     llm_timeout_seconds: float = 60  # per call; prep is not time-critical
     max_tokens: int = 1500

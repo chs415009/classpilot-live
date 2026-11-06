@@ -27,7 +27,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Literal
 
-from classpilot.adapters.llm import LLMClient, LLMError, call_llm
+from classpilot.adapters.llm import LLMClient, LLMError, MalformedReplyError, call_llm
 from classpilot.adapters.retrieval import RetrievalError, Retriever
 from classpilot.contracts.manifest import (
     Manifest,
@@ -271,7 +271,15 @@ class Generator:
         self.progress("generating", self.done, self.total, detail)
 
     def call(self, task: str, inputs: dict) -> dict:
-        return call_llm(self.llm, task, inputs, self.deps.prep.llm_timeout_seconds)
+        """One LLM call; a malformed reply is asked again up to `malformed_retries` times
+        (Stage 7/9: 2-3 empty or fenced replies per run). Timeouts are not retried."""
+        timeout = self.deps.prep.llm_timeout_seconds
+        for _ in range(self.deps.prep.malformed_retries):
+            try:
+                return call_llm(self.llm, task, inputs, timeout)
+            except MalformedReplyError:
+                continue
+        return call_llm(self.llm, task, inputs, timeout)
 
     def retrieve(self, query: str, base: list[dict], min_references: int = 0) -> list[dict]:
         """`base` chunks plus the top `retrieval_top_k` retrieved lesson chunks, without

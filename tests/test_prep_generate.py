@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from classpilot.adapters.llm import LLMError
+from classpilot.adapters.llm import LLMError, MalformedReplyError
 from classpilot.adapters.mock_prep import MockPrepLLM
 from classpilot.adapters.parse import MockParser, MockStage, MockVision
 from classpilot.adapters.retrieval import MockRetriever
@@ -218,6 +218,18 @@ def test_every_attempt_keeps_its_draft(tables):
     failing = Rigged(script_writer=first_calls(LLMError("timeout"), 1))
     first = item(run(tables, failing), f"script {P}01").attempts[0]
     assert first.outcome == "llm_error" and first.draft is None
+
+
+def test_malformed_reply_is_asked_again_once_timeouts_are_not(tables):
+    llm = Rigged(script_guardian=for_slide("02", MalformedReplyError("[[ "), times=1))
+    result = run(tables, llm)
+    attempts = item(result, f"script {P}02").attempts
+    assert [a.outcome for a in attempts] == ["pass"] and attempts[0].calls == 3
+    twice = Rigged(script_guardian=for_slide("02", MalformedReplyError("[[ "), times=2))
+    assert item(run(tables, twice), f"script {P}02").attempts[0].outcome == "llm_error"
+    timeout = Rigged(script_guardian=for_slide("02", LLMError("timed out"), times=1))
+    first = item(run(tables, timeout), f"script {P}02").attempts[0]
+    assert first.outcome == "llm_error" and first.calls == 2
 
 
 # ---------- script fallbacks ----------

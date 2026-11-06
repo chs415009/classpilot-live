@@ -6,6 +6,7 @@ a plain dict. The dict is unchecked: the validator parses it with the pydantic m
 Errors are not caught here; `call_llm` turns every exception into `LLMError`.
 """
 
+import re
 import textwrap
 
 import dspy
@@ -56,6 +57,9 @@ def prediction_dict(task: str, prediction: dspy.Prediction) -> dict:
     return out
 
 
+FENCE_LINE = re.compile(r"^[ \t]*```[A-Za-z]*[ \t]*$", re.MULTILINE)
+
+
 class RulesFirstChatAdapter(dspy.ChatAdapter):
     """ChatAdapter with the signature's instructions at the top of the system message.
 
@@ -63,6 +67,11 @@ class RulesFirstChatAdapter(dspy.ChatAdapter):
     the v1 Guardian cases that cost 2-3 of 8 catches against the Stage 4 baseline, whose
     prompt led with the strict rules (Stage 3 finding, docs/agent/note.md).
     """
+
+    def parse(self, signature: type[dspy.Signature], completion: str) -> dict:
+        # Stage 9: mistral-large3 sometimes wraps a field's JSON value in a ``` fence,
+        # which the stock parser rejects. Fence lines carry no content; drop them.
+        return super().parse(signature, FENCE_LINE.sub("", completion))
 
     def format_system_message(self, signature: type[dspy.Signature]) -> str:
         return (

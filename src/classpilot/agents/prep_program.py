@@ -18,7 +18,9 @@ Structured inputs (a chunk is `{"chunk_id", "slide_id" (None for references), "t
 """
 
 import dspy
+from dspy.utils.exceptions import AdapterParseError
 
+from classpilot.adapters.llm import MalformedReplyError
 from classpilot.agents.prep_signatures import PREP_SIGNATURES
 from classpilot.agents.program import RulesFirstChatAdapter, _none_if_null
 
@@ -140,5 +142,8 @@ class DSPyPrepAgents:
 
     def complete(self, task: str, inputs: dict) -> dict:
         with dspy.context(lm=self.lm, adapter=self.adapter):
-            prediction = self.modules[task](**prep_signature_inputs(task, inputs))
+            try:
+                prediction = self.modules[task](**prep_signature_inputs(task, inputs))
+            except AdapterParseError as exc:
+                raise MalformedReplyError(f"{task}: malformed reply: {exc}") from exc
         return prep_prediction_dict(task, prediction)

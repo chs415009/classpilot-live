@@ -22,7 +22,7 @@ from classpilot.contracts.prep import (
     SegmenterOutput,
 )
 from classpilot.prep.tts import generated_text_issues
-from classpilot.rules.support import rescued_by_words
+from classpilot.rules.support import fail_verdict_explained_by, rescued_by_words
 
 
 def parse_output[M: BaseModel](model: type[M], raw: dict | None) -> M | None:
@@ -278,6 +278,8 @@ def check_prep_guardian(
             for o in wrong_options
             if o not in shown
         ]
-    if output.verdict != "pass" and not problems and not rescued:
+    others = [c.claim for c in output.claims if c.claim not in rescued]
+    overruled = fail_verdict_explained_by(output.reason, rescued, others)
+    if output.verdict != "pass" and not problems and not overruled:
         problems.append(output.reason or "The Guardian failed the item.")
     return PrepCheck(not problems, problems, rescued)

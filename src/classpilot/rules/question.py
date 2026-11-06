@@ -11,7 +11,7 @@ from classpilot.contracts import (
     GuardianOutput,
     ResponderOutput,
 )
-from classpilot.rules.support import rescued_by_words
+from classpilot.rules.support import fail_verdict_explained_by, rescued_by_words
 
 
 def parse_or_none(model: type, raw: dict | None):
@@ -42,8 +42,9 @@ def check_guardian(
     "pass" verdict next to an unsupported claim still fails. `chunk_ids` are the chunks
     the Guardian saw (Stage 9: every retrieved chunk, not only the cited ones). With
     `chunk_texts` and `rescue_coverage`, a claim the Guardian left without a chunk
-    passes if code finds its words in one of those chunks (`rescued_by_words`); a "fail"
-    verdict whose only unsupported claims were rescued then passes too.
+    passes if code finds its words in one of those chunks (`rescued_by_words`). A "fail"
+    verdict stands unless its reason names only rescued claims
+    (`fail_verdict_explained_by`).
     """
     output = parse_or_none(GuardianOutput, guardian_raw)
     if output is None:
@@ -63,8 +64,9 @@ def check_guardian(
             unsupported.append(c.claim)
     if unsupported:
         return GuardianCheck(False, f"Not supported by the chunks: {unsupported[0]!r}", rescued)
-    if output.verdict != "pass" and not rescued:
-        return GuardianCheck(False, output.reason)
+    others = [c.claim for c in output.claims if c.claim not in rescued]
+    if output.verdict != "pass" and not fail_verdict_explained_by(output.reason, rescued, others):
+        return GuardianCheck(False, output.reason, rescued)
     return GuardianCheck(True, output.reason, rescued)
 
 

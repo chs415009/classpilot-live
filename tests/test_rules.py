@@ -204,7 +204,9 @@ TEXTS = {"chunk-01": "Bronze keeps raw data exactly as it arrived, for replay."}
 
 def test_word_rescue_passes_a_claim_the_guardian_could_not_tie():
     claims = (("Bronze keeps the raw data as it arrived.", None),)
-    check = rules.check_guardian(guardian("fail", claims), ["chunk-01"], TEXTS, 0.8)
+    raw = guardian("fail", claims)
+    raw["reason"] = "'Bronze keeps the raw data as it arrived' is not in a chunk."
+    check = rules.check_guardian(raw, ["chunk-01"], TEXTS, 0.8)
     assert check.passed is True and check.rescued == ["Bronze keeps the raw data as it arrived."]
 
 
@@ -225,3 +227,23 @@ def test_without_rescue_a_fail_verdict_still_fails():
 def test_validator_uses_retrieved_chunks_and_rescue():
     claims = (("Bronze keeps raw data.", "chunk-02"),)  # retrieved, not cited
     assert validate(guardian_raw=guardian(claims=claims)).action == "answer"
+
+
+def test_a_fail_verdict_naming_an_unrescued_claim_stands():
+    # v1 case gc-09: the invented claim got a chunk id, but the reason names it.
+    raw = guardian(
+        "fail",
+        (
+            ("Duplicates are removed in the Silver models.", "chunk-01"),
+            ("Bronze keeps the raw data as it arrived.", None),
+        ),
+    )
+    raw["reason"] = "The claim 'Duplicates are removed in the Silver models' is not supported."
+    check = rules.check_guardian(raw, ["chunk-01"], TEXTS, 0.8)
+    assert check.passed is False and check.rescued
+
+
+def test_a_fail_verdict_with_a_reason_naming_no_claim_stands():
+    raw = guardian("fail", (("Bronze keeps the raw data as it arrived.", None),))
+    raw["reason"] = "Something is off."
+    assert rules.check_guardian(raw, ["chunk-01"], TEXTS, 0.8).passed is False

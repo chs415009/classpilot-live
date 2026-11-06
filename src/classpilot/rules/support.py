@@ -46,3 +46,20 @@ def rescued_by_words(claim: str, chunk_texts: list[str], min_coverage: float) ->
         if share >= min_coverage and _negations(claim) <= _negations(text):
             return True
     return False
+
+
+def _mentions(reason: str, claim: str) -> bool:
+    words = set(content_words(claim)) - RESCUE_IGNORED
+    if not words:
+        return False
+    return len(words & set(content_words(reason))) / len(words) >= 0.8
+
+
+def fail_verdict_explained_by(reason: str, rescued: list[str], others: list[str]) -> bool:
+    """May code overrule a "fail" verdict after rescuing `rescued`? Only if the
+    Guardian's reason names a rescued claim and no other claim. Stage 9 (v1 case gc-09):
+    the Guardian tied an invented claim to a chunk but named it as unsupported in its
+    reason, while code rescued a different, true claim; the verdict must stand."""
+    if not rescued or any(_mentions(reason, c) for c in others):
+        return False
+    return any(_mentions(reason, c) for c in rescued)

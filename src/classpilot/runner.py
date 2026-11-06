@@ -93,9 +93,10 @@ def run_eval(
     trace_path: Path | None = None,
     log_path: Path | None = None,
     set_path: Path | None = None,
+    overrides: dict | None = None,
 ) -> dict:
     """Run a labeled question set; without `set_path`, the v1 set on the fixture lesson."""
-    settings = load_settings()
+    settings = load_settings(overrides=overrides)
     if set_path is None:
         content = load_content()
         deps = make_deps(settings, content)

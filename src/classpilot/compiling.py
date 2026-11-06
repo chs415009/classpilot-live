@@ -213,7 +213,7 @@ def bootstrap(signature, trainset: list[dspy.Example], metric, lm: dspy.LM, max_
 LIVE_TASKS = ("analyst", "responder")
 # Tried first, so the demos show what the dev baseline got wrong: a question about an
 # example or a sub-topic the objective titles do not name is still in scope.
-ANALYST_FIRST = ("tr-09", "tr-06", "tr-08", "tr-12", "tr-15")
+ANALYST_FIRST = ("tr-09", "tr-06", "tr-12", "tr-15", "tr-08")
 RESPONDER_FIRST = ("tr-09", "tr-04", "tr-05")
 
 

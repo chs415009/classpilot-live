@@ -417,6 +417,7 @@ BLUEPRINT = {"c1": "An ADT is language agnostic. Think of it as an architectural
 def test_code_rescues_a_claim_the_guardian_could_not_tie(claim, passed):
     raw = kinds((claim, None, None, "example"))
     raw["verdict"] = "fail"
+    raw["reason"] = f"Not tied to a chunk: {claim}"
     check = check_prep_guardian(
         raw, ["c1"], require_claims=True, chunk_texts=BLUEPRINT, rescue_coverage=0.8
     )

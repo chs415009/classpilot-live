@@ -402,3 +402,17 @@ is no longer updated)
   causes as prep: an inference (dv-06), a missed rewording plus an uncited retrieved
   chunk (dv-07), and a claim word for word in a cited chunk (dv-09). Retrieval had
   every needed chunk in all three. Round 2: 13 live dev cases labeled (12 pass, 1 fail).
+- 2026-11-06 [result] live-qa-v1 (Analyst 3 demos, Responder 2, synthetic; 8 calls) on
+  the L1 dev set with the new live Guardian rule: action correct 25 -> 28 of 31, false
+  escalations 6 -> 3, recall 1.0, 0 unsupported let through. Fixed dv-03/06/07/15;
+  still dv-09 (Guardian) and dv-10 (Analyst: "inheritance" out of scope); new dv-12
+  (Responder added setter validation, not in L1: correct block). Latency avg 4.1 ->
+  4.8 s, max 13.4 s, 2 of 31 over 10 s (longer prompts, 3 chunks to the Guardian).
+  Compile and the rule change cannot be separated without another dev run; the new rule
+  on the stored baseline replies changes nothing.
+- 2026-11-06 [finding] Rule hole found by the v1 regression run: gc-09 passed because
+  code rescued a true claim and overruled the "fail" verdict, while the Guardian had
+  tied the invented claim to a chunk and named it in its reason. Fix (live and prep):
+  a fail verdict stands unless its reason names only rescued claims. Re-scored stored
+  replies: v1 8/8 caught, no other result changes. Live dev cases: 1/1 caught, 2 of 12
+  false fails (baseline 3, different cases).

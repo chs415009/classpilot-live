@@ -302,7 +302,7 @@ def run_compile_live(args, settings) -> tuple[dict, dict]:
             task,
             items[task],
             make_cortex_lm(settings),
-            args.max_demos,
+            args.analyst_demos if task == "analyst" else args.max_demos,
             log,
             guardian,
             settings.llm.timeout_seconds,
@@ -388,6 +388,9 @@ def main(argv: list[str] | None = None) -> None:
     eval_cmd.add_argument(
         "--set", type=Path, help="question set file, e.g. eval/questions_train.json"
     )
+    eval_cmd.add_argument(
+        "--compiled-program", help="compiled/<id>.json for the live agents (Stage 9)"
+    )
 
     guardian_cmd = sub.add_parser(
         "guardian-eval",
@@ -422,6 +425,9 @@ def main(argv: list[str] | None = None) -> None:
         help="trainset (default: eval/prep_train.json or eval/questions_train.json)",
     )
     compile_cmd.add_argument("--max-demos", type=int, default=2)
+    compile_cmd.add_argument(
+        "--analyst-demos", type=int, default=3, help="live: demos for the short Analyst prompt"
+    )
     compile_cmd.add_argument("--overwrite", action="store_true")
 
     prep_cmd = sub.add_parser("prep", help="prep steps (before class)")
@@ -507,10 +513,15 @@ def main(argv: list[str] | None = None) -> None:
     elif args.command == "eval":
         backend = load_settings().backend
         tag = backend if args.set is None else f"{args.set.stem}_{backend}"
+        overrides = None
+        if args.compiled_program:
+            tag = f"{tag}_{args.compiled_program}"
+            overrides = {"llm": {"compiled_program": args.compiled_program}}
         result = run_eval(
             OUTPUT_DIR / f"eval_traces_{tag}.jsonl",
             OUTPUT_DIR / f"eval_decision_log_{tag}.jsonl",
             set_path=args.set,
+            overrides=overrides,
         )
         out = OUTPUT_DIR / f"eval_{tag}.json"
         out.write_text(json.dumps(result, indent=2))

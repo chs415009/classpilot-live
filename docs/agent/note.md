@@ -352,3 +352,15 @@ is no longer updated)
 - 2026-11-06 [change] Malformed replies: the adapter drops ``` fence lines before
   parsing (live and prep); prep asks the same call again once on an unparseable reply
   (`prep.malformed_retries`), never on a timeout. Live keeps the safe path (escalate).
+- 2026-11-06 [decision] User: keep a poll when one of its explanations fails (that option
+  reveals only), and compile the prep writers; bar for generated content is "does not
+  mislead", not perfect grounding.
+- 2026-11-06 [finding] Compiling: a Guardian-passed v1 demo held the writer's own
+  analogy ("like putting a fence around"), so demos need the own-comparison check too
+  (v2). The ExplanationWriter got 0 demos: in 6 tries it added analogies 3 times
+  (recipe, shopping bag, coffee line) and the Guardian wrongly failed 2.
+- 2026-11-06 [result] L1 prep with prep-writers-v2 + own-comparison check + safety net
+  (91 calls): script fallbacks 3 (before 6), 4 polls live (before 0), 6 of 12 wrong
+  options explained, the rest reveal only. Spot check: no misleading explanation; R-06
+  calls overloading "polymorphism" (narrower than the lesson's definition) and q-05
+  uses Abstraction as a wrong option (wrong only within the lesson's closed list).

@@ -828,3 +828,6 @@ Stage 8 (service API, mock) decisions:
   Analyst and Responder (`live-qa-v1`). The live Guardian was not compiled (7/8 then
   8/8 on the v1 cases uncompiled). Prep Guardian stays on mistral-large3
   (claude-haiku-4-5 and claude-sonnet-4-5 did worse on the labeled cases).
+- 2026-11-06 (user) Compiled programs are the default: `llm.compiled_program:
+  live-qa-v1`, `prep.compiled_program: prep-writers-v5` (best results in Stage 9; the
+  live one adds about 0.7 s per answer on average).

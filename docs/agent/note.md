@@ -431,3 +431,5 @@ is no longer updated)
   5 -> 1. Stage 9 used about 780 LLM calls (estimate 480, cap raised to about 800).
 - 2026-11-06 [decision] User accepted Stage 9. Open: whether compiled programs become
   the default; the Stage 9 cost reading (`sql/probes/stage9_cost_reading.sql`).
+- 2026-11-06 [decision] User: compiled programs are the default (`live-qa-v1`,
+  `prep-writers-v5` in `config/settings.yaml`); tests use code defaults (uncompiled).

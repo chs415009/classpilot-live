@@ -129,8 +129,9 @@ python scripts/search_service.py status|resume|suspend   # suspend after every l
 python scripts/stage9_comparison.py                      # -> outputs/stage9_comparison.md
 ```
 
-Compiled programs are off by default (`llm.compiled_program` and `prep.compiled_program`
-are `null`); a program id becomes `prompt_version` in the trace. Cases and question sets
+The service and the CLI use the programs named in `config/settings.yaml`
+(`llm.compiled_program: live-qa-v1`, `prep.compiled_program: prep-writers-v5`; `null`
+runs the uncompiled prompts); a program id becomes `prompt_version` in the trace. Cases and question sets
 built from real course material (`materials/eval/`) are never committed. Helper scripts:
 `scripts/eval_lesson_snapshot.py` (dev set from a parsed lesson),
 `scripts/draft_prep_guardian_cases.py` and `scripts/draft_live_guardian_cases.py`

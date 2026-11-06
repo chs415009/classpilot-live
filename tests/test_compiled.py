@@ -23,7 +23,7 @@ from classpilot.content import load_content
 from classpilot.contracts import StudentQuestion
 from classpilot.contracts.trace import PROMPT_VERSION
 from classpilot.live.question_graph import Deps, run_question
-from classpilot.settings import load_settings
+from classpilot.settings import Settings, load_settings
 
 FIXTURE_DIR = Path(__file__).parent / "fixtures" / "compiled"
 FIXTURE_ID = "fixture-compiled-v0"
@@ -42,7 +42,8 @@ def test_fixture_loads_and_sets_the_prompt_version():
 
 
 def test_uncompiled_by_default():
-    agents = live_agents(load_settings(), lm(FakeEngine()), FIXTURE_DIR)
+    # Code defaults (config/settings.yaml may name a program).
+    agents = live_agents(Settings(), lm(FakeEngine()), FIXTURE_DIR)
     assert agents.prompt_version == PROMPT_VERSION == "uncompiled-v1"
     assert all(m.demos == [] for m in agents.modules.values())
 

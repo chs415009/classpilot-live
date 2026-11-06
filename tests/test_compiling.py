@@ -27,7 +27,7 @@ from classpilot.compiling import (
     responder_check,
     writer_check,
 )
-from classpilot.settings import load_settings
+from classpilot.settings import Settings, load_settings
 
 
 def lm(engine):
@@ -85,7 +85,8 @@ def test_prep_program_loads_behind_prep_compiled_program(tmp_path):
     agents = prep_agents(settings, lm(FakeEngine(reply)), tmp_path)
     assert agents.prompt_version == "prep-x"
     assert len(agents.modules["script_writer"].demos) == 2
-    assert prep_agents(load_settings(), lm(FakeEngine())).modules["script_writer"].demos == []
+    # Code defaults (the yaml may name a program): uncompiled.
+    assert prep_agents(Settings(), lm(FakeEngine())).modules["script_writer"].demos == []
 
 
 def test_a_prep_program_cannot_load_into_the_live_agents(tmp_path):

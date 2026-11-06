@@ -14,8 +14,9 @@
       ],
       "question_text": "Is a linked version of a list faster than an array-based version?",
       "answer_text": "The lesson chunks do not compare the speed of the two versions. They say that the same ADT can have several data structures behind it, such as an array-based version and a linked version.",
-      "expected": null,
-      "note": "Edge: a sentence about what the chunks do not cover, plus one supported claim"
+      "expected": "pass",
+      "note": "Saying the chunks do not cover it is not a claim; the other sentence is supported. (Edge: a sentence about what the chunks do not cover, plus one supported claim)",
+      "unsupported": []
     },
     {
       "id": "gs-02",
@@ -29,8 +30,11 @@
       ],
       "question_text": "Why are fields declared private?",
       "answer_text": "Encapsulation keeps an object's data from being changed directly from outside, so the fields are declared private and other code uses public methods. Private fields also make the program run faster.",
-      "expected": null,
-      "note": "Edge: one added sentence"
+      "expected": "fail",
+      "note": "Added unsupported claim. (Edge: one added sentence)",
+      "unsupported": [
+        "Private fields also make the program run faster."
+      ]
     },
     {
       "id": "gs-03",
@@ -44,8 +48,9 @@
       ],
       "question_text": "Which collection should I use to store unique student IDs?",
       "answer_text": "A set does not allow duplicates, so a set is a good fit for storing unique student IDs.",
-      "expected": null,
-      "note": "Edge: a supported fact plus a recommendation drawn from it"
+      "expected": "pass",
+      "note": "The chunk states a set does not allow duplicates; the recommendation follows directly. (Edge: a supported fact plus a recommendation drawn from it)",
+      "unsupported": []
     },
     {
       "id": "gs-04",
@@ -59,8 +64,9 @@
       ],
       "question_text": "For lab 1, what should the setPrice method look like?",
       "answer_text": "A setter can check the new value first. For lab 1: public void setPrice(double price) { if (price < 0) { throw new IllegalArgumentException(\"negative price\"); } this.price = price; }",
-      "expected": null,
-      "note": "Edge: concept supported, but finished code for graded work"
+      "expected": "fail",
+      "note": "Concept supported, but gives finished code for graded lab work. (Edge: concept supported, but finished code for graded work)",
+      "unsupported": []
     }
   ]
 }

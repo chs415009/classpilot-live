@@ -1,6 +1,6 @@
 {
-  "program_id": "prep-writers-v4",
-  "created_at": "2026-11-06T06:18:27Z",
+  "program_id": "prep-writers-v5",
+  "created_at": "2026-11-06T06:43:35Z",
   "dspy_version": "3.4.1",
   "modules": {
     "script_writer": {
@@ -10,28 +10,31 @@
         {
           "augmented": true,
           "objective": "Recognize how data is organized in everyday situations",
-          "slide": "syn-s01: slide 1 of 7; slide 1 of 3 in seg-01",
-          "chunks": "[syn-s01-c1] (syn-s01) Lecture 3 | Organizing Data and Object Basics | Sample Course 101\n[syn-p01-c1] (reference) People organize information all the time so it is quick to use. A music playlist keeps songs in a chosen order. People waiting at a bus stop board in the order they arrived. The undo button in a text editor removes the most recent change first.",
+          "slide": "syn-s02: slide 2 of 7; slide 2 of 3 in seg-01",
+          "chunks": "[syn-s02-c1] (syn-s02) Outline | - Organizing data | - Object basics\n[syn-p01-c1] (reference) People organize information all the time so it is quick to use. A music playlist keeps songs in a chosen order. People waiting at a bus stop board in the order they arrived. The undo button in a text editor removes the most recent change first.",
           "feedback": "(none)",
-          "script": "We organize things every day to make them easier to use. Think of a music playlist—you put songs in a certain order so you can find and play them quickly. When people line up at a bus stop, they get on in the order they arrived, so everyone knows who goes next. Even the undo button in a program works the same way—it removes the most recent change first, just like taking the last thing you added off a stack. All of these are ways to keep information or actions neat and predictable.",
+          "script": "This slide shows two main ideas we’ll cover next. First, how we organize data to make it easy to use. Second, the basics of objects—how they help group related information together.\n\nThink about how you already organize things every day. A music playlist keeps songs in a set order so you can play them quickly. People line up at a bus stop in the order they arrived, so the first person gets on first. Even the undo button in a text editor works the same way—it removes the most recent change first, like peeling off the top layer of a stack.",
           "citations": [
+            "syn-s02-c1",
             "syn-p01-c1"
           ]
         },
         {
           "augmented": true,
           "objective": "Recognize how data is organized in everyday situations",
-          "slide": "syn-s02: slide 2 of 7; slide 2 of 3 in seg-01",
-          "chunks": "[syn-s02-c1] (syn-s02) Outline | - Organizing data | - Object basics\n[syn-p01-c1] (reference) People organize information all the time so it is quick to use. A music playlist keeps songs in a chosen order. People waiting at a bus stop board in the order they arrived. The undo button in a text editor removes the most recent change first.",
+          "slide": "syn-s03: slide 3 of 7; slide 3 of 3 in seg-01",
+          "chunks": "[syn-s03-c1] (syn-s03) Data Organization Around Us | - Music playlist | - Bus stop line | - Undo button | - Library shelves | - Family tree | - Subway map\n[syn-p01-c1] (reference) People organize information all the time so it is quick to use. A music playlist keeps songs in a chosen order. People waiting at a bus stop board in the order they arrived. The undo button in a text editor removes the most recent change first.\n[syn-p01-c2] (reference) Libraries shelve books by call number, so a reader can walk to the right shelf instead of checking every book. A family tree shows how relatives are connected across generations. A subway map shows stations and the lines that join them.",
           "feedback": "(none)",
-          "script": "Let’s start with something we all do every day—organizing things to make them easier to use. Think of a music playlist. You put songs in a certain order so you can find and play them quickly. Or picture people waiting at a bus stop. They get on the bus in the same order they arrived, so everyone knows who’s next. Even the undo button in a text editor works this way—it removes the most recent change first, like peeling off the top layer of a stack. These are all simple ways we arrange data so it’s ready when we need it.",
+          "script": "Look around—we organize data all the time to make things easier to use. A music playlist keeps songs in the order you pick, just like people at a bus stop board in the order they arrived. The undo button in a text editor works the same way, removing the last change first. Libraries put books on shelves by call number so you don’t have to search every book, and a family tree shows how relatives connect across generations. Even a subway map is organized data, showing stations and the lines that link them.",
           "citations": [
-            "syn-p01-c1"
+            "syn-s03-c1",
+            "syn-p01-c1",
+            "syn-p01-c2"
           ]
         }
       ],
       "signature": {
-        "instructions": "You write what the class assistant says aloud while one slide is on screen.\nThe professor is not in the room; a text-to-speech voice reads your script.\n- Teach this slide's content in 2 to 5 short spoken sentences, in service of the\n  segment objective.\n- Teach only ideas the chunks given state; say them in simpler words if that helps.\n  Use the examples and analogies the chunks contain first (the reference chunks\n  often have them). You may add a short example or analogy of your own only to\n  illustrate an idea the chunks state; it must fit that idea exactly and add no new\n  fact. Say nothing about what later lessons or the rest of the course cover.\n  Cite the ids of the chunks you used.\n- If the slide only lists items, name them and say what they have in common, using\n  what the chunks say.\n- You may add a short transition (for example \"Next, let's look at how data moves\")\n  that states no facts.\n- Plain spoken English only: no Markdown, bullets, backticks, or code. Spell out\n  code and symbols in words (say \"order id\" for order_id and \"dot s q l\" for .sql),\n  and describe what code does instead of reading it out.\n- If feedback is given, your previous script had these problems; fix all of them.",
+        "instructions": "You write what the class assistant says aloud while one slide is on screen.\nThe professor is not in the room; a text-to-speech voice reads your script.\n- Teach this slide's content in 2 to 5 short spoken sentences, in service of the\n  segment objective.\n- Teach only ideas the chunks given state; say them in simpler words if that helps.\n  Use the examples and analogies the chunks contain first (the reference chunks\n  often have them). You may add a short example or analogy of your own only to\n  illustrate an idea the chunks state; it must fit that idea exactly and add no new\n  fact. Say nothing about what later lessons or the rest of the course cover.\n  Cite the ids of the chunks you used.\n- If the slide only lists items, name them and say what they have in common, using\n  what the chunks say.\n- If the slide has only a title, a section name, or a short outline, say what it\n  shows in one or two sentences (for example \"This part of the lecture is the Java\n  review.\"). Do not explain or preview the topics it names.\n- You may add a short transition (for example \"Next, let's look at how data moves\")\n  that states no facts.\n- Plain spoken English only: no Markdown, bullets, backticks, or code. Spell out\n  code and symbols in words (say \"order id\" for order_id and \"dot s q l\" for .sql),\n  and describe what code does instead of reading it out.\n- If feedback is given, your previous script had these problems; fix all of them.",
         "fields": [
           {
             "prefix": "Objective:",
@@ -74,8 +77,8 @@
           "misconception": "Bag rejects duplicates: Believes a bag keeps only one copy of each item.",
           "chunks": "[syn-s05-c1] (syn-s05) Collections | - Bag | - Set | - List | - Stack | - Queue | - Map\n[syn-p03-c2] (reference) A bag holds items in no particular order and allows duplicates. A set holds items in no particular order and does not allow duplicates. A list keeps items in a sequence, and each item has a position.",
           "feedback": "(none)",
-          "title": "Bags allow duplicates, sets don’t",
-          "text": "A lot of you picked bag, thinking it rejects duplicates. But the lesson says a bag is like a shopping bag—you can toss in two identical apples and both stay. A set is the one that acts like a club guest list: if your name is already on it, you don’t get in again. So the collection that does not allow duplicates is the set.",
+          "title": "Why a bag allows duplicates",
+          "text": "A lot of you picked bag, thinking it keeps only one copy of each item. But that’s actually what a set does. The lesson says a bag lets you add the same item over and over—it’s like a shopping bag where you can toss in two identical apples. A set, on the other hand, is more like a club guest list: if your name is already on it, you can’t sign up again.",
           "show_slide": "syn-s05",
           "citations": [
             "syn-s05-c1",
@@ -145,7 +148,11 @@
       {
         "task": "script_writer",
         "item": "syn-s01",
-        "problems": []
+        "problems": [
+          "Example not tied to a concept in the cited chunks: 'For example, a music playlist keeps songs in a specific order so you can play them quickly.'",
+          "Example not tied to a concept in the cited chunks: 'People boarding a bus line up in the order they arrived, which helps things run smoothly.'",
+          "Example not tied to a concept in the cited chunks: 'Also, the undo button in a text editor removes the most recent change first, showing how order matters in simple tasks.'"
+        ]
       },
       {
         "task": "script_writer",
@@ -153,19 +160,23 @@
         "problems": []
       },
       {
+        "task": "script_writer",
+        "item": "syn-s03",
+        "problems": []
+      },
+      {
         "task": "explanation_writer",
         "item": "syn-e01",
         "problems": [
-          "Example not tied to a concept in the cited chunks: 'An ADT is like a menu at a restaurant, telling you what dishes you can order but not how the chef cooks the food or where the ingredients are stored.'",
-          "Example not tied to a concept in the cited chunks: \"The 'how' part is the job of the data structure, like whether it uses an array or a linked list.\""
+          "Example not tied to a concept in the cited chunks: 'An ADT doesn’t say anything about how the data is actually stored in memory.'",
+          "Example not tied to a concept in the cited chunks: 'A recipe tells you what ingredients to use and what steps to follow, but it doesn’t tell you exactly how the oven works inside.'"
         ]
       },
       {
         "task": "explanation_writer",
         "item": "syn-e02",
         "problems": [
-          "Example not tied to a concept in the cited chunks: 'Think of it like a recipe: the recipe says what ingredients you need and what steps to follow, but it doesn’t say which brand of flour to use or what kind of oven.'",
-          "Example not tied to a concept in the cited chunks: 'The code in a specific language is the actual cooking, not the recipe itself.'"
+          "Example not tied to a concept in the cited chunks: 'The data structure is like the actual cake you bake—it’s the real thing, written in code.'"
         ]
       },
       {
@@ -184,15 +195,15 @@
         "task": "explanation_writer",
         "item": "syn-e05",
         "problems": [
-          "Example not tied to a concept in the cited chunks: 'OOP is about building with objects, like Lego blocks.'",
-          "Example not tied to a concept in the cited chunks: 'Recursion is more like a single block repeating itself, which isn’t how OOP works.'"
+          "Not supported by the cited chunks: 'Recursion is a different way to solve problems, like a function calling itself.'",
+          "Example not tied to a concept in the cited chunks: 'Recursion is more like a single block repeating itself, which doesn’t fit the OOP blueprint.'"
         ]
       },
       {
         "task": "explanation_writer",
         "item": "syn-e06",
         "problems": [
-          "Not supported by the cited chunks: 'Private fields are not for making the program run faster'"
+          "Not supported by the cited chunks: 'Speed isn’t the point here; control and safety are.'"
         ]
       }
     ]

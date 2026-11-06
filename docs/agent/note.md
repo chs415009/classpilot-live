@@ -389,3 +389,8 @@ is no longer updated)
   >= 0.8 of its content words are in one given chunk with no extra negation
   (`prep.rescue_coverage`); title/outline slides get one or two sentences. Budget cap
   raised to about 800 calls. pc-03 and pc-10 relabeled pass with the stating chunks.
+- 2026-11-06 [result] L1 prep with prep-writers-v5 and the changes above (125 calls,
+  413 s): 1 script fallback (title slide p03), all 5 polls live, 8 of 15 wrong options
+  explained. Spot check: nothing misleading; minor: p04 calls the lecture outline "the
+  course outline", one recipe analogy is muddled, q-04's wrong options are too easy.
+  Stage 9 calls so far about 676 (cap raised to about 800).

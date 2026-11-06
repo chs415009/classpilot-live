@@ -459,3 +459,138 @@ def test_no_credential_value_in_responses_traces_or_logs(tmp_path, monkeypatch, 
     joined = "\n".join(texts)
     for value in FAKE_SECRETS.values():
         assert value not in joined
+
+
+# ---------- Stage 11: lesson bundle, question repeat guard, session export ----------
+
+
+def zip_files(data: bytes) -> dict[str, bytes]:
+    import io
+    import zipfile
+
+    with zipfile.ZipFile(io.BytesIO(data)) as zf:
+        return {name: zf.read(name) for name in zf.namelist()}
+
+
+def test_bundle_holds_the_manifest_and_every_slide_image(client):
+    processed(client)
+    response = client.get("/lessons/l1/bundle")
+    assert response.status_code == 200 and response.headers["content-type"] == "application/zip"
+    files = zip_files(response.content)
+    manifest = json.loads(files["manifest.json"])
+    assert manifest == client.get("/lessons/l1/manifest").json()
+    assert sorted(n for n in files if n != "manifest.json") == sorted(
+        s["image_ref"] for s in manifest["slides"].values()
+    )
+    assert (
+        files["slides/fixture-deck-p01.png"]
+        == client.get("/lessons/l1/slides/fixture-deck-p01").content
+    )
+
+
+def test_bundle_without_lesson_or_manifest_is_404(client):
+    assert client.get("/lessons/nope/bundle").status_code == 404
+    client.post("/lessons", json={"lesson_id": "l1"})
+    assert client.get("/lessons/l1/bundle").status_code == 404
+
+
+class CountingMockLLM(MockLLM):
+    def __init__(self):
+        super().__init__()
+        self.calls = 0
+
+    def complete(self, task, inputs):
+        self.calls += 1
+        return super().complete(task, inputs)
+
+
+def test_repeated_question_event_returns_the_first_decision_without_llm_calls(tmp_path):
+    llm = CountingMockLLM()
+    client = make_client(tmp_path, live_llm=lambda: llm)
+    processed(client)
+    first = client.post("/questions", json=question("Why does bronze keep raw data?")).json()
+    calls = llm.calls
+    again = client.post("/questions", json=question("Why does bronze keep raw data?")).json()
+    assert again == first and llm.calls == calls
+    assert len(read_jsonl(tmp_path / "decision_log.jsonl")) == 1  # not traced twice
+    other = client.post(
+        "/questions", json=question("Why does bronze keep raw data?", event_id="evt-2")
+    )
+    assert other.json()["decision_id"] != first["decision_id"] and llm.calls > calls
+
+
+def test_repeat_guards_survive_a_restart(tmp_path):
+    client = make_client(tmp_path)
+    processed(client)
+    q = client.post("/questions", json=question("Why does bronze keep raw data?")).json()
+    p = client.post("/polls/result", json=evidence({"A": 15, "B": 3, "C": 1, "D": 1})).json()
+    restarted = make_client(tmp_path, live_llm=lambda: pytest.fail("no LLM call after restart"))
+    assert restarted.post("/questions", json=question("Why does bronze keep raw data?")).json() == q
+    assert restarted.post("/polls/result", json=evidence({"A": 1, "B": 19})).json() == p
+    assert len(read_jsonl(tmp_path / "decision_log.jsonl")) == 2
+
+
+def test_session_export_holds_only_that_sessions_data(tmp_path):
+    from classpilot.contracts.trace import RECORD_MODELS, DecisionLogEntry
+
+    client = make_client(tmp_path)
+    processed(client)
+    client.post("/questions", json=question("Why does bronze keep raw data?"))
+    client.post("/questions", json=question("When is the parking office open?", event_id="evt-2"))
+    client.post("/polls/result", json=evidence({"A": 15, "B": 3, "C": 1, "D": 1}))
+    client.post("/polls/result", json=evidence({"A": 1, "B": 19}, session="session-2"))
+
+    response = client.get("/sessions/session-1/export")
+    assert response.status_code == 200 and response.headers["content-type"] == "application/zip"
+    files = zip_files(response.content)
+    summary = json.loads(files["export.json"])
+    assert (
+        sorted(files)
+        == sorted(summary["files"])
+        == [
+            "decision_log.jsonl",
+            "export.json",
+            "lessons/l1/generation_report.json",
+            "lessons/l1/manifest.json",
+            "traces.jsonl",
+        ]
+    )
+    assert (summary["decisions"], summary["questions"], summary["polls"]) == (3, 2, 1)
+    assert summary["lessons"] == ["l1"]
+    log = [
+        DecisionLogEntry.model_validate_json(x) for x in files["decision_log.jsonl"].splitlines()
+    ]
+    traces = [json.loads(x) for x in files["traces.jsonl"].splitlines()]
+    assert (
+        {e.decision.session_id for e in log} == {r["session_id"] for r in traces} == {"session-1"}
+    )
+    for record in traces:
+        RECORD_MODELS[record["record_type"]].model_validate(record)
+    assert len(traces) == summary["trace_records"]
+    assert {r["run_id"] for r in traces} == {e.decision.decision_id for e in log}
+    assert (
+        json.loads(files["lessons/l1/manifest.json"]) == client.get("/lessons/l1/manifest").json()
+    )
+
+
+def test_session_export_of_an_unknown_session_is_404(client):
+    assert client.get("/sessions/nobody/export").status_code == 404
+
+
+def test_cli_export_writes_the_same_zip(tmp_path, capsys):
+    from classpilot import cli
+
+    client = make_client(tmp_path)
+    processed(client)
+    client.post("/questions", json=question("Why does bronze keep raw data?"))
+    out = tmp_path / "out.zip"
+    with pytest.raises(SystemExit) as code:
+        cli.main(["export", "session-1", "--data-dir", str(tmp_path), "--out", str(out)])
+    assert code.value.code == 0
+    api = zip_files(client.get("/sessions/session-1/export").content)
+    cli_files = zip_files(out.read_bytes())
+    assert sorted(cli_files) == sorted(api)
+    assert cli_files["decision_log.jsonl"] == api["decision_log.jsonl"]
+    with pytest.raises(SystemExit) as code:
+        cli.main(["export", "nobody", "--data-dir", str(tmp_path), "--out", str(out)])
+    assert code.value.code == 1

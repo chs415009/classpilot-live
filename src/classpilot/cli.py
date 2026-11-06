@@ -13,6 +13,7 @@ python -m classpilot.cli prep check --lesson l1
 python -m classpilot.cli prep run --backend mock --lesson l1 deck.pptx --ref reading.pdf
 python -m classpilot.cli dev info6205-l1 [--backend cortex] [--skip-prep]
 python -m classpilot.cli dev --list
+python -m classpilot.cli export <session_id> [--data-dir outputs/service]
 """
 
 import argparse
@@ -438,6 +439,36 @@ def run_dev(args) -> int:
     return 0
 
 
+def run_export(args) -> int:
+    """The service's session export (same zip as GET /sessions/{id}/export, Q-22)."""
+    from classpilot.service.exports import session_export
+    from classpilot.service.store import LessonStore, now, safe_name
+    from classpilot.settings import PROJECT_ROOT
+
+    data_dir = args.data_dir or PROJECT_ROOT / load_settings().service.data_dir
+    result = session_export(
+        args.session_id,
+        data_dir / "traces.jsonl",
+        data_dir / "decision_log.jsonl",
+        LessonStore(data_dir).prep_dir,
+        now(),
+    )
+    if result is None:
+        print(f"error: session {args.session_id!r} has no decisions in {data_dir}")
+        return 1
+    data, summary = result
+    out = args.out or OUTPUT_DIR / "exports" / f"{safe_name(args.session_id)}.zip"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_bytes(data)
+    print(
+        f"session {summary['session_id']}: {summary['decisions']} decisions "
+        f"({summary['questions']} questions, {summary['polls']} polls), "
+        f"{summary['trace_records']} trace records, lessons {', '.join(summary['lessons'])}"
+    )
+    print(f"wrote {out}")
+    return 0
+
+
 def run_guardian_eval_file(path: Path | None, overrides: dict | None) -> None:
     result = run_guardian_eval(path, overrides)
     tag = result["backend"] if path is None else f"{path.stem}_{result['backend']}"
@@ -664,7 +695,16 @@ def main(argv: list[str] | None = None) -> None:
     )
     dev_cmd.add_argument("--lessons-dir", type=Path, default=LESSONS_DIR)
 
+    export_cmd = sub.add_parser(
+        "export", help="zip one session's traces, decision log, and lesson manifests"
+    )
+    export_cmd.add_argument("session_id")
+    export_cmd.add_argument("--data-dir", type=Path, help="default: service.data_dir")
+    export_cmd.add_argument("--out", type=Path, help="default: outputs/exports/<session>.zip")
+
     args = parser.parse_args(argv)
+    if args.command == "export":
+        raise SystemExit(run_export(args))
     if args.command == "dev":
         if args.list:
             raise SystemExit(run_dev_list(args))

@@ -12,6 +12,7 @@ from classpilot.adapters.retrieval import Retriever
 from classpilot.content import Content, lesson_content
 from classpilot.contracts import Decision
 from classpilot.contracts.manifest import Manifest, load_manifest
+from classpilot.contracts.trace import DecisionLogEntry
 from classpilot.prep.generate import GenerateDeps, Generator, LessonMaterial, load_material
 from classpilot.prep.outputs import check_and_review, copy_slide_images, write_generation
 from classpilot.prep.parse import ParseDeps, parse_lesson
@@ -71,13 +72,39 @@ class ServiceContext:
     backends: Backends
     lessons: LessonStore = field(init=False)
     jobs: JobStore = field(default_factory=JobStore)
+    # Repeat guards: (session_id, poll_id) and (session_id, event_id) -> first decision.
     poll_decisions: dict[tuple[str, str], Decision] = field(default_factory=dict)
+    question_decisions: dict[tuple[str, str], Decision] = field(default_factory=dict)
     lock: threading.Lock = field(default_factory=threading.Lock)
     _live: dict[str, Content] = field(default_factory=dict)
     _llm: LLMClient | None = None
+    _inflight: dict[tuple[str, str], threading.Lock] = field(default_factory=dict)
 
     def __post_init__(self):
         self.lessons = LessonStore(self.data_dir)
+        self._load_guards()
+
+    def _load_guards(self) -> None:
+        """Rebuild the repeat guards from the decision log, so that after a restart a
+        repeated question is not run again and a poll does not trigger twice."""
+        if not self.log_path.is_file():
+            return
+        for line in self.log_path.read_text().splitlines():
+            try:
+                entry = DecisionLogEntry.model_validate_json(line)
+            except ValueError:
+                continue  # a torn last line after a crash
+            d = entry.decision
+            if d.path == "poll" and d.poll_id:
+                self.poll_decisions.setdefault((d.session_id, d.poll_id), d)
+            elif entry.question is not None:
+                self.question_decisions.setdefault((d.session_id, entry.question.event_id), d)
+
+    def question_lock(self, key: tuple[str, str]) -> threading.Lock:
+        """One lock per (session_id, event_id): a repeat sent while the first call still
+        runs waits for it and gets the same decision."""
+        with self.lock:
+            return self._inflight.setdefault(key, threading.Lock())
 
     @classmethod
     def build(cls, settings: Settings, data_dir: Path | None = None, backends=None):

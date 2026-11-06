@@ -109,7 +109,7 @@ handling, the future-work list in BEHAVIOR section 9.
 
 ## Data contracts
 
-Decided by the agent side, open to change requests (`interface_questions.md` Q-13 to Q-21). Code: live shapes
+Decided by the agent side, open to change requests (`interface_questions.md` Q-13 to Q-22). Code: live shapes
 in `src/classpilot/contracts/live.py`, manifest in `contracts/manifest.py`, trace and
 decision log in `contracts/trace.py`. Full definitions: manifest in IMPLEMENTATION_NOTES
 section 5, trace records in section 6.3, API in section 3. A test validates every JSON

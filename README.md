@@ -28,6 +28,7 @@ are exploratory (small, synthetic data).
 | Compiled DSPy programs (`compiled/`, synthetic demos only): prep writers and live Analyst/Responder, loaded behind `prep.compiled_program` / `llm.compiled_program` | Stage 9 | Cortex |
 | Service API: lessons, uploads, background prep jobs with progress, manifest, slide images, `POST /questions`, `POST /polls/result` | Stage 8 | mock (Cortex: same code, not yet run live) |
 | Dev report (demo entry): prep a lesson folder, run its fixed test questions, static HTML with collapsible details and an index of runs | Stage 10 | mock, Cortex |
+| Handoff to the other parts: lesson bundle zip, repeat-safe live calls, session export zip (traces, decision log, manifests) | Stage 11 | mock |
 
 Not yet: the professor's post-class report is deferred (who builds it, and from which
 tables, is decided later). The trace, the decision log, and the manifest statuses hold
@@ -44,6 +45,7 @@ its data.
 | `docs/agent/note.md` | Agent part dev log: changes, findings, results per stage |
 | `CLAUDE.md`, `.claude/rules/` | Instructions for Claude Code: shared rules, per-part rules |
 | `interface_questions.md` | Interface items to agree with the team |
+| `docs/agent/handoff/` | Handoff notes for the front end (`FRONTEND_HANDOFF.md`) and the pipeline (`PIPELINE_HANDOFF.md`); sample data: `python scripts/sample_session.py` → `outputs/samples/` |
 | `docs/v1/` | v1 archive: design, dev log, interface items, diagrams, Stage 4 Cortex results |
 
 ## Setup
@@ -195,10 +197,17 @@ curl -X POST localhost:8000/lessons/$L/process -H 'content-type: application/jso
 curl localhost:8000/jobs/<job_id>                 # step, progress, failures
 curl localhost:8000/lessons/$L/manifest
 curl -o p01.png localhost:8000/lessons/$L/slides/<slide_id>
+curl -o $L.zip localhost:8000/lessons/$L/bundle   # manifest + every slide PNG, before class
+curl -o s1.zip localhost:8000/sessions/<session_id>/export   # after class, for the pipeline
+python -m classpilot.cli export <session_id>       # same zip -> outputs/exports/
 ```
 
 Live: `POST /questions` (StudentQuestion → Decision) and `POST /polls/result`
-(PollEvidence → Decision). Shapes and error codes: `interface_questions.md` Q-18, Q-19.
+(PollEvidence → Decision). Calls are stateless; a repeated (`session_id`, `event_id`) or
+(`session_id`, `poll_id`) returns the first decision, also after a restart. The session
+export holds that session's `traces.jsonl`, `decision_log.jsonl`, and each lesson's
+manifest and generation report. Shapes and error codes: `interface_questions.md` Q-18,
+Q-19, Q-22.
 Data (lessons, uploads, manifests, slide images, `traces.jsonl`, `decision_log.jsonl`)
 goes to `outputs/service/` (`service.data_dir`); CORS origins are `service.cors_origins`.
 Credentials stay in the service's `.env` and never appear in a response.

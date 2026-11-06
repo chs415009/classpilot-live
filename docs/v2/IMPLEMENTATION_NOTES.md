@@ -104,8 +104,10 @@ serves the live endpoints.
 | `GET /jobs/{job_id}` | Status: step, progress (e.g. 12/40), per-item failures |
 | `GET /lessons/{id}/manifest` | Final manifest |
 | `GET /lessons/{id}/slides/{slide_id}` | Slide image (PNG) for playback |
+| `GET /lessons/{id}/bundle` | Manifest + all slide PNGs in one zip, fetched once before class (Stage 11) |
 | `POST /questions` (draft) | Live: one student question → decision (answer / escalate) |
 | `POST /polls/result` (draft) | Live: poll evidence → `explain` (option, remediation text, `show_slide`) or `reveal` |
+| `GET /sessions/{id}/export` | One session's traces, decision log, lesson manifests in a zip, for the pipeline (Stage 11, Q-22) |
 | `POST /sessions/{id}/report` (deferred) | Build the post-class report at session end |
 | `GET /sessions/{id}/report` (deferred) | The report as an HTML page |
 
@@ -853,3 +855,9 @@ Stage 8 (service API, mock) decisions:
   command preps a lesson from a local folder, runs its fixed hand-written test
   questions (4 categories × 3) through the question graph, and writes static HTML with
   large blocks collapsed. No generated questions, no poll simulation, no endpoint.
+- 2026-11-06 (user, Stage 11) Interfaces to the other parts stay small and stateless so
+  they can build freely. Front end: a lesson bundle (manifest + slide PNGs) before
+  class, `POST /questions` and `POST /polls/result` in class, repeats return the first
+  decision (also after a restart); the agent never touches Redis or WebSocket.
+  Pipeline: one zip per session (`GET /sessions/{id}/export`: traces, decision log,
+  manifests); loading is theirs.

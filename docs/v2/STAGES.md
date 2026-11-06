@@ -697,6 +697,11 @@ Goal: The system runs with Sai's front end and backend and Yaksha's pipeline on 
 agreed contracts. A full class is rehearsed, and the contracts are signed off.
 Depends on: Stages 0–10; team agreement on the `[team]` items.
 Tasks:
+- First (user, 2026-11-06), before tuning: small stateless interfaces for the other
+  parts. Lesson bundle `GET /lessons/{id}/bundle` (Q-18), repeat guard on `POST
+  /questions` by (`session_id`, `event_id`), guards rebuilt from the decision log on
+  start (Q-19), session export `GET /sessions/{id}/export` and CLI `export` (Q-22).
+  TestClient tests for each. Done 2026-11-06.
 - Switch the draft contracts to the agreed versions (interface_questions → `agreed`).
 - Integration fixes on my side only.
 - Confirm with Yaksha that the trace JSONL loads into the star schema as it is (every

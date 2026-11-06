@@ -470,3 +470,12 @@ is no longer updated)
   llm_error. The `partial` category tests exactly that path.
 - 2026-11-06 [decision] User accepted Stage 10. Later: a full L1 run (prep + questions,
   about 155 calls) once things are stable.
+
+## Stage 11: Integration, rehearsal, handoff
+
+- 2026-11-06 [decision] User: interfaces to Sai and Yaksha stay small and stateless so
+  they keep freedom; the agent never reads Redis. Added the lesson bundle (Q-18), the
+  question repeat guard with guards rebuilt from the decision log (Q-19), and the
+  session export zip plus `cli export` (new Q-22). Open for them: Sai's origin and
+  bundle needs; Yaksha's loading method and whether prep data goes into the model.
+

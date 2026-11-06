@@ -1,8 +1,8 @@
-"""The ClassPilot service: prep, live, and (Stage 10) report endpoints (IMPLEMENTATION_NOTES 3).
+"""The ClassPilot service: prep, live, and export endpoints (IMPLEMENTATION_NOTES 3).
 
     uvicorn classpilot.service.app:create_app --factory --port 8000
 
-Shapes: `service/schemas.py` and `contracts/` (interface_questions.md Q-18, Q-19).
+Shapes: `service/schemas.py` and `contracts/` (interface_questions.md Q-18, Q-19, Q-22).
 Backend (mock or cortex) from `config/settings.yaml` / BACKEND; credentials only from
 the service's `.env`, and never in a response.
 """
@@ -15,12 +15,13 @@ from typing import Annotated
 
 from fastapi import BackgroundTasks, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 
 from classpilot.contracts import Decision, PollEvidence, StudentQuestion
 from classpilot.live.poll import PollInputError, run_poll
 from classpilot.live.question_graph import Deps, run_question
 from classpilot.service.context import ServiceContext
+from classpilot.service.exports import lesson_bundle, session_export
 from classpilot.service.schemas import (
     ErrorBody,
     FileKindIn,
@@ -31,7 +32,7 @@ from classpilot.service.schemas import (
     LessonFile,
     ProcessRequest,
 )
-from classpilot.service.store import safe_name
+from classpilot.service.store import now, safe_name
 from classpilot.settings import Settings, load_settings
 
 ALLOWED = {"slides": {"pptx", "pdf"}, "reference": {"pdf", "docx"}}
@@ -178,6 +179,22 @@ def create_app(
             raise HTTPException(404, f"slide {slide_id!r} not found in lesson {lesson_id!r}")
         return FileResponse(path, media_type="image/png")
 
+    @app.get(
+        "/lessons/{lesson_id}/bundle",
+        responses={**ERRORS, 200: {"content": {"application/zip": {}}}},
+    )
+    def get_bundle(lesson_id: str) -> Response:
+        """manifest.json + slides/*.png in one zip, to fetch once before class (Q-18)."""
+        lesson_or_404(lesson_id)
+        prep_dir = ctx.lessons.prep_dir(lesson_id)
+        if not (prep_dir / "manifest.json").is_file():
+            raise HTTPException(404, f"lesson {lesson_id!r} has no manifest yet")
+        return Response(
+            lesson_bundle(prep_dir),
+            media_type="application/zip",
+            headers={"Content-Disposition": f'attachment; filename="{lesson_id}.zip"'},
+        )
+
     # ---------- live ----------
 
     @app.post("/questions", response_model=Decision, responses=ERRORS)
@@ -185,9 +202,14 @@ def create_app(
         content = ctx.live_content(question.lesson_id)
         if content is None:
             raise HTTPException(404, f"lesson {question.lesson_id!r} has no manifest")
-        deps = Deps(settings, content, ctx.live_llm(), ctx.backends.live_retriever(content))
-        output = run_question(question, deps)  # LLM errors and timeouts escalate inside
-        ctx.write_run(output)
+        key = (question.session_id, question.event_id)
+        with ctx.question_lock(key):  # a repeated event_id gets the first decision (Q-19)
+            if key in ctx.question_decisions:
+                return ctx.question_decisions[key]
+            deps = Deps(settings, content, ctx.live_llm(), ctx.backends.live_retriever(content))
+            output = run_question(question, deps)  # LLM errors and timeouts escalate inside
+            ctx.write_run(output)
+            ctx.question_decisions[key] = output.decision
         return output.decision
 
     @app.post("/polls/result", response_model=Decision, responses=ERRORS)
@@ -209,5 +231,27 @@ def create_app(
             ctx.poll_decisions[key] = output.decision
         ctx.write_run(output)
         return output.decision
+
+    # ---------- after class ----------
+
+    @app.get(
+        "/sessions/{session_id}/export",
+        responses={**ERRORS, 200: {"content": {"application/zip": {}}}},
+    )
+    def get_session_export(session_id: str) -> Response:
+        """The session's trace records, decision log, and lesson manifests (Q-22)."""
+        with ctx.lock:  # no half-written line while reading
+            result = session_export(
+                session_id, ctx.trace_path, ctx.log_path, ctx.lessons.prep_dir, now()
+            )
+        if result is None:
+            raise HTTPException(404, f"session {session_id!r} has no decisions")
+        data, _ = result
+        safe = safe_name(session_id)
+        return Response(
+            data,
+            media_type="application/zip",
+            headers={"Content-Disposition": f'attachment; filename="{safe}.zip"'},
+        )
 
     return app

@@ -305,6 +305,10 @@ class ExplanationGuardianSignature(dspy.Signature):
          null for its chunk id and quote.
        - Sentences that only refer to the poll ("Many of you chose this option", "The
          answer comes next") are not claims; leave them out.
+       - A sentence that restates the chosen option in order to reject it ("Some of you
+         thought private fields make programs faster", "The option you picked describes
+         a queue") is not a claim of the explanation; leave it out. The claim to check
+         is what the explanation says instead.
        - A claim that the chosen option is wrong, or that it really describes another
          idea, is supported by a chunk that contradicts the option or that defines that
          other idea.

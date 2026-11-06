@@ -7,7 +7,7 @@ structure checks.
 """
 
 from classpilot.contracts.manifest import Manifest
-from classpilot.prep.tts import tts_issues
+from classpilot.prep.tts import generated_text_issues
 from classpilot.rules.prep import manifest_poll_problems
 
 
@@ -45,10 +45,10 @@ def manifest_check_problems(
 
     # Scripts and explanations pass the TTS lint.
     for slide_id, slide in manifest.slides.items():
-        if issues := tts_issues(slide.script):
+        if issues := generated_text_issues(slide.script):
             problems.append(f"script {slide_id}: TTS lint ({', '.join(issues)})")
     for rid, rem in manifest.remediations.items():
-        if issues := tts_issues(rem.text):
+        if issues := generated_text_issues(rem.text):
             problems.append(f"{rid}: TTS lint ({', '.join(issues)})")
 
     # No active_poll points to a dropped question; poll limits.

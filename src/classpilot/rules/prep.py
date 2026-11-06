@@ -21,7 +21,7 @@ from classpilot.contracts.prep import (
     ScriptOutput,
     SegmenterOutput,
 )
-from classpilot.prep.tts import tts_issues
+from classpilot.prep.tts import generated_text_issues
 
 
 def parse_output[M: BaseModel](model: type[M], raw: dict | None) -> M | None:
@@ -43,13 +43,8 @@ def _citation_problems(citations: list[str], allowed: set[str], required: bool) 
     return problems
 
 
-# TTS reads these as a pause; generated prose may use them (Stage 9: a semicolon failed
-# otherwise good scripts and explanations). Slide-text cleaning still replaces them.
-SPOKEN_PUNCTUATION = {"semicolon"}
-
-
 def _tts_problems(what: str, text: str) -> list[str]:
-    issues = [i for i in tts_issues(text) if i not in SPOKEN_PUNCTUATION]
+    issues = generated_text_issues(text)
     if not issues:
         return []
     return [

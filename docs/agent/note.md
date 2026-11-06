@@ -372,3 +372,11 @@ is no longer updated)
   allows up to `prep.max_framing_claims` (2) framing claims without a chunk and checks
   an example's quote against the idea it illustrates. The own-comparison check is
   removed. Dev cases: 8/8 caught, 3 false fails, poll options agree 16/18.
+- 2026-11-06 [result] L1 prep with prep-writers-v4 (own examples allowed, 98 calls):
+  script fallbacks 6 (v2 run: 3), 4 polls live, 3 of 12 wrong options explained (v2
+  run: 6). Cause: mistral-large3 as prep Guardian is inconsistent on the new claim
+  kinds (a chunk's own "blueprint" analogy judged untied; facts marked framing), and
+  longer scripts give it more to judge. Single runs vary a lot.
+- 2026-11-06 [finding] `claude-sonnet-4-5` as prep Guardian on the 21 dev cases (new
+  rules): 6/8 caught (missed pc-07 wrong course title, pc-08 wrong topic order), 4 false
+  fails. Not better than mistral-large3 (8/8, 3); the prep Guardian stays on it.

@@ -116,6 +116,17 @@ def tts_issues(text: str) -> list[str]:
     return _apply_rules(text)[1]
 
 
+# TTS reads these as a pause; generated prose may use them (Stage 9: a semicolon failed
+# otherwise good scripts and explanations). Slide-text cleaning still replaces them.
+SPOKEN_PUNCTUATION = {"semicolon"}
+
+
+def generated_text_issues(text: str) -> list[str]:
+    """The TTS lint for generated scripts and explanations: `tts_issues` without the
+    punctuation TTS reads as a pause."""
+    return [i for i in tts_issues(text) if i not in SPOKEN_PUNCTUATION]
+
+
 def clean_for_tts(text: str) -> str:
     """Text that TTS can read aloud: rules applied, one line per sentence joined."""
     text, _ = _apply_rules(text)

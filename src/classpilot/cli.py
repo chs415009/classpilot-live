@@ -4,6 +4,7 @@ python -m classpilot.cli run scenarios/01_poll_explain.json
 python -m classpilot.cli run-all
 python -m classpilot.cli eval
 python -m classpilot.cli guardian-eval
+BACKEND=cortex python -m classpilot.cli compile --program-id prep-writers-v1
 python -m classpilot.cli prep convert deck.pptx --ref reading.pdf --ref notes.docx
 python -m classpilot.cli prep parse --lesson l1 deck.pptx --ref reading.pdf
 python -m classpilot.cli prep search --lesson l1 "why keep raw data"
@@ -282,6 +283,49 @@ def run_guardian_eval_file(path: Path | None, overrides: dict | None) -> None:
     print(f"wrote {out}")
 
 
+def run_compile(args) -> int:
+    """Compile the prep writers on the synthetic trainset and save compiled/<id>.json."""
+    from classpilot.adapters.cortex_engine import make_prep_lm
+    from classpilot.agents.compiled import COMPILED_DIR, program_path, save_program
+    from classpilot.agents.prep_program import DSPyPrepAgents
+    from classpilot.compiling import CompileLog, compile_writer, load_prep_trainset
+
+    settings = load_settings()
+    if settings.backend != "cortex":
+        print("compile calls the LLM: run it with BACKEND=cortex (after approval)")
+        return 2
+    if program_path(args.program_id).exists() and not args.overwrite:
+        print(f"{program_path(args.program_id)} exists; pass --overwrite to replace it")
+        return 2
+    items = load_prep_trainset(args.train)
+    guardian = DSPyPrepAgents(make_prep_lm(settings))  # uncompiled Guardian as the metric
+    log, modules = CompileLog(), {}
+    start = time.perf_counter()
+    for task in args.task:
+        modules[task] = compile_writer(
+            task,
+            items[task],
+            make_prep_lm(settings),
+            guardian,
+            settings.prep.llm_timeout_seconds,
+            args.max_demos,
+            log,
+        )
+        print(f"{task}: {len(modules[task].demos)} demos")
+    meta = {
+        "trainset": args.train.name,
+        "metric": "structure check + uncompiled prep Guardian + Guardian rule (quotes)",
+        "optimizer": "BootstrapFewShot",
+        "max_bootstrapped_demos": args.max_demos,
+        "model": settings.prep.model or settings.llm.model,
+        "tried": log.tried,
+    }
+    path = save_program(args.program_id, modules, meta, COMPILED_DIR)
+    seconds = round(time.perf_counter() - start, 1)
+    print(f"tried {len(log.tried)} examples in {seconds} s; wrote {path}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(prog="classpilot")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -312,6 +356,20 @@ def main(argv: list[str] | None = None) -> None:
         "guardian-sheet", help="write a labeling sheet for a Guardian case file (outputs/)"
     )
     sheet_cmd.add_argument("cases", type=Path)
+
+    compile_cmd = sub.add_parser(
+        "compile", help="compile the prep writers on the synthetic trainset (BACKEND=cortex)"
+    )
+    compile_cmd.add_argument("--program-id", required=True, help="compiled/<id>.json")
+    compile_cmd.add_argument(
+        "--task",
+        action="append",
+        choices=["script_writer", "explanation_writer"],
+        help="writer to compile; repeat for both (default: both)",
+    )
+    compile_cmd.add_argument("--train", type=Path, default=Path("eval/prep_train.json"))
+    compile_cmd.add_argument("--max-demos", type=int, default=2)
+    compile_cmd.add_argument("--overwrite", action="store_true")
 
     prep_cmd = sub.add_parser("prep", help="prep steps (before class)")
     prep_sub = prep_cmd.add_subparsers(dest="prep_command", required=True)
@@ -360,6 +418,9 @@ def main(argv: list[str] | None = None) -> None:
     search_cmd.add_argument("--top-k", type=int, default=3)
 
     args = parser.parse_args(argv)
+    if args.command == "compile":
+        args.task = args.task or ["script_writer", "explanation_writer"]
+        raise SystemExit(run_compile(args))
 
     if args.command == "prep":
         if args.prep_command == "search":

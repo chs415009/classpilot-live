@@ -58,8 +58,8 @@ def make_generate_deps(settings: Settings, material: LessonMaterial) -> Generate
         llm, retriever = MockPrepLLM(), MockRetriever(material.retrieval_rows())
     else:
         from classpilot.adapters.cortex_engine import make_prep_lm
-        from classpilot.agents.prep_program import DSPyPrepAgents
+        from classpilot.agents.compiled import prep_agents
 
-        llm = DSPyPrepAgents(make_prep_lm(settings))
+        llm = prep_agents(settings, make_prep_lm(settings))
         retriever = CortexSearchRetriever(settings, service_name=settings.objects.search_service)
     return GenerateDeps(llm, retriever, settings.prep, settings.poll)

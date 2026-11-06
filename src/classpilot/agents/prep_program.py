@@ -133,7 +133,10 @@ def prep_prediction_dict(task: str, prediction: dspy.Prediction) -> dict:
 
 
 class DSPyPrepAgents:
-    """The prep generators and Guardians as uncompiled `dspy.Predict` modules."""
+    """The prep generators and Guardians as `dspy.Predict` modules (compiled ones are
+    loaded by `agents.compiled.prep_agents`)."""
+
+    prompt_version = "uncompiled-v1"
 
     def __init__(self, lm: dspy.LM, adapter: dspy.Adapter | None = None):
         self.lm = lm

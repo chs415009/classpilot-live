@@ -80,6 +80,7 @@ class PrepSettings(BaseModel):
     max_retries: int = 1  # retries with Guardian feedback before the fallback
     malformed_retries: int = 1  # same call again after an unparseable reply (not timeouts)
     model: str | None = None  # Cortex model for generation; None: llm.model
+    compiled_program: str | None = None  # compiled/<id>.json for prep tasks; None: uncompiled
     llm_timeout_seconds: float = 60  # per call; prep is not time-critical
     max_tokens: int = 1500
     retrieval_top_k: int = 4  # extra chunks retrieved per generated item

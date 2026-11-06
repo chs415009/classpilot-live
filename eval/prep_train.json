@@ -1,0 +1,167 @@
+{
+  "set_id": "prep-train-synthetic-01",
+  "split": "train",
+  "note": "Synthetic slides and polls written for compiling the prep writers (Stage 9). Own wording, no course content. Reference chunks come from the synthetic lesson in eval/questions_train.json. Slide chunk ids are '<slide_id>-c1'.",
+  "lesson_file": "eval/questions_train.json",
+  "slides": [
+    {
+      "slide_id": "syn-s01",
+      "objective": "Recognize how data is organized in everyday situations",
+      "position": "slide 1 of 7; slide 1 of 3 in seg-01",
+      "text": "Lecture 3\nOrganizing Data and Object Basics\nSample Course 101",
+      "references": ["syn-p01-c1"]
+    },
+    {
+      "slide_id": "syn-s02",
+      "objective": "Recognize how data is organized in everyday situations",
+      "position": "slide 2 of 7; slide 2 of 3 in seg-01",
+      "text": "Outline\n- Organizing data\n- Object basics",
+      "references": ["syn-p01-c1"]
+    },
+    {
+      "slide_id": "syn-s03",
+      "objective": "Recognize how data is organized in everyday situations",
+      "position": "slide 3 of 7; slide 3 of 3 in seg-01",
+      "text": "Data Organization Around Us\n- Music playlist\n- Bus stop line\n- Undo button\n- Library shelves\n- Family tree\n- Subway map",
+      "references": ["syn-p01-c1", "syn-p01-c2"]
+    },
+    {
+      "slide_id": "syn-s04",
+      "objective": "Distinguish an abstract data type from a data structure",
+      "position": "slide 4 of 7; slide 1 of 1 in seg-02",
+      "text": "ADT and Data Structure\n- ADT: the data and its operations\n- Says what, not how\n- Data structure: an implementation in a language",
+      "references": ["syn-p02-c1", "syn-p02-c2", "syn-p02-c3"]
+    },
+    {
+      "slide_id": "syn-s05",
+      "objective": "Describe common collections and their rules",
+      "position": "slide 5 of 7; slide 1 of 1 in seg-03",
+      "text": "Collections\n- Bag\n- Set\n- List\n- Stack\n- Queue\n- Map",
+      "references": ["syn-p03-c1", "syn-p03-c2", "syn-p03-c3"]
+    },
+    {
+      "slide_id": "syn-s06",
+      "objective": "Name the main ideas of object-oriented programming",
+      "position": "slide 6 of 7; slide 1 of 1 in seg-04",
+      "text": "Object-Oriented Programming\n- Encapsulation\n- Inheritance\n- Polymorphism",
+      "references": ["syn-p04-c1", "syn-p04-c2", "syn-p04-c3"]
+    },
+    {
+      "slide_id": "syn-s07",
+      "objective": "Explain encapsulation and access control in a class",
+      "position": "slide 7 of 7; slide 1 of 1 in seg-05",
+      "text": "Encapsulation\n- Keep data and methods together\n- Hide the data inside the class\n- Use it through public methods",
+      "references": ["syn-p05-c1", "syn-p05-c3"]
+    }
+  ],
+  "explanations": [
+    {
+      "id": "syn-e01",
+      "slides": ["syn-s04"],
+      "references": ["syn-p02-c1", "syn-p02-c2"],
+      "question": "What does an abstract data type describe?",
+      "options": {
+        "A": "The data and the operations allowed on it",
+        "B": "How the data is laid out in memory",
+        "C": "The Java code of each operation",
+        "D": "The order in which items are stored"
+      },
+      "correct_option": "A",
+      "wrong_option": "B",
+      "misconception": {
+        "label": "ADT as storage",
+        "description": "Believes an ADT says how the data is kept in memory."
+      }
+    },
+    {
+      "id": "syn-e02",
+      "slides": ["syn-s04"],
+      "references": ["syn-p02-c1", "syn-p02-c2"],
+      "question": "What does an abstract data type describe?",
+      "options": {
+        "A": "The data and the operations allowed on it",
+        "B": "How the data is laid out in memory",
+        "C": "The Java code of each operation",
+        "D": "The order in which items are stored"
+      },
+      "correct_option": "A",
+      "wrong_option": "C",
+      "misconception": {
+        "label": "ADT tied to a language",
+        "description": "Believes an ADT is code written in one programming language."
+      }
+    },
+    {
+      "id": "syn-e03",
+      "slides": ["syn-s05"],
+      "references": ["syn-p03-c2"],
+      "question": "Which collection does not allow duplicate items?",
+      "options": {
+        "A": "Bag",
+        "B": "Set",
+        "C": "List",
+        "D": "Stack"
+      },
+      "correct_option": "B",
+      "wrong_option": "A",
+      "misconception": {
+        "label": "Bag rejects duplicates",
+        "description": "Believes a bag keeps only one copy of each item."
+      }
+    },
+    {
+      "id": "syn-e04",
+      "slides": ["syn-s05"],
+      "references": ["syn-p03-c3"],
+      "question": "Which item does a stack remove first?",
+      "options": {
+        "A": "The item added most recently",
+        "B": "The item added first",
+        "C": "The smallest item",
+        "D": "A random item"
+      },
+      "correct_option": "A",
+      "wrong_option": "B",
+      "misconception": {
+        "label": "Stack works like a queue",
+        "description": "Believes a stack removes the oldest item first, as a queue does."
+      }
+    },
+    {
+      "id": "syn-e05",
+      "slides": ["syn-s06"],
+      "references": ["syn-p04-c1"],
+      "question": "Which is one of the three main ideas of object-oriented programming covered here?",
+      "options": {
+        "A": "Recursion",
+        "B": "Inheritance",
+        "C": "Sorting",
+        "D": "Compilation"
+      },
+      "correct_option": "B",
+      "wrong_option": "A",
+      "misconception": {
+        "label": "Recursion as an OOP idea",
+        "description": "Believes recursion is one of the main ideas of object-oriented programming."
+      }
+    },
+    {
+      "id": "syn-e06",
+      "slides": ["syn-s07"],
+      "references": ["syn-p05-c1", "syn-p05-c3"],
+      "question": "Why are an object's fields usually declared private?",
+      "options": {
+        "A": "To keep the data from being changed directly from outside",
+        "B": "To make the program run faster",
+        "C": "To let any class change the data",
+        "D": "To save memory"
+      },
+      "correct_option": "A",
+      "wrong_option": "B",
+      "misconception": {
+        "label": "Private for speed",
+        "description": "Believes private fields exist to make programs faster."
+      }
+    }
+  ]
+}

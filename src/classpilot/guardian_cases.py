@@ -286,11 +286,10 @@ def guardian_llms(settings: Settings, kinds: set[str]) -> dict[str, LLMClient]:
         live, prep = MockLLM(), MockPrepLLM()
     else:
         from classpilot.adapters.cortex_engine import make_cortex_lm, make_prep_lm
-        from classpilot.agents.compiled import live_agents
-        from classpilot.agents.prep_program import DSPyPrepAgents
+        from classpilot.agents.compiled import live_agents, prep_agents
 
         live = live_agents(settings, make_cortex_lm(settings)) if "live" in kinds else None
-        prep = DSPyPrepAgents(make_prep_lm(settings)) if kinds - {"live"} else None
+        prep = prep_agents(settings, make_prep_lm(settings)) if kinds - {"live"} else None
     for kind in kinds:
         out[kind] = live if kind == "live" else prep
     return out

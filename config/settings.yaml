@@ -51,6 +51,7 @@ prep:
   max_retries: 1                # retries with the Guardian's feedback, then the fallback
   malformed_retries: 1          # same call again after an unparseable reply (not timeouts)
   model: null                   # Cortex model for generation; null: llm.model (Stage 7)
+  compiled_program: null        # compiled/<id>.json for the prep writers (Stage 9)
   llm_timeout_seconds: 60
   max_tokens: 1500
   retrieval_top_k: 4

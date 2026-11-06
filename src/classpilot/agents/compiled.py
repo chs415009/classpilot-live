@@ -1,4 +1,4 @@
-"""Compiled DSPy programs for the live agents: save, load, and build the live agents.
+"""Compiled DSPy programs for the live agents and the prep writers: save, load, build.
 
 A program file `compiled/<program_id>.json` holds the `dspy.Predict` state (few-shot
 demos and the signature, instructions included) of each compiled module, plus metadata:
@@ -8,10 +8,12 @@ demos and the signature, instructions included) of each compiled module, plus me
      "meta": {"trainset": [...], "metric": "...", ...}}
 
 Modules missing from `modules` stay uncompiled. The program id is the `prompt_version`
-of the LLM-call trace records. `llm.compiled_program` (null = uncompiled) picks the
-program at runtime. A loaded program keeps the instructions it was compiled with, even
-if the signature in code changes later. Saved states never carry an LM (the agents set
-the LM per call), so no model or account values reach `compiled/`.
+of the LLM-call trace records. `llm.compiled_program` (live: analyst, responder,
+guardian) and `prep.compiled_program` (prep tasks, Stage 9) pick the program at runtime;
+null = uncompiled. A program holds modules of one side only. A loaded program keeps the
+instructions it was compiled with, even if the signature in code changes later. Saved
+states never carry an LM (the agents set the LM per call), so no model or account values
+reach `compiled/`.
 """
 
 import json
@@ -20,11 +22,14 @@ from pathlib import Path
 
 import dspy
 
+from classpilot.agents.prep_program import DSPyPrepAgents
+from classpilot.agents.prep_signatures import PREP_SIGNATURES
 from classpilot.agents.program import DSPyAgents
 from classpilot.agents.signatures import SIGNATURES
 from classpilot.settings import PROJECT_ROOT, Settings
 
 COMPILED_DIR = PROJECT_ROOT / "compiled"
+KNOWN_MODULES = set(SIGNATURES) | set(PREP_SIGNATURES)
 
 
 class CompiledProgramError(Exception):
@@ -43,7 +48,7 @@ def save_program(
     meta: dict,
     directory: Path = COMPILED_DIR,
 ) -> Path:
-    unknown = set(modules) - set(SIGNATURES)
+    unknown = set(modules) - KNOWN_MODULES
     if unknown:
         raise CompiledProgramError(f"unknown modules {sorted(unknown)}")
     states = {}
@@ -74,7 +79,7 @@ def load_program(program_id: str, directory: Path = COMPILED_DIR) -> dict:
     if data.get("program_id") != program_id:
         raise CompiledProgramError(f"{path} holds program {data.get('program_id')!r}")
     modules = data.get("modules") or {}
-    unknown = set(modules) - set(SIGNATURES)
+    unknown = set(modules) - KNOWN_MODULES
     if unknown:
         raise CompiledProgramError(f"{path}: unknown modules {sorted(unknown)}")
     if any(state.get("lm") for state in modules.values()):
@@ -82,7 +87,12 @@ def load_program(program_id: str, directory: Path = COMPILED_DIR) -> dict:
     return data
 
 
-def apply_program(agents: DSPyAgents, data: dict) -> DSPyAgents:
+def apply_program[A: (DSPyAgents, DSPyPrepAgents)](agents: A, data: dict) -> A:
+    other = set(data["modules"]) - set(agents.modules)
+    if other:
+        raise CompiledProgramError(
+            f"program {data['program_id']!r} has modules {sorted(other)} of the other side"
+        )
     for task, state in data["modules"].items():
         agents.modules[task].load_state(state)
     agents.prompt_version = data["program_id"]
@@ -95,4 +105,13 @@ def live_agents(settings: Settings, lm: dspy.LM, directory: Path = COMPILED_DIR)
     agents = DSPyAgents(lm)
     if settings.llm.compiled_program:
         apply_program(agents, load_program(settings.llm.compiled_program, directory))
+    return agents
+
+
+def prep_agents(settings: Settings, lm: dspy.LM, directory: Path = COMPILED_DIR) -> DSPyPrepAgents:
+    """The prep generators and Guardians; compiled when `prep.compiled_program` names a
+    program."""
+    agents = DSPyPrepAgents(lm)
+    if settings.prep.compiled_program:
+        apply_program(agents, load_program(settings.prep.compiled_program, directory))
     return agents

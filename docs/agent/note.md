@@ -416,3 +416,16 @@ is no longer updated)
   a fail verdict stands unless its reason names only rescued claims. Re-scored stored
   replies: v1 8/8 caught, no other result changes. Live dev cases: 1/1 caught, 2 of 12
   false fails (baseline 3, different cases).
+- 2026-11-06 [result] Stage 9 comparison (exploratory: single runs; the dev cases also
+  steered the rule changes; full table `scripts/stage9_comparison.py`):
+
+  | Live Q&A | actions | recall | let through | false esc. | calls/q | latency avg / max |
+  |---|---|---|---|---|---|---|
+  | Stage 4 baseline (v1 lesson, 11 q) | 11/11 | 1.0 | 0 | 0 | 1.82 | 4.4-7.6 s answered |
+  | uncompiled v2 (L1 dev, 31 q) | 25/31 | 1.0 | 0 | 6 | 2.0 | 4.1 / 9.9 s |
+  | live-qa-v1 + new Guardian rule (dev) | 28/31 | 1.0 | 0 | 3 | 2.1 | 4.8 / 13.4 s |
+
+  Guardian cases: v1 7/8 -> 8/8 caught, 0 false fails; prep dev (mistral-large3) 8/8,
+  3 false fails; live dev 1/1, 2 false fails. Malformed replies: dev 1/62 -> 0/65;
+  L1 prep runs 2-3 per run -> 0. L1 prep: polls live 0 -> 5 of 5, script fallbacks
+  5 -> 1. Stage 9 used about 780 LLM calls (estimate 480, cap raised to about 800).

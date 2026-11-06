@@ -23,11 +23,13 @@ are exploratory (small, synthetic data).
 | Trace records (JSONL) and decision log for every live decision | Stage 2 | — |
 | Local conversion: PPTX/PDF/DOCX → page text, notes, PNGs, image-page flag | Stage 4 | local + Docker |
 | Parse layer: vision for image pages, AI_PARSE_DOCUMENT for references, chunks, Cortex Search | Stage 5 | mock, Cortex |
-| Generators: segments, scripts, polls, explanations, each checked by the prep Guardian, retried once, then a fallback; team manifest | Stage 6-7 | mock, Cortex (live: scripts work; polls do not pass their checks yet, Stage 9) |
+| Generators: segments, scripts, polls, explanations, each checked by the prep Guardian (claims with quotes checked by code), retried twice, then a fallback; a wrong option whose explanation fails reveals only; team manifest | Stage 6-9 | mock, Cortex (L1: 13 of 14 scripts, 5 of 5 polls, 8 of 15 wrong options explained) |
+| Eval sets (train: synthetic, committed; dev: real lesson, gitignored), labeled Guardian cases with a labeling sheet | Stage 9 | mock, Cortex |
+| Compiled DSPy programs (`compiled/`, synthetic demos only): prep writers and live Analyst/Responder, loaded behind `prep.compiled_program` / `llm.compiled_program` | Stage 9 | Cortex |
 
 | Service API: lessons, uploads, background prep jobs with progress, manifest, slide images, `POST /questions`, `POST /polls/result` | Stage 8 | mock (Cortex: same code, not yet run live) |
 
-Not yet: compiled DSPy programs (Stage 9), the post-class report (Stage 10).
+Not yet: the post-class report (Stage 10).
 
 ## Docs
 
@@ -105,6 +107,34 @@ the stored parse, so changing `--poll-count` costs no parse calls.
 
 Settings (thresholds, `poll_count`, retries, timeouts, models, object names):
 `config/settings.yaml`. An example manifest from the mock: `tests/fixtures/deck/manifest_mock.json`.
+
+## Eval and compile (Stage 9)
+
+```bash
+# labeled question sets (train is synthetic and committed; dev is under materials/)
+python -m classpilot.cli eval --set eval/questions_train.json
+BACKEND=cortex python -m classpilot.cli eval --set materials/eval/questions_dev.json \
+    [--compiled-program live-qa-v1]                  # needs the search service resumed
+
+# Guardian cases: write a labeling sheet, then evaluate labeled cases
+python -m classpilot.cli guardian-sheet eval/guardian_cases_train.json   # -> outputs/labeling/
+python -m classpilot.cli guardian-eval --cases eval/guardian_cases_train.json [--prep-model M]
+
+# compile on the synthetic trainsets (BACKEND=cortex, after approval)
+python -m classpilot.cli compile --side prep --program-id prep-writers-v5
+python -m classpilot.cli compile --side live --program-id live-qa-v1
+python -m classpilot.cli prep generate --lesson l1 --compiled-program prep-writers-v5
+
+python scripts/search_service.py status|resume|suspend   # suspend after every live run
+python scripts/stage9_comparison.py                      # -> outputs/stage9_comparison.md
+```
+
+Compiled programs are off by default (`llm.compiled_program` and `prep.compiled_program`
+are `null`); a program id becomes `prompt_version` in the trace. Cases and question sets
+built from real course material (`materials/eval/`) are never committed. Helper scripts:
+`scripts/eval_lesson_snapshot.py` (dev set from a parsed lesson),
+`scripts/draft_prep_guardian_cases.py` and `scripts/draft_live_guardian_cases.py`
+(unlabeled cases from stored runs).
 
 ## Service (FastAPI)
 

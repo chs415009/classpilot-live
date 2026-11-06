@@ -812,3 +812,19 @@ Stage 8 (service API, mock) decisions:
   keywords come from the segment's slide chunks.
 - 2026-11-05 `SNOWFLAKE_*` values are replaced by their variable names in job errors and
   item problems. The repeated-poll guard is implemented (it was trivial).
+- 2026-11-06 (Stage 9, user) Bar for generated content and live answers: does not
+  mislead. Rewording, direct inferences, content-free transitions (up to 2 per item),
+  and the writer's own examples tied to a chunk idea pass; new facts or anything beyond
+  the syllabus does not. Replaces the Stage 7 "no writer-made examples" rule.
+- 2026-11-06 (Stage 9, user) A failed explanation no longer drops its poll: that option
+  reveals only (`known_wrong` may leave it out, Q-13). Prep retries 1 -> 2.
+- 2026-11-06 (Stage 9) Guardians (prep and live) see every chunk the generator or the
+  Responder was given, cited first; code passes a claim the Guardian could not tie when
+  0.8 of its content words are in one given chunk with no extra negation; a Guardian
+  "fail" stands unless its reason names only rescued claims. Prep claims carry a kind
+  (fact, example, framing) and a quote checked by code.
+- 2026-11-06 (Stage 9) Compile: BootstrapFewShot on synthetic trainsets only, metric =
+  the system's own checks; compiled the prep writers (`prep-writers-v5`) and the live
+  Analyst and Responder (`live-qa-v1`). The live Guardian was not compiled (7/8 then
+  8/8 on the v1 cases uncompiled). Prep Guardian stays on mistral-large3
+  (claude-haiku-4-5 and claude-sonnet-4-5 did worse on the labeled cases).

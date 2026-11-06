@@ -543,21 +543,19 @@ class Generator:
                 citations=list(expl.citations) if expl else [],
             )
             explained.append((mis.option, expl, expl_status, report))
-            if expl is None:
-                break  # the poll is dropped; the other explanations are not needed
 
-        if any(e is None for _, e, _, _ in explained):
-            for _, _, _, report in explained:
-                report.status = "dropped"
-            self.report.items.append(ItemReport(item, "dropped", attempts, "an explanation failed"))
-            self.report.items.extend(r for *_, r in explained)
-            return self.dropped_question(seg, [out]), {}, {}
-
-        self.report.items.append(ItemReport(item, status, attempts, citations=out.citations))
+        # Stage 9 (user decision): a failed explanation no longer drops the poll. That
+        # option gets no explanation; if it triggers, the correct option is revealed.
+        missing = [option for option, expl, _, _ in explained if expl is None]
+        detail = f"no explanation for {', '.join(missing)}" if missing else ""
+        self.report.items.append(
+            ItemReport(item, status, attempts, detail, citations=out.citations)
+        )
         self.report.items.extend(r for *_, r in explained)
         known_wrong, new_mis, new_rem = {}, {}, {}
         by_option = {m.option: m for m in out.misconceptions}
-        for n, (option, expl, expl_status, _) in enumerate(explained, start=mis_offset + 1):
+        kept = [e for e in explained if e[1] is not None]
+        for n, (option, expl, expl_status, _) in enumerate(kept, start=mis_offset + 1):
             mid, rid = f"M-{n:02d}", f"R-{n:02d}"
             known_wrong[option] = mid
             new_mis[mid] = Misconception(

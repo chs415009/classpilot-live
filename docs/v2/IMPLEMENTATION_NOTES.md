@@ -316,7 +316,7 @@ Fields marked `new` are added; `changed` means same field, new meaning.
         "text": "In an ELT pipeline, what is dbt responsible for?",
         "options": {"A": "...", "B": "...", "C": "...", "D": "..."},
         "correct_option": "B",                                     // new
-        "known_wrong": {"A": "M1", "C": "M2", "D": "M3"},          // changed: every wrong option
+        "known_wrong": {"A": "M1", "C": "M2", "D": "M3"},          // changed: wrong options with an explanation
         "segment": "seg-01",
         "status": "ok"                                             // new
       }
@@ -353,8 +353,10 @@ Model and validation: `src/classpilot/contracts/manifest.py` (draft); fixture:
 
 Rules:
 - Slide ids are system-generated (`<source>-p<NN>`).
-- `known_wrong` covers every wrong option. Each wrong option maps to exactly one
-  misconception, and each misconception to exactly one remediation.
+- `known_wrong` holds wrong options only. A wrong option whose explanation failed at
+  prep time is left out (Stage 9); if it triggers, the poll path reveals. Each listed
+  option maps to exactly one misconception, and each misconception to exactly one
+  remediation.
   No two misconceptions share a remediation (agent-side check, Stage 2).
 - `citations` hold chunk ids (they include the page).
 - A segment without a poll has `active_poll: null` and `questions: {}`.
@@ -377,7 +379,8 @@ Rules:
 - Rule: `answers_received >= min_responses` and top wrong share `>= wrong_ratio_threshold`
   → action `explain` with `option`; else `reveal`.
 - On `explain`: `known_wrong[option]` → misconception → `remediation` → `text` +
-  `show_slide`, returned with the decision. TTS reads the text while the front end shows
+  `show_slide`, returned with the decision. An option missing from `known_wrong` gives
+  `reveal` instead (Stage 9). TTS reads the text while the front end shows
   `show_slide`; then the correct option is revealed and the lecture returns to where it
   stopped. No re-poll; each poll triggers at most once. The backend calls the rule once
   per poll **[team]**. If it is trivial, the endpoint also guards on

@@ -62,7 +62,8 @@ def run_poll(evidence: PollEvidence, manifest: Manifest, backend: str) -> RunOut
         statuses["explanation_lookup"] = "pass" if explanation else "fail"
         latency["explanation_lookup"] = elapsed_ms(t)
         if explanation is None:
-            # Cannot happen with a validated manifest; reveal is the safe outcome.
+            # The option has no explanation (its explanation failed at prep time,
+            # Stage 9) or a link is missing: reveal is the safe outcome.
             outcome, deciding_node = rules.PollOutcome("reveal"), "explanation_lookup"
 
     decision = Decision(

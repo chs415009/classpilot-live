@@ -42,6 +42,16 @@ def test_missing_link_reveals_instead(content, make_evidence):
     assert out.decision.remediation_id is None
 
 
+def test_option_without_an_explanation_reveals(content, make_evidence):
+    # Stage 9: a wrong option whose explanation failed at prep time has no known_wrong.
+    manifest = content.manifest.model_copy(deep=True)
+    _, question = manifest.find_question("q-01")
+    del question.known_wrong["B"]
+    out = run_poll(make_evidence({"A": 3, "B": 13, "C": 4, "D": 1}), manifest, "mock")
+    assert out.decision.action == "reveal" and out.decision.correct_option == "A"
+    assert out.decision.option is None and out.decision.remediation_text is None
+
+
 @pytest.mark.parametrize(
     ("kwargs", "message"),
     [

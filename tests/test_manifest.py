@@ -33,17 +33,17 @@ def test_fixture_manifest_is_valid():
     assert manifest.find_question("q-99") is None
 
 
-# ---------- every wrong option is in known_wrong ----------
+# ---------- known_wrong holds only wrong options (Stage 9: some may lack one) ----------
 
 
-def test_wrong_option_missing_from_known_wrong(raw):
+def test_wrong_option_without_an_explanation_is_allowed(raw):
     del seg(raw, "seg-02")["questions"]["q-01"]["known_wrong"]["D"]
-    assert_invalid(raw, "known_wrong covers")
+    Manifest.model_validate(raw)
 
 
 def test_correct_option_in_known_wrong(raw):
     seg(raw, "seg-02")["questions"]["q-01"]["known_wrong"]["A"] = "M-01"
-    assert_invalid(raw, "known_wrong covers")
+    assert_invalid(raw, r"known_wrong has \['A'\]")
 
 
 def test_known_wrong_points_to_unknown_misconception(raw):
@@ -157,6 +157,6 @@ def test_dropped_question_still_needs_known_misconception_ids(raw):
     assert_invalid(raw, "unknown misconception 'M-99'")
 
 
-def test_active_question_still_needs_full_known_wrong(raw):
+def test_active_question_may_have_no_explanations(raw):
     seg(raw, "seg-02")["questions"]["q-01"]["known_wrong"] = {}
-    assert_invalid(raw, "known_wrong covers")
+    Manifest.model_validate(raw)

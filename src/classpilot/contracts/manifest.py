@@ -122,11 +122,13 @@ def manifest_errors(m: Manifest) -> list[str]:
                 continue
             if q.correct_option not in q.options:
                 errors.append(f"{where}: correct_option {q.correct_option!r} not in options")
+            # A wrong option without an explanation is allowed (Stage 9): if it
+            # triggers, the poll path reveals the correct option.
             wrong = set(q.options) - {q.correct_option}
-            if set(q.known_wrong) != wrong:
+            extra = set(q.known_wrong) - wrong
+            if extra:
                 errors.append(
-                    f"{where}: known_wrong covers {sorted(q.known_wrong)}, "
-                    f"wrong options are {sorted(wrong)}"
+                    f"{where}: known_wrong has {sorted(extra)}, wrong options are {sorted(wrong)}"
                 )
 
     owners: dict[str, str] = {}

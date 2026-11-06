@@ -92,6 +92,13 @@ def render_review(manifest: Manifest, report: dict, chunks: dict[str, str]) -> s
                 mark = " (correct)" if key == q.correct_option else ""
                 out.append(f"- {key}: {text}{mark}")
             out.append("")
+            if q.status != "dropped":
+                unexplained = sorted(set(q.options) - {q.correct_option} - set(q.known_wrong))
+                for option in unexplained:
+                    out += [
+                        f"**{option}**: no explanation (its explanation failed; reveal only)",
+                        "",
+                    ]
             for option, mid in sorted(q.known_wrong.items()):
                 mis = manifest.misconceptions[mid]
                 rem = manifest.remediations[mis.remediation]

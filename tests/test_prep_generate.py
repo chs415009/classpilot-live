@@ -282,31 +282,29 @@ def test_slide_without_chunks_skips_the_writer(tables):
 # ---------- polls ----------
 
 
-def test_one_explanation_fails_twice_drops_the_poll_and_tries_the_next_segment(tables):
-    def first_poll_first_explanation(inputs, n):
+def test_failed_explanation_keeps_the_poll_without_that_explanation(tables):
+    def first_explanation(inputs, n):
         return UNSUPPORTED if n <= 2 else None
 
-    llm = Rigged(explanation_guardian=first_poll_first_explanation)
+    llm = Rigged(explanation_guardian=first_explanation)
     result = run(tables, llm, poll_count=1)
     m = result.manifest
-    dropped = m.segments[0].questions["q-01"]
-    assert dropped.status == "dropped" and dropped.known_wrong == {}
-    assert dropped.text  # the poll itself passed; its text stays for the report
-    assert m.segments[0].active_poll is None
-    assert m.segments[1].active_poll == "q-02"
-    assert sorted(m.misconceptions) == ["M-01", "M-02", "M-03"]
-    assert all(r.status == "ok" for r in m.remediations.values())
-    # q-01 stopped at its failing explanation: 2 attempts, the other 2 not generated.
-    assert len(llm.inputs_of("explanation_writer")) == 2 + 3
-    assert item(result, "poll q-01 seg-01").detail == "an explanation failed"
-    assert result.report.statuses("explanation q-01") == ["dropped"]
+    q = m.segments[0].questions["q-01"]
+    assert m.segments[0].active_poll == "q-01" and q.status != "dropped"
+    wrong = sorted(set(q.options) - {q.correct_option})
+    assert sorted(q.known_wrong) == wrong[1:]  # the first wrong option has none
+    assert sorted(m.misconceptions) == ["M-01", "M-02"]
+    assert len(llm.inputs_of("explanation_writer")) == 2 + 2  # every option is tried
+    assert item(result, "poll q-01 seg-01").detail == f"no explanation for {wrong[0]}"
+    assert result.report.statuses("explanation q-01") == ["dropped", "ok", "ok"]
 
 
-def test_explanation_failing_after_one_passed_drops_them_all(tables):
-    llm = Rigged(explanation_guardian=lambda inputs, n: UNSUPPORTED if n in (2, 3) else None)
+def test_poll_with_no_explanations_still_runs_and_reveals(tables):
+    llm = Rigged(explanation_guardian=lambda inputs, n: UNSUPPORTED)
     result = run(tables, llm, poll_count=1)
-    assert result.report.statuses("explanation q-01") == ["dropped", "dropped"]
-    assert result.manifest.segments[1].active_poll == "q-02"
+    q = result.manifest.segments[0].questions["q-01"]
+    assert q.status != "dropped" and q.known_wrong == {}
+    assert result.manifest.misconceptions == {} and result.manifest.remediations == {}
 
 
 def test_poll_fails_twice_is_dropped_and_the_next_segment_is_tried(tables):

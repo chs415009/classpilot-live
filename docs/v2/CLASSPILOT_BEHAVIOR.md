@@ -134,9 +134,10 @@ parse result.
    - at least `min_responses` answers (default **5**), and
    - the most chosen wrong option has at least `wrong_ratio_threshold` of the answers
      (default **0.60**).
-4. If the rule triggers: TTS reads the pre-generated explanation for that wrong option,
-   and the front end shows the slide named in that explanation (`show_slide`) while it
-   is read.
+4. If the rule triggers and that wrong option has an explanation: TTS reads the
+   pre-generated explanation, and the front end shows the slide named in that
+   explanation (`show_slide`) while it is read. If the option has no explanation (its
+   explanation failed the checks before class), the correct option is only revealed.
 5. In all cases: the correct option is revealed (no explanation for it), and the
    lecture returns to where it stopped.
 
@@ -205,9 +206,10 @@ automatically.
    - script: the slide's own text, cleaned for TTS (no code or symbols read
      literally). If the slide has no text, the vision description of the slide. If
      there is none, a fixed sentence asking students to look at the slide.
-   - poll: if the poll or any of its wrong-option explanations fails, the whole poll is
-     dropped and the next segment end is tried. Every wrong option of a poll in use has
-     an explanation.
+   - poll: if the poll fails, it is dropped and the next segment end is tried.
+   - explanation: if a wrong option's explanation fails, the poll is kept and that
+     option has no explanation; if it triggers in class, the correct option is only
+     revealed (user decision, Stage 9: in Stage 7 this rule dropped every poll).
 4. Every retry and fallback is recorded in the manifest (a status per item; the
    report counts them) and shown in the post-class report. Prep runs are not written to
    the analytics data model.

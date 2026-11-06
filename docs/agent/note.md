@@ -296,7 +296,7 @@ is no longer updated)
   PPTX (LibreOffice in Docker) to manifest in about 1 s, one question (answer), one
   poll result (explain with the manifest's text and slide). No Snowflake use.
 
-## Stage 9: Eval expansion, DSPy compile, baseline comparison — in progress
+## Stage 9: Eval expansion, DSPy compile, baseline comparison — accepted 2026-11-06
 
 - 2026-11-05 [decision] User: train on a synthetic lesson written from L1's topics in
   own words (`eval/questions_train.json`, committed), dev on the real L1 lesson
@@ -429,3 +429,5 @@ is no longer updated)
   3 false fails; live dev 1/1, 2 false fails. Malformed replies: dev 1/62 -> 0/65;
   L1 prep runs 2-3 per run -> 0. L1 prep: polls live 0 -> 5 of 5, script fallbacks
   5 -> 1. Stage 9 used about 780 LLM calls (estimate 480, cap raised to about 800).
+- 2026-11-06 [decision] User accepted Stage 9. Open: whether compiled programs become
+  the default; the Stage 9 cost reading (`sql/probes/stage9_cost_reading.sql`).

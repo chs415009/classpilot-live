@@ -200,6 +200,26 @@ def test_guardian_pass_verdict_with_unsupported_claim_still_fails(tables):
     assert result.manifest.slides[f"{P}01"].status == "ok_after_retry"
 
 
+def test_guardian_quote_not_in_the_chunk_fails_the_attempt(tables):
+    invented = {
+        "claims": [{"claim": "x", "chunk_id": f"{P}03-c1", "quote": "words the chunk lacks"}],
+        "verdict": "pass",
+        "reason": "ok",
+    }
+    result = run(tables, Rigged(script_guardian=for_slide("03", invented, times=1)))
+    first = item(result, f"script {P}03").attempts[0]
+    assert first.outcome == "guardian" and "quote" in first.problems[0]
+
+
+def test_every_attempt_keeps_its_draft(tables):
+    llm = Rigged(script_guardian=for_slide("02", UNSUPPORTED, times=1))
+    attempts = item(run(tables, llm), f"script {P}02").attempts
+    assert all(a.draft and a.draft["script"] and "citations" in a.draft for a in attempts)
+    failing = Rigged(script_writer=first_calls(LLMError("timeout"), 1))
+    first = item(run(tables, failing), f"script {P}01").attempts[0]
+    assert first.outcome == "llm_error" and first.draft is None
+
+
 # ---------- script fallbacks ----------
 
 

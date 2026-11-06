@@ -10,8 +10,6 @@ from typing import Literal
 
 from pydantic import BaseModel
 
-from classpilot.contracts.live import GuardianClaim
-
 OPTION_LETTERS = ("A", "B", "C", "D")
 
 
@@ -55,10 +53,19 @@ class ExplanationOutput(BaseModel):
     citations: list[str]
 
 
+class PrepClaim(BaseModel):
+    """A claim with the cited chunk that states it and a quote from that chunk. Code
+    checks that the quote is in the chunk (Stage 9: false passes); None = not given."""
+
+    claim: str
+    chunk_id: str | None  # cited chunk that states the claim; None = not supported
+    quote: str | None = None
+
+
 class PrepGuardianOutput(BaseModel):
     """Scripts and explanations: every factual claim with the cited chunk that states it."""
 
-    claims: list[GuardianClaim]
+    claims: list[PrepClaim]
     verdict: Literal["pass", "fail"]
     reason: str
 
@@ -66,12 +73,13 @@ class PrepGuardianOutput(BaseModel):
 class WrongOptionCheck(BaseModel):
     option: str
     chunk_id: str | None  # cited chunk that shows the option is wrong; None = not shown
+    quote: str | None = None  # words of that chunk that show it
 
 
 class PollGuardianOutput(BaseModel):
     """Polls: claims of the question and correct option, and why each wrong option is wrong."""
 
-    claims: list[GuardianClaim]
+    claims: list[PrepClaim]
     wrong_options: list[WrongOptionCheck]
     verdict: Literal["pass", "fail"]
     reason: str

@@ -167,6 +167,30 @@ def option_key(text: str) -> str:
     return match.group(1) if match else text.strip()
 
 
+_NON_WORD = re.compile(r"[^0-9a-z]+")
+_QUOTE_CHARS = str.maketrans({"\u2018": "'", "\u2019": "'", "\u201c": '"', "\u201d": '"'})
+
+
+def normalize_words(text: str) -> str:
+    """Lower case, words only: punctuation, line breaks, and the ' | ' line joins of the
+    prompt do not count when a quote is matched against a chunk."""
+    return " ".join(_NON_WORD.sub(" ", text.translate(_QUOTE_CHARS).lower()).split())
+
+
+_QUOTE_GAP = re.compile(r"\s*(?:\||\.\.\.|\u2026)\s*")
+
+
+def quote_found(quote: str | None, chunk_texts: list[str]) -> bool:
+    """Every part of the quote is word for word in one of the cited chunks. Parts are
+    split at ' | ' (the prompt's line joins) and '...'. Stage 9: the Guardian joined
+    lines of a list with ' | ' and sometimes named a different cited chunk than the one
+    it quoted."""
+    texts = [f" {normalize_words(t)} " for t in chunk_texts]
+    parts = [normalize_words(p) for p in _QUOTE_GAP.split(quote or "")]
+    parts = [p for p in parts if p]
+    return bool(parts) and all(any(f" {p} " in t for t in texts) for p in parts)
+
+
 @dataclass
 class PrepCheck:
     passed: bool | None  # None: the Guardian output does not match the schema
@@ -179,6 +203,7 @@ def check_prep_guardian(
     *,
     require_claims: bool,
     wrong_options: list[str] | None = None,
+    chunk_texts: dict[str, str] | None = None,
 ) -> PrepCheck:
     """Pass only if the Guardian says pass AND its claim list backs that up.
 
@@ -186,21 +211,35 @@ def check_prep_guardian(
     not claims); explanations and polls need at least one. For a poll
     (`wrong_options` given), every wrong option also needs a cited chunk that shows it
     is wrong.
+
+    With `chunk_texts` (chunk id -> text), each claim and wrong-option check must also
+    quote the cited chunks word for word (case and punctuation aside; `quote_found`); a
+    missing or invented quote fails it. Stage 9: a Guardian named a chunk for a claim
+    the chunk does not state. A real quote that does not mean the claim still passes.
     """
     model = PollGuardianOutput if wrong_options is not None else PrepGuardianOutput
     output = parse_output(model, raw)
     if output is None:
         return PrepCheck(None, ["The Guardian output did not match the schema."])
     cited = set(cited_ids)
-    problems = [
-        f"Not supported by the cited chunks: {c.claim!r}"
-        for c in output.claims
-        if c.chunk_id not in cited
-    ]
+
+    def quoted(chunk_id: str | None, quote: str | None) -> bool:
+        if chunk_id not in cited:
+            return False
+        return chunk_texts is None or quote_found(
+            quote, [chunk_texts[i] for i in cited_ids if i in chunk_texts]
+        )
+
+    problems = []
+    for c in output.claims:
+        if c.chunk_id not in cited:
+            problems.append(f"Not supported by the cited chunks: {c.claim!r}")
+        elif not quoted(c.chunk_id, c.quote):
+            problems.append(f"The quote for {c.claim!r} is not in the cited chunks.")
     if require_claims and not output.claims:
         problems.append("The Guardian found no claims to check.")
     if wrong_options is not None:
-        shown = {option_key(w.option) for w in output.wrong_options if w.chunk_id in cited}
+        shown = {option_key(w.option) for w in output.wrong_options if quoted(w.chunk_id, w.quote)}
         problems += [
             f"Option {o} is not shown to be wrong by the cited chunks."
             for o in wrong_options

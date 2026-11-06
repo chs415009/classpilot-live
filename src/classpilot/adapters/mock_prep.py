@@ -49,8 +49,20 @@ def _supported_by(sentence: str, chunks: list[dict]) -> str | None:
     return None
 
 
+def _quote(chunk_id: str | None, chunks: list[dict]) -> str | None:
+    """The mock quotes the first words of the chunk it names."""
+    for c in chunks:
+        if c["chunk_id"] == chunk_id:
+            return " ".join(c["text"].split()[:6])
+    return None
+
+
 def _claims(text: str, chunks: list[dict]) -> list[dict]:
-    return [{"claim": s, "chunk_id": _supported_by(s, chunks)} for s in split_sentences(text)]
+    claims = []
+    for sentence in split_sentences(text):
+        chunk_id = _supported_by(sentence, chunks)
+        claims.append({"claim": sentence, "chunk_id": chunk_id, "quote": _quote(chunk_id, chunks)})
+    return claims
 
 
 def _verdict(claims: list[dict]) -> dict:
@@ -170,7 +182,7 @@ class MockPrepLLM:
         first = inputs["cited_chunks"][0]["chunk_id"] if inputs["cited_chunks"] else None
         # The mock cannot judge wrongness: the first cited chunk "shows" every wrong option.
         wrong = [
-            {"option": o, "chunk_id": first}
+            {"option": o, "chunk_id": first, "quote": _quote(first, inputs["cited_chunks"])}
             for o in sorted(inputs["options"])
             if o != inputs["correct_option"]
         ]

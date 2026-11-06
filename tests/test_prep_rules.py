@@ -283,3 +283,83 @@ def test_option_text_without_a_key_is_not_matched():
     raw = guardian([("q", "c1")], wrong=[("Clean data", "c1"), ("C", "c1"), ("D", "c1")])
     check = check_prep_guardian(raw, ["c1"], require_claims=True, wrong_options=["B", "C", "D"])
     assert check.problems == ["Option B is not shown to be wrong by the cited chunks."]
+
+
+# ---------- quotes (Stage 9) ----------
+
+TEXTS = {"c1": "Encapsulation:\nBundling data and methods | in one Class."}
+
+
+def quoted(claims, wrong=None):
+    raw = {
+        "claims": [{"claim": c, "chunk_id": cid, "quote": q} for c, cid, q in claims],
+        "verdict": "pass",
+        "reason": "ok",
+    }
+    if wrong is not None:
+        raw["wrong_options"] = [{"option": o, "chunk_id": cid, "quote": q} for o, cid, q in wrong]
+    return raw
+
+
+@pytest.mark.parametrize(
+    "quote",
+    [
+        "Bundling data and methods",
+        "bundling data and methods in one class.",
+        "Encapsulation: Bundling",
+    ],
+)
+def test_quote_found_in_the_chunk_passes(quote):
+    raw = quoted([("x", "c1", quote)])
+    assert check_prep_guardian(raw, ["c1"], require_claims=True, chunk_texts=TEXTS).passed
+
+
+@pytest.mark.parametrize(
+    "quote", [None, "", "bundling data and objects", "methods in one class too"]
+)
+def test_missing_or_invented_quote_fails(quote):
+    raw = quoted([("x", "c1", quote)])
+    check = check_prep_guardian(raw, ["c1"], require_claims=True, chunk_texts=TEXTS)
+    assert check.passed is False
+    assert check.problems == ["The quote for 'x' is not in the cited chunks."]
+
+
+def test_quote_must_match_whole_words():
+    raw = quoted([("x", "c1", "ndling data")])
+    assert not check_prep_guardian(raw, ["c1"], require_claims=True, chunk_texts=TEXTS).passed
+
+
+def test_wrong_option_needs_a_quote_from_its_chunk():
+    raw = quoted(
+        [("q", "c1", "in one class")], wrong=[("B", "c1", "Bundling"), ("C", "c1", "nope")]
+    )
+    check = check_prep_guardian(
+        raw, ["c1"], require_claims=True, wrong_options=["B", "C"], chunk_texts=TEXTS
+    )
+    assert check.problems == ["Option C is not shown to be wrong by the cited chunks."]
+
+
+def test_without_chunk_texts_quotes_are_not_checked():
+    raw = quoted([("x", "c1", None)])
+    assert check_prep_guardian(raw, ["c1"], require_claims=True).passed
+
+
+@pytest.mark.parametrize(
+    "quote",
+    ["Encapsulation: | in one Class", "Encapsulation ... in one class", "other chunk words"],
+)
+def test_quote_parts_may_skip_lines_and_come_from_any_cited_chunk(quote):
+    texts = {**TEXTS, "c2": "Other chunk words."}
+    raw = quoted([("x", "c1", quote)])
+    assert check_prep_guardian(raw, ["c1", "c2"], require_claims=True, chunk_texts=texts).passed
+
+
+def test_every_quote_part_must_be_found():
+    raw = quoted([("x", "c1", "Encapsulation: | invented words")])
+    assert not check_prep_guardian(raw, ["c1"], require_claims=True, chunk_texts=TEXTS).passed
+
+
+def test_quote_from_an_uncited_chunk_does_not_count():
+    texts = {**TEXTS, "c9": "Uncited words."}
+    raw = quoted([("x", "c1", "Uncited words")])
+    assert not check_prep_guardian(raw, ["c1"], require_claims=True, chunk_texts=texts).passed

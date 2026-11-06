@@ -34,7 +34,7 @@ from classpilot import rules
 from classpilot.adapters.llm import LLMClient, LLMError, call_llm
 from classpilot.content import load_content
 from classpilot.nodes.guardian import run_guardian
-from classpilot.rules.prep import check_prep_guardian, option_key
+from classpilot.rules.prep import check_prep_guardian, option_key, quote_found
 from classpilot.settings import PROJECT_ROOT, Settings
 
 V1_CASES_PATH = PROJECT_ROOT / "eval" / "guardian_cases.json"
@@ -209,6 +209,7 @@ def run_case(case: GuardianCase, llm: LLMClient, timeout_s: float) -> dict:
             case.chunk_ids,
             require_claims=case.kind != "script",
             wrong_options=case.wrong_options if case.kind == "poll" else None,
+            chunk_texts={c.chunk_id: c.text for c in case.chunks},
         )
     latency = round((time.perf_counter() - start) * 1000)
     if error is not None or check.passed is None:
@@ -222,11 +223,13 @@ def run_case(case: GuardianCase, llm: LLMClient, timeout_s: float) -> dict:
         "latency_ms": latency,
     }
     if case.kind == "poll":
-        cited = set(case.chunk_ids)
+        texts = {c.chunk_id: c.text for c in case.chunks}
         shown = {
             option_key(w.get("option", ""))
             for w in raw.get("wrong_options") or []
-            if isinstance(w, dict) and w.get("chunk_id") in cited
+            if isinstance(w, dict)
+            and w.get("chunk_id") in texts
+            and quote_found(w.get("quote"), list(texts.values()))
         }
         out["shown_wrong"] = {o: o in shown for o in case.wrong_options}
         out["expected_shown_wrong"] = case.shown_wrong
@@ -320,18 +323,20 @@ def run_case_eval(
 
 # ---------- labeling sheet ----------
 
-SHEET_HELP = """How to label: edit the JSON file, not this sheet. Set `expected` to "pass" or
-"fail": pass only if every factual claim is stated by the listed chunks (transitions and
-"this slide shows ..." sentences are not claims; a live answer must also not give
-finished graded work). For polls, also set each wrong option in `shown_wrong` to true if
-the chunks show it is wrong (a closed, complete list in a chunk that leaves the option
-out counts; a list of examples does not), and `expected` to "pass" only if the question,
-the correct option, and every wrong option are covered. Optional: copy unsupported claims
-into `unsupported`, and add a `note`. Reconstructed items were rebuilt from the claims a
-Stage 7 Guardian listed; judge the text as shown. The chunks are
-the ones the Guardian sees in this eval (they may differ from what the Stage 7
-generator cited); label against them only. The Stage 7 verdict is in the JSON
-(`stage7`) but not here, so it does not steer the label."""
+SHEET_HELP = """How to label: edit the JSON file, not this sheet. Set `expected` to
+"pass" or "fail": pass only if every factual claim is stated by the listed chunks.
+Differences in wording, transitions, and sentences that only describe the slide ("this
+slide lists the main topics") are not claims; new knowledge, the writer's own examples,
+and wrong facts fail, and so does true content found only in chunks not listed here. A
+live answer must also not give finished graded work. For polls, also set each wrong
+option in `shown_wrong` to true if the chunks show it is wrong (a closed, complete list
+in a chunk that leaves the option out counts; a list of examples does not), and
+`expected` to "pass" only if the question, the correct option, and every wrong option
+are covered. Optional: copy unsupported claims into `unsupported`, and add a `note`.
+Reconstructed items were rebuilt from the claims a Stage 7 Guardian listed; judge the
+text as shown. The chunks are the ones the Guardian sees in this eval (they may differ
+from what the Stage 7 generator cited); label against them only. The Stage 7 verdict is
+in the JSON (`stage7`) but not here, so it does not steer the label."""
 
 
 def case_sheet(case_set: CaseSet) -> str:

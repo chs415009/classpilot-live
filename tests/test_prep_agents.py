@@ -247,3 +247,22 @@ def test_scripted_llm_replays_then_falls_back_and_records_calls():
     assert llm.complete("poll_placer", INPUTS["poll_placer"])["segment_ids"] == []
     assert llm.complete("poll_placer", INPUTS["poll_placer"])["segment_ids"] == ["seg-01"]
     assert llm.count("poll_placer") == 3
+
+
+def _words(text: str) -> str:
+    return " ".join(text.split())
+
+
+def test_closed_list_rule_is_the_same_in_poll_and_explanation_guardians():
+    from classpilot.agents.prep_signatures import CLOSED_LIST_RULE
+
+    for task in ("poll_guardian", "explanation_guardian"):
+        instructions = _words(PREP_SIGNATURES[task][0].instructions)
+        assert _words(CLOSED_LIST_RULE) in instructions, task
+
+
+def test_writers_say_nothing_about_later_lessons_and_guardians_ask_for_quotes():
+    for task in ("script_writer", "explanation_writer"):
+        assert "later lessons" in _words(PREP_SIGNATURES[task][0].instructions)
+    for task in ("script_guardian", "poll_guardian", "explanation_guardian"):
+        assert "quote" in PREP_SIGNATURES[task][0].instructions

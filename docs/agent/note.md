@@ -295,3 +295,51 @@ is no longer updated)
   values in responses, traces, or logs); 448 tests in all. Local uvicorn run: fixture
   PPTX (LibreOffice in Docker) to manifest in about 1 s, one question (answer), one
   poll result (explain with the manifest's text and slide). No Snowflake use.
+
+## Stage 9: Eval expansion, DSPy compile, baseline comparison — in progress
+
+- 2026-11-05 [decision] User: train on a synthetic lesson written from L1's topics in
+  own words (`eval/questions_train.json`, committed), dev on the real L1 lesson
+  (`materials/eval/`, gitignored), so compiled demos can be committed. Compiled files
+  hold the demos' full inputs (chunk text, question, answer), which rules out real
+  content in train.
+- 2026-11-05 [decision] User: one "option is wrong" rule for PollGuardian and
+  ExplanationGuardian: a closed, complete list in a chunk that leaves the option out
+  counts; a list of examples does not.
+- 2026-11-05 [decision] User: prep Guardian false passes are handled in order: quotes per
+  claim checked by code against the chunk, then another model (`claude-haiku-4-5`) on
+  the same labeled cases, then (asking first) compiling.
+- 2026-11-05 [change] Generation reports kept no draft text or generator citations, so
+  failed Stage 7 drafts are rebuilt from the claims their Guardian listed
+  (`reconstructed`), and cited chunks = the item's own chunks plus the chunks the
+  Guardian named.
+- 2026-11-05 [finding] DSPy 3.4 `Predict.dump_state()` fails on a custom engine LM;
+  saving works on a copy without the LM, so `compiled/` never stores model settings.
+- 2026-11-06 [finding] Uncompiled dev baseline (L1, 31 questions, 62 calls): action
+  correct 25/31, escalation recall 1.0, 0 unsupported let through, 6 false escalations:
+  Guardian caught Responder additions (dv-06/07/09), Analyst judged scope from objective
+  titles only (dv-10 inheritance, dv-15 car analogy), 1 malformed Analyst reply (dv-03).
+- 2026-11-06 [finding] v1 Guardian cases, uncompiled, 2 runs: identical, 7/8 caught,
+  0 false fails, 0 errors; gc-07 missed both times.
+- 2026-11-06 [decision] User labeling standard for prep cases: differences in wording or
+  in describing the slide are not claims (pass); new knowledge, own examples, or wrong
+  facts fail. True content found only in uncited chunks still fails (a citation
+  problem for the generator, not a looser Guardian). Round 1: 25 cases labeled.
+- 2026-11-06 [finding] Uncompiled prep Guardians on the 21 labeled prep cases: 8/9
+  caught (missed pc-02, the writer's own "family tree"), 5 false fails: slide-describing
+  sentences counted as claims (pc-01, pc-09), closed lists not used (pc-14, pc-15; D2
+  rule not yet in the prompt), "that option is inheritance" (pc-18). Synthetic live:
+  2/2 caught, 2 false fails (gs-01 "chunks do not cover", gs-03 recommendation).
+- 2026-11-06 [change] Prep fixes: per-claim (and per wrong option) quotes checked by
+  code; quote parts split at ' | ' and '...' may come from any cited chunk (the
+  Guardian joins list lines and sometimes names the wrong cited chunk). Shared
+  closed-list rule in PollGuardian and ExplanationGuardian; slide-describing sentences
+  are not claims; ExplanationWriter gets the ScriptWriter rule plus "nothing about later
+  lessons". Generation reports keep each attempt's draft.
+- 2026-11-06 [finding] Quotes are real text but do not catch a quote that does not mean
+  the claim (pc-02 "family tree" quoted "similar to a Graph or Tree"). After the fixes
+  (mistral-large3, dev cases): 8/9 caught, false fails 5 -> 4 (pc-01, pc-09, pc-15
+  outline not taken as closed, pc-17 linking sentence without quote). Prompt changes
+  were checked on these dev cases, so the number is optimistic.
+- 2026-11-06 [finding] `claude-haiku-4-5` as prep Guardian on the same cases: 4/9
+  caught, 6 false fails. Worse on both; prep Guardian stays on mistral-large3.

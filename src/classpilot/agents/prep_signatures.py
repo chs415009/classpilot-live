@@ -12,7 +12,9 @@ checks them; code checks their structure.
 
 The prep Guardian has one signature per item type, because each type has its own rule
 (scripts: transitions are not claims; polls: each wrong option shown wrong;
-explanations: every claim supported). The live Guardian (`signatures.py`) is unchanged.
+explanations: every claim supported). Every claim and every wrong-option check carries a
+quote from its chunk, and code checks the quote is there (Stage 9, against false
+passes). The live Guardian (`signatures.py`) is unchanged.
 Output fields mirror the pydantic models in `contracts/prep.py` (a sync test checks this).
 """
 
@@ -20,13 +22,13 @@ from typing import Literal
 
 import dspy
 
-from classpilot.contracts.live import GuardianClaim
 from classpilot.contracts.prep import (
     ExplanationOutput,
     MisconceptionDraft,
     PlacementOutput,
     PollGuardianOutput,
     PollOutput,
+    PrepClaim,
     PrepGuardianOutput,
     ScriptOutput,
     SegmentDraft,
@@ -36,6 +38,15 @@ from classpilot.contracts.prep import (
 
 CHUNKS_DESC = "lesson chunks, one per line as '[<chunk_id>] (<slide id> or reference) <text>'"
 FEEDBACK_DESC = "problems with your previous answer that you must fix, or '(none)'"
+
+# Shared by PollGuardian and ExplanationGuardian (user decision D2, Stage 9); a test
+# checks both instructions contain it word for word.
+CLOSED_LIST_RULE = (
+    'If a cited chunk gives a closed, complete list (for example "The three pillars '
+    "are: 1, 2, 3\" or an outline of the lecture's topics), an option or idea that the "
+    'list leaves out is shown wrong by that list. A list of examples ("for example", '
+    '"such as", "examples of") is not complete and shows nothing wrong.'
+)
 
 
 class SegmenterSignature(dspy.Signature):
@@ -64,7 +75,8 @@ class ScriptWriterSignature(dspy.Signature):
       segment objective.
     - Use only what the chunks given state. You may say it in simpler words, and you may
       use examples and analogies that the chunks contain (the reference chunks often
-      have them). Do not add facts, examples, analogies, or explanations of your own.
+      have them). Do not add facts, examples, analogies, or explanations of your own,
+      and say nothing about what later lessons or the rest of the course cover.
       Cite the ids of the chunks you used.
     - If the slide only lists items, name them and say what they have in common, using
       what the chunks say.
@@ -140,8 +152,14 @@ class ExplanationWriterSignature(dspy.Signature):
     the correct option is revealed.
     - Address the misconception behind the chosen option: say why it is wrong and what
       the lesson says instead, in 2 to 4 short spoken sentences.
-    - Use only facts stated in the chunks given. Cite the ids of the chunks you used,
-      including at least one slide chunk.
+    - Use only what the chunks given state. You may say it in simpler words, and you may
+      use examples and analogies that the chunks contain. Do not add facts, examples,
+      analogies, or explanations of your own, and say nothing about what later lessons
+      or the rest of the course cover. Cite the ids of the chunks you used, including at
+      least one slide chunk.
+    - To say why the option is wrong, use what the chunks state: a chunk that
+      contradicts it, a chunk that defines the idea the option really describes, or a
+      closed, complete list in a chunk that leaves it out.
     - show_slide is the slide id of one cited slide chunk that best shows the right idea.
     - Do not say the letter of the correct option; it is revealed after you.
     - Plain spoken English only: no Markdown, bullets, backticks, or code. Spell out
@@ -170,22 +188,29 @@ class ScriptGuardianSignature(dspy.Signature):
     supported.
     1. List every factual claim in the script. A sentence can hold more than one claim;
        list each one.
-       For each claim, give the id of the cited chunk that directly states it, or null
-       if no cited chunk states it.
+       For each claim, give the id of the cited chunk that states it, or null if no
+       cited chunk states it, and copy the words of that chunk that state it as quote
+       (a short exact span, not a paraphrase).
        - Only the cited chunks count. Do not use your own knowledge.
        - A claim that is true in general but not stated in the cited chunks is not
          supported.
+       - A claim the chunk states in other words is supported: judge the meaning, not
+         the wording.
        - A chunk that only names a term, without explaining it, does not support an
          explanation of that term.
-       - Transitions, sign-posts, and sentences that only say what the slide shows or
-         lists ("Next, let's look at ...", "Let's recap", "This slide lists three
-         examples") state no facts; they are not claims, so leave them out.
-    2. verdict is "pass" only if every claim has a chunk id."""
+       - An example, analogy, or comparison counts as a claim; it is supported only if
+         a cited chunk contains that same example, analogy, or comparison.
+       - Transitions, sign-posts, and sentences that only say what the slide is or what
+         it shows or lists ("Next, let's look at ...", "Let's recap", "This slide lists
+         the main topics", "These are the starting points for this class") state no
+         facts about the subject; they are not claims, so leave them out.
+    2. verdict is "pass" only if every claim has a chunk id and a quote."""
 
     chunks: str = dspy.InputField(desc="cited chunks, one per line as '[<chunk_id>] <text>'")
     script: str = dspy.InputField(desc="the script to check")
-    claims: list[GuardianClaim] = dspy.OutputField(
-        desc="every factual claim, each with the id of the cited chunk that states it, or null"
+    claims: list[PrepClaim] = dspy.OutputField(
+        desc="every factual claim, each with the id of the cited chunk that states it, or "
+        "null, and the quote from that chunk"
     )
     verdict: Literal["pass", "fail"] = dspy.OutputField()
     reason: str = dspy.OutputField(desc="one sentence")
@@ -196,29 +221,42 @@ class PollGuardianSignature(dspy.Signature):
     are not sure, treat it as not supported.
     1. List the factual claims that the question and its correct option make: what the
        question assumes, and that the correct option answers it.
-       For each claim, give the id of the cited chunk that directly states it, or null
-       if no cited chunk states it.
+       For each claim, give the id of the cited chunk that states it, or null if no
+       cited chunk states it, and copy the words of that chunk that state it as quote
+       (a short exact span, not a paraphrase).
        - Only the cited chunks count. Do not use your own knowledge.
        - A claim that is true in general but not stated in the cited chunks is not
          supported.
+       - A claim the chunk states in other words is supported: judge the meaning, not
+         the wording.
        - A chunk that only names a term, without explaining it, does not support an
          explanation of that term.
+       - An example, analogy, or comparison counts as a claim; it is supported only if
+         a cited chunk contains that same example, analogy, or comparison.
     2. For every wrong option, give the id of the cited chunk that shows it is wrong
-       (the chunk states something that contradicts it), or null. An option that the
-       chunks only fail to mention is not shown wrong. An option that could also be
-       argued to be correct is not shown wrong.
-    3. verdict is "pass" only if every claim and every wrong option has a chunk id."""
+       and copy the words that show it as quote, or null. A chunk shows an option wrong
+       if it states something that contradicts it, or if it defines the idea the option
+       really describes as a different thing.
+       If a cited chunk gives a closed, complete list (for example "The three pillars
+       are: 1, 2, 3" or an outline of the lecture's topics), an option or idea that the
+       list leaves out is shown wrong by that list. A list of examples ("for example",
+       "such as", "examples of") is not complete and shows nothing wrong.
+       An option that the chunks only fail to mention is not shown wrong. An option
+       that could also be argued to be correct is not shown wrong.
+    3. verdict is "pass" only if every claim and every wrong option has a chunk id and
+       a quote."""
 
     chunks: str = dspy.InputField(desc="cited chunks, one per line as '[<chunk_id>] <text>'")
     question: str = dspy.InputField(desc="the poll question")
     options: str = dspy.InputField(desc="the options, one per line as '<key>: <text>'")
     correct_option: str = dspy.InputField(desc="key of the correct option")
-    claims: list[GuardianClaim] = dspy.OutputField(
-        desc="claims of the question and correct option, each with a chunk id or null"
+    claims: list[PrepClaim] = dspy.OutputField(
+        desc="claims of the question and correct option, each with a chunk id or null "
+        "and the quote from that chunk"
     )
     wrong_options: list[WrongOptionCheck] = dspy.OutputField(
-        desc="one per wrong option: its key only (A, B, C, or D) and the chunk id that "
-        "shows it is wrong, or null"
+        desc="one per wrong option: its key only (A, B, C, or D), the chunk id that "
+        "shows it is wrong or null, and the quote from that chunk that shows it"
     )
     verdict: Literal["pass", "fail"] = dspy.OutputField()
     reason: str = dspy.OutputField(desc="one sentence")
@@ -230,23 +268,38 @@ class ExplanationGuardianSignature(dspy.Signature):
     supported, treat it as not supported.
     1. List every factual claim in the explanation. A sentence can hold more than one
        claim; list each one.
-       For each claim, give the id of the cited chunk that directly states it, or null
-       if no cited chunk states it.
+       For each claim, give the id of the cited chunk that states it, or null if no
+       cited chunk states it, and copy the words of that chunk that state it as quote
+       (a short exact span, not a paraphrase).
        - Only the cited chunks count. Do not use your own knowledge.
        - A claim that is true in general but not stated in the cited chunks is not
          supported.
+       - A claim the chunk states in other words is supported: judge the meaning, not
+         the wording.
        - A chunk that only names a term, without explaining it, does not support an
          explanation of that term.
+       - An example, analogy, or comparison counts as a claim; it is supported only if
+         a cited chunk contains that same example, analogy, or comparison.
        - Sentences that only refer to the poll ("Many of you chose this option", "The
          answer comes next") are not claims; leave them out.
-    2. verdict is "pass" only if every claim has a chunk id."""
+       - A claim that the chosen option is wrong, or that it really describes another
+         idea, is supported by a chunk that contradicts the option or that defines that
+         other idea.
+       - If a cited chunk gives a closed, complete list (for example "The three pillars
+         are: 1, 2, 3" or an outline of the lecture's topics), an option or idea that
+         the list leaves out is shown wrong by that list. A list of examples ("for
+         example", "such as", "examples of") is not complete and shows nothing wrong.
+       - A claim about what later lessons or the rest of the course cover is supported
+         only if a cited chunk states it.
+    2. verdict is "pass" only if every claim has a chunk id and a quote."""
 
     chunks: str = dspy.InputField(desc="cited chunks, one per line as '[<chunk_id>] <text>'")
     question: str = dspy.InputField(desc="the poll question")
     wrong_option: str = dspy.InputField(desc="'<key>: <text>' of the option the students picked")
     explanation: str = dspy.InputField(desc="the explanation to check")
-    claims: list[GuardianClaim] = dspy.OutputField(
-        desc="every factual claim, each with the id of the cited chunk that states it, or null"
+    claims: list[PrepClaim] = dspy.OutputField(
+        desc="every factual claim, each with the id of the cited chunk that states it, or "
+        "null, and the quote from that chunk"
     )
     verdict: Literal["pass", "fail"] = dspy.OutputField()
     reason: str = dspy.OutputField(desc="one sentence")

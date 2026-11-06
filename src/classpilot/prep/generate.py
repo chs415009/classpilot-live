@@ -135,6 +135,9 @@ class Attempt:
     latency_ms: int = 0  # generator + structure check + Guardian
     calls: int = 0  # LLM calls of this attempt (timed-out calls included)
     guardian: dict | None = None  # the Guardian's own reply (claims, verdict, reason)
+    # The generator's reply (text and citations), so failed drafts can become Guardian
+    # eval cases (Stage 9). None after an LLM error.
+    draft: dict | None = None
 
 
 @dataclass
@@ -231,6 +234,7 @@ def with_retries(
             output, attempt = None, Attempt("llm_error", [str(exc)])
         else:
             output, attempt = check(raw)
+            attempt.draft = raw
         attempt.latency_ms = round((time.perf_counter() - start) * 1000)
         attempt.calls = call_count() - calls
         attempts.append(attempt)
@@ -304,7 +308,8 @@ class Generator:
             raw = self.call(task, {**inputs, "cited_chunks": self.cited(cited)})
         except LLMError as exc:
             return Attempt("llm_error", [f"Guardian: {exc}"])
-        check = check_prep_guardian(raw, cited, **rule)
+        texts = {c["chunk_id"]: c["text"] for c in self.cited(cited)}
+        check = check_prep_guardian(raw, cited, chunk_texts=texts, **rule)
         if check.passed is None:
             return Attempt("llm_error", check.problems, guardian=raw)
         return Attempt("pass" if check.passed else "guardian", check.problems, guardian=raw)

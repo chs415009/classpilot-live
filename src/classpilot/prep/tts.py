@@ -102,6 +102,15 @@ def _apply_rules(text: str) -> tuple[str, list[str]]:
     return text, found
 
 
+def strip_emphasis(text: str) -> str:
+    """Generated text without Markdown bold or italics (book titles were often in *...*,
+    Stage 9). Removing the markers changes no words, so code does it instead of a retry."""
+    for name, pattern, replacement in RULES:
+        if name == "Markdown emphasis":
+            text = pattern.sub(replacement, text)
+    return text
+
+
 def tts_issues(text: str) -> list[str]:
     """Names of the rules that change the text: what TTS would read wrongly. Empty: clean."""
     return _apply_rules(text)[1]

@@ -27,6 +27,7 @@ from classpilot.agents.prep_program import (
 from classpilot.agents.prep_signatures import PREP_SIGNATURES
 from classpilot.agents.program import RulesFirstChatAdapter
 from classpilot.contracts.prep import ExplanationOutput, ScriptOutput
+from classpilot.prep.tts import strip_emphasis
 from classpilot.rules.prep import (
     check_prep_guardian,
     explanation_problems,
@@ -115,12 +116,14 @@ def writer_check(item: WriterItem, raw: dict, guardian: LLMClient, timeout_s: fl
         out = parse_output(ScriptOutput, raw)
         if out is None:
             return ["The output did not match the schema."]
+        out = out.model_copy(update={"script": strip_emphasis(out.script)})
         problems = script_problems(out, allowed, [c["text"] for c in item.chunks])
         task, inputs, require = "script_guardian", {"script": out.script}, False
     else:
         out = parse_output(ExplanationOutput, raw)
         if out is None:
             return ["The output did not match the schema."]
+        out = out.model_copy(update={"text": strip_emphasis(out.text)})
         chunk_slide = {c["chunk_id"]: c["slide_id"] for c in item.chunks}
         problems = explanation_problems(
             out, allowed, chunk_slide, item.slide_ids, [c["text"] for c in item.chunks]

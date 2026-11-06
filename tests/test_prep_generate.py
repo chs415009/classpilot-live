@@ -183,15 +183,29 @@ def test_fail_then_pass_is_ok_after_retry_and_feedback_reaches_the_retry(tables)
 
 
 def test_structure_problem_is_fed_back_without_calling_the_guardian(tables):
-    markdown = {"script": "**Bronze** keeps raw data.", "citations": [f"{P}02-c1"]}
-    llm = Rigged(script_writer=for_slide("02", markdown, times=1))
+    code = {"script": "`Bronze` keeps raw data.", "citations": [f"{P}02-c1"]}
+    llm = Rigged(script_writer=for_slide("02", code, times=1))
     result = run(tables, llm)
     attempts = item(result, f"script {P}02").attempts
     assert [a.outcome for a in attempts] == ["structure", "pass"]
     p02 = [i for i in llm.inputs_of("script_writer") if i["slide_id"] == f"{P}02"]
-    assert "read aloud" in p02[1]["feedback"] and "Markdown emphasis" in p02[1]["feedback"]
-    guarded = [i for i in llm.inputs_of("script_guardian") if i["script"].startswith("**")]
+    assert "read aloud" in p02[1]["feedback"] and "backtick" in p02[1]["feedback"]
+    guarded = [i for i in llm.inputs_of("script_guardian") if i["script"].startswith("`")]
     assert guarded == []
+
+
+def test_markdown_emphasis_is_removed_by_code_not_retried(tables):
+    mock = MockPrepLLM()
+
+    def emphasized(inputs, n):
+        if inputs["slide_id"] != f"{P}02":
+            return None
+        reply = mock.complete("script_writer", inputs)
+        return {**reply, "script": f"**{reply['script']}**"}
+
+    result = run(tables, Rigged(script_writer=emphasized))
+    assert [a.outcome for a in item(result, f"script {P}02").attempts] == ["pass"]
+    assert "**" not in result.manifest.slides[f"{P}02"].script
 
 
 def test_guardian_pass_verdict_with_unsupported_claim_still_fails(tables):

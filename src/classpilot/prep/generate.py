@@ -49,7 +49,7 @@ from classpilot.contracts.prep import (
 from classpilot.prep.chunking import clean_text
 from classpilot.prep.records import ParsedPage
 from classpilot.prep.tables import PrepTables
-from classpilot.prep.tts import clean_for_tts, strip_lines, template_lines
+from classpilot.prep.tts import clean_for_tts, strip_emphasis, strip_lines, template_lines
 from classpilot.rules.prep import (
     check_prep_guardian,
     explanation_problems,
@@ -413,6 +413,7 @@ class Generator:
             out = parse_output(ScriptOutput, raw)
             if out is None:
                 return None, Attempt("structure", ["The output did not match the schema."])
+            out = out.model_copy(update={"script": strip_emphasis(out.script)})
             problems = script_problems(out, allowed, [c["text"] for c in chunks])
             if problems:
                 return None, Attempt("structure", problems)
@@ -614,6 +615,7 @@ class Generator:
             out = parse_output(ExplanationOutput, raw)
             if out is None:
                 return None, Attempt("structure", ["The output did not match the schema."])
+            out = out.model_copy(update={"text": strip_emphasis(out.text)})
             problems = explanation_problems(
                 out, allowed, chunk_slide, slide_ids, [c["text"] for c in chunks]
             )

@@ -128,6 +128,9 @@ class PollWriterSignature(dspy.Signature):
     - Each wrong option shows one specific misconception a student might have. For
       every wrong option, give that misconception: a short label and one sentence that
       describes the mistaken belief. Give no misconception for the correct option.
+    - Each wrong option must be wrong in general, not only within this lesson: do not
+      use an idea that other courses or textbooks commonly count as correct (for
+      example a fourth item that some sources add to a list the lesson gives).
     - Ask a positive question, not "Which is NOT ..." or "All of these EXCEPT ...".
     - Test the lesson content, not course logistics (instructor, textbooks, schedule,
       outline).

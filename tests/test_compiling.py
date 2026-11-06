@@ -44,8 +44,10 @@ def test_writer_check_runs_structure_guardian_and_rule():
     assert writer_check(S03, good, MockPrepLLM(), 5) == []
     invented = {"script": f"{SUPPORTED} Buses always run on time.", "citations": ["syn-p01-c1"]}
     assert writer_check(S03, invented, MockPrepLLM(), 5)
-    markdown = {"script": f"**{SUPPORTED}**", "citations": ["syn-p01-c1"]}
-    assert "read aloud" in writer_check(S03, markdown, MockPrepLLM(), 5)[0]
+    code = {"script": f"`{SUPPORTED}`", "citations": ["syn-p01-c1"]}
+    assert "read aloud" in writer_check(S03, code, MockPrepLLM(), 5)[0]
+    bold = {"script": f"**{SUPPORTED}**", "citations": ["syn-p01-c1"]}
+    assert writer_check(S03, bold, MockPrepLLM(), 5) == []  # emphasis removed by code
 
 
 def test_compile_keeps_only_passing_outputs_as_demos():

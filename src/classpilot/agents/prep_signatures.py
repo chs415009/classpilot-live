@@ -73,10 +73,11 @@ class ScriptWriterSignature(dspy.Signature):
     The professor is not in the room; a text-to-speech voice reads your script.
     - Teach this slide's content in 2 to 5 short spoken sentences, in service of the
       segment objective.
-    - Use only what the chunks given state. You may say it in simpler words, and you may
-      use examples and analogies that the chunks contain (the reference chunks often
-      have them). Do not add facts, examples, analogies, or explanations of your own,
-      and say nothing about what later lessons or the rest of the course cover.
+    - Teach only ideas the chunks given state; say them in simpler words if that helps.
+      Use the examples and analogies the chunks contain first (the reference chunks
+      often have them). You may add a short example or analogy of your own only to
+      illustrate an idea the chunks state; it must fit that idea exactly and add no new
+      fact. Say nothing about what later lessons or the rest of the course cover.
       Cite the ids of the chunks you used.
     - If the slide only lists items, name them and say what they have in common, using
       what the chunks say.
@@ -155,11 +156,12 @@ class ExplanationWriterSignature(dspy.Signature):
     the correct option is revealed.
     - Address the misconception behind the chosen option: say why it is wrong and what
       the lesson says instead, in 2 to 4 short spoken sentences.
-    - Use only what the chunks given state. You may say it in simpler words, and you may
-      use examples and analogies that the chunks contain. Do not add facts, examples,
-      analogies, or explanations of your own, and say nothing about what later lessons
-      or the rest of the course cover. Cite the ids of the chunks you used, including at
-      least one slide chunk.
+    - Use only ideas the chunks given state; say them in simpler words if that helps.
+      Use the examples and analogies the chunks contain first. You may add a short
+      example or analogy of your own only to illustrate an idea the chunks state; it
+      must fit that idea exactly and add no new fact. Say nothing about what later
+      lessons or the rest of the course cover. Cite the ids of the chunks you used,
+      including at least one slide chunk.
     - To say why the option is wrong, use what the chunks state: a chunk that
       contradicts it, a chunk that defines the idea the option really describes, or a
       closed, complete list in a chunk that leaves it out.
@@ -201,13 +203,19 @@ class ScriptGuardianSignature(dspy.Signature):
          the wording.
        - A chunk that only names a term, without explaining it, does not support an
          explanation of that term.
-       - An example, analogy, or comparison counts as a claim; it is supported only if
-         a cited chunk contains that same example, analogy, or comparison.
+       - Give each claim a kind:
+         "fact": a statement about the subject or the course. Its chunk must state it.
+         "example": an example, analogy, or rewording that only illustrates an idea.
+         Give the chunk and quote of the idea it illustrates. If it does not fit that
+         idea exactly, or it brings in a new fact, give null.
+         "framing": a sentence with no fact at all (motivation or encouragement, such as
+         "This will help you later" or "Let's make sure we all start together"). Give
+         null for its chunk id and quote.
        - Transitions, sign-posts, and sentences that only say what the slide is or what
          it shows or lists ("Next, let's look at ...", "Let's recap", "This slide lists
          the main topics", "These are the starting points for this class") state no
          facts about the subject; they are not claims, so leave them out.
-    2. verdict is "pass" only if every claim has a chunk id and a quote."""
+    2. verdict is "pass" only if every fact and example has a chunk id and a quote."""
 
     chunks: str = dspy.InputField(desc="cited chunks, one per line as '[<chunk_id>] <text>'")
     script: str = dspy.InputField(desc="the script to check")
@@ -234,8 +242,14 @@ class PollGuardianSignature(dspy.Signature):
          the wording.
        - A chunk that only names a term, without explaining it, does not support an
          explanation of that term.
-       - An example, analogy, or comparison counts as a claim; it is supported only if
-         a cited chunk contains that same example, analogy, or comparison.
+       - Give each claim a kind:
+         "fact": a statement about the subject or the course. Its chunk must state it.
+         "example": an example, analogy, or rewording that only illustrates an idea.
+         Give the chunk and quote of the idea it illustrates. If it does not fit that
+         idea exactly, or it brings in a new fact, give null.
+         "framing": a sentence with no fact at all (motivation or encouragement, such as
+         "This will help you later" or "Let's make sure we all start together"). Give
+         null for its chunk id and quote.
     2. For every wrong option, give the id of the cited chunk that shows it is wrong
        and copy the words that show it as quote, or null. A chunk shows an option wrong
        if it states something that contradicts it, or if it defines the idea the option
@@ -246,8 +260,8 @@ class PollGuardianSignature(dspy.Signature):
        "such as", "examples of") is not complete and shows nothing wrong.
        An option that the chunks only fail to mention is not shown wrong. An option
        that could also be argued to be correct is not shown wrong.
-    3. verdict is "pass" only if every claim and every wrong option has a chunk id and
-       a quote."""
+    3. verdict is "pass" only if every fact, example, and wrong option has a chunk id
+       and a quote."""
 
     chunks: str = dspy.InputField(desc="cited chunks, one per line as '[<chunk_id>] <text>'")
     question: str = dspy.InputField(desc="the poll question")
@@ -281,8 +295,14 @@ class ExplanationGuardianSignature(dspy.Signature):
          the wording.
        - A chunk that only names a term, without explaining it, does not support an
          explanation of that term.
-       - An example, analogy, or comparison counts as a claim; it is supported only if
-         a cited chunk contains that same example, analogy, or comparison.
+       - Give each claim a kind:
+         "fact": a statement about the subject or the course. Its chunk must state it.
+         "example": an example, analogy, or rewording that only illustrates an idea.
+         Give the chunk and quote of the idea it illustrates. If it does not fit that
+         idea exactly, or it brings in a new fact, give null.
+         "framing": a sentence with no fact at all (motivation or encouragement, such as
+         "This will help you later" or "Let's make sure we all start together"). Give
+         null for its chunk id and quote.
        - Sentences that only refer to the poll ("Many of you chose this option", "The
          answer comes next") are not claims; leave them out.
        - A claim that the chosen option is wrong, or that it really describes another
@@ -294,7 +314,7 @@ class ExplanationGuardianSignature(dspy.Signature):
          example", "such as", "examples of") is not complete and shows nothing wrong.
        - A claim about what later lessons or the rest of the course cover is supported
          only if a cited chunk states it.
-    2. verdict is "pass" only if every claim has a chunk id and a quote."""
+    2. verdict is "pass" only if every fact and example has a chunk id and a quote."""
 
     chunks: str = dspy.InputField(desc="cited chunks, one per line as '[<chunk_id>] <text>'")
     question: str = dspy.InputField(desc="the poll question")

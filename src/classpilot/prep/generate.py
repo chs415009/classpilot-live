@@ -317,7 +317,9 @@ class Generator:
         except LLMError as exc:
             return Attempt("llm_error", [f"Guardian: {exc}"])
         texts = {c["chunk_id"]: c["text"] for c in self.cited(cited)}
-        check = check_prep_guardian(raw, cited, chunk_texts=texts, **rule)
+        check = check_prep_guardian(
+            raw, cited, chunk_texts=texts, max_framing=self.deps.prep.max_framing_claims, **rule
+        )
         if check.passed is None:
             return Attempt("llm_error", check.problems, guardian=raw)
         return Attempt("pass" if check.passed else "guardian", check.problems, guardian=raw)
@@ -414,7 +416,7 @@ class Generator:
             if out is None:
                 return None, Attempt("structure", ["The output did not match the schema."])
             out = out.model_copy(update={"script": strip_emphasis(out.script)})
-            problems = script_problems(out, allowed, [c["text"] for c in chunks])
+            problems = script_problems(out, allowed)
             if problems:
                 return None, Attempt("structure", problems)
             attempt = self.guardian(
@@ -616,9 +618,7 @@ class Generator:
             if out is None:
                 return None, Attempt("structure", ["The output did not match the schema."])
             out = out.model_copy(update={"text": strip_emphasis(out.text)})
-            problems = explanation_problems(
-                out, allowed, chunk_slide, slide_ids, [c["text"] for c in chunks]
-            )
+            problems = explanation_problems(out, allowed, chunk_slide, slide_ids)
             if problems:
                 return None, Attempt("structure", problems)
             attempt = self.guardian(

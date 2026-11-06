@@ -108,7 +108,9 @@ def to_example(item: WriterItem, index: int) -> dspy.Example:
     return dspy.Example(**fields, item_index=index).with_inputs(*fields)
 
 
-def writer_check(item: WriterItem, raw: dict, guardian: LLMClient, timeout_s: float) -> list[str]:
+def writer_check(
+    item: WriterItem, raw: dict, guardian: LLMClient, timeout_s: float, max_framing: int = 2
+) -> list[str]:
     """Problems of one writer output, as a prep run would find them; [] = pass."""
     allowed = {c["chunk_id"] for c in item.chunks}
     by_id = {c["chunk_id"]: c for c in item.chunks}
@@ -117,7 +119,7 @@ def writer_check(item: WriterItem, raw: dict, guardian: LLMClient, timeout_s: fl
         if out is None:
             return ["The output did not match the schema."]
         out = out.model_copy(update={"script": strip_emphasis(out.script)})
-        problems = script_problems(out, allowed, [c["text"] for c in item.chunks])
+        problems = script_problems(out, allowed)
         task, inputs, require = "script_guardian", {"script": out.script}, False
     else:
         out = parse_output(ExplanationOutput, raw)
@@ -125,9 +127,7 @@ def writer_check(item: WriterItem, raw: dict, guardian: LLMClient, timeout_s: fl
             return ["The output did not match the schema."]
         out = out.model_copy(update={"text": strip_emphasis(out.text)})
         chunk_slide = {c["chunk_id"]: c["slide_id"] for c in item.chunks}
-        problems = explanation_problems(
-            out, allowed, chunk_slide, item.slide_ids, [c["text"] for c in item.chunks]
-        )
+        problems = explanation_problems(out, allowed, chunk_slide, item.slide_ids)
         task = "explanation_guardian"
         inputs = {
             "question": item.inputs["question"],
@@ -144,7 +144,9 @@ def writer_check(item: WriterItem, raw: dict, guardian: LLMClient, timeout_s: fl
     except LLMError as exc:
         return [f"Guardian: {exc}"]
     texts = {c["chunk_id"]: c["text"] for c in cited}
-    check = check_prep_guardian(raw_g, out.citations, require_claims=require, chunk_texts=texts)
+    check = check_prep_guardian(
+        raw_g, out.citations, require_claims=require, chunk_texts=texts, max_framing=max_framing
+    )
     return check.problems if check.passed is not None else ["Guardian output unusable."]
 
 

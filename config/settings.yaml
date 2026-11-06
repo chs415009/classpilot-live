@@ -50,6 +50,7 @@ prep:
   poll_count: 5                 # at most one poll per segment; fewer are accepted
   max_retries: 1                # retries with the Guardian's feedback, then the fallback
   malformed_retries: 1          # same call again after an unparseable reply (not timeouts)
+  max_framing_claims: 2         # content-free transition/motivation sentences per item
   model: null                   # Cortex model for generation; null: llm.model (Stage 7)
   compiled_program: null        # compiled/<id>.json for the prep writers (Stage 9)
   llm_timeout_seconds: 60

@@ -168,7 +168,7 @@ def prep_inputs(case: GuardianCase) -> dict:
     }
 
 
-def run_case(case: GuardianCase, llm: LLMClient, timeout_s: float) -> dict:
+def run_case(case: GuardianCase, llm: LLMClient, timeout_s: float, max_framing: int = 2) -> dict:
     """The Guardian's verdict on one case, decided by the same rule code as in use."""
     row = {"id": case.id, "kind": case.kind, "expected": case.expected, "note": case.note}
     if case.kind == "live":
@@ -210,6 +210,7 @@ def run_case(case: GuardianCase, llm: LLMClient, timeout_s: float) -> dict:
             require_claims=case.kind != "script",
             wrong_options=case.wrong_options if case.kind == "poll" else None,
             chunk_texts={c.chunk_id: c.text for c in case.chunks},
+            max_framing=max_framing,
         )
     latency = round((time.perf_counter() - start) * 1000)
     if error is not None or check.passed is None:
@@ -307,7 +308,7 @@ def run_case_eval(
     for case in case_set.cases:
         live = case.kind == "live"
         timeout = settings.llm.timeout_seconds if live else settings.prep.llm_timeout_seconds
-        rows.append(run_case(case, llms[case.kind], timeout))
+        rows.append(run_case(case, llms[case.kind], timeout, settings.prep.max_framing_claims))
     return {
         "backend": settings.backend,
         "set_id": case_set.set_id,
@@ -324,18 +325,19 @@ def run_case_eval(
 
 SHEET_HELP = """How to label: edit the JSON file, not this sheet. Set `expected` to
 "pass" or "fail": pass only if every factual claim is stated by the listed chunks.
-Differences in wording, transitions, and sentences that only describe the slide ("this
-slide lists the main topics") are not claims; new knowledge, the writer's own examples,
-and wrong facts fail, and so does true content found only in chunks not listed here. A
-live answer must also not give finished graded work. For polls, also set each wrong
-option in `shown_wrong` to true if the chunks show it is wrong (a closed, complete list
-in a chunk that leaves the option out counts; a list of examples does not), and
-`expected` to "pass" only if the question, the correct option, and every wrong option
-are covered. Optional: copy unsupported claims into `unsupported`, and add a `note`.
-Reconstructed items were rebuilt from the claims a Stage 7 Guardian listed; judge the
-text as shown. The chunks are the ones the Guardian sees in this eval (they may differ
-from what the Stage 7 generator cited); label against them only. The Stage 7 verdict is
-in the JSON (`stage7`) but not here, so it does not steer the label."""
+Differences in wording, transitions, content-free motivation sentences (at most 2), and
+sentences that only describe the slide ("this slide lists the main topics") are not
+claims. The writer's own example or analogy passes if it fits an idea the chunks state.
+New knowledge and wrong facts fail, and so does true content found only in chunks not
+listed here. A live answer must also not give finished graded work. For polls, also set
+each wrong option in `shown_wrong` to true if the chunks show it is wrong (a closed,
+complete list in a chunk that leaves the option out counts; a list of examples does
+not), and `expected` to "pass" only if the question, the correct option, and every wrong
+option are covered. Optional: copy unsupported claims into `unsupported`, and add a
+`note`. Reconstructed items were rebuilt from the claims a Stage 7 Guardian listed;
+judge the text as shown. The chunks are the ones the Guardian sees in this eval (they
+may differ from what the Stage 7 generator cited); label against them only. The Stage 7
+verdict is in the JSON (`stage7`) but not here, so it does not steer the label."""
 
 
 def case_sheet(case_set: CaseSet) -> str:

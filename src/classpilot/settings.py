@@ -79,6 +79,7 @@ class PrepSettings(BaseModel):
     poll_count: int = 5  # at most this many polls; fewer are accepted
     max_retries: int = 1  # retries with Guardian feedback before the fallback
     malformed_retries: int = 1  # same call again after an unparseable reply (not timeouts)
+    max_framing_claims: int = 2  # content-free transition/motivation sentences allowed
     model: str | None = None  # Cortex model for generation; None: llm.model
     compiled_program: str | None = None  # compiled/<id>.json for prep tasks; None: uncompiled
     llm_timeout_seconds: float = 60  # per call; prep is not time-critical

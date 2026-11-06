@@ -55,11 +55,17 @@ class ExplanationOutput(BaseModel):
 
 class PrepClaim(BaseModel):
     """A claim with the cited chunk that states it and a quote from that chunk. Code
-    checks that the quote is in the chunk (Stage 9: false passes); None = not given."""
+    checks that the quote is in the chunk (Stage 9: false passes); None = not given.
+
+    `kind` (Stage 9, user decision): "fact" must be stated by the chunk; "example" is
+    the writer's own example or rewording, and its chunk and quote are the concept it
+    illustrates; "framing" is a transition or motivation sentence with no fact, allowed
+    without a chunk up to `prep.max_framing_claims`."""
 
     claim: str
     chunk_id: str | None  # cited chunk that states the claim; None = not supported
     quote: str | None = None
+    kind: Literal["fact", "example", "framing"] = "fact"
 
 
 class PrepGuardianOutput(BaseModel):

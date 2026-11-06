@@ -17,7 +17,6 @@ from classpilot.rules.prep import (
     check_prep_guardian,
     explanation_problems,
     manifest_poll_problems,
-    own_comparisons,
     placement_problems,
     poll_problems,
     script_problems,
@@ -371,29 +370,30 @@ def test_a_semicolon_in_generated_prose_is_not_a_problem():
     assert script_problems(out, set()) == []
 
 
-CAR = [
-    "Think of encapsulation like a car's dashboard. The engine is hidden.",
-    "A stack adds and removes items at the same end.",
-]
+# ---------- claim kinds (Stage 9) ----------
 
 
-@pytest.mark.parametrize(
-    ("text", "found"),
-    [
-        ("A stack works like a stack of plates.", ["like a stack of plates"]),
-        ("An ADT is like a menu that lists dishes.", ["like a menu that lists dishes"]),
-        ("Imagine a coffee shop line.", ["Imagine a coffee shop line"]),
-        ("Encapsulation is like a car's dashboard.", []),
-        ("Think of the engine.", []),
-        ("A queue works like a stack, but not at the same end.", []),
-        ("Operations like add and remove.", []),  # "adds and removes" is in a chunk
-    ],
-)
-def test_own_comparisons(text, found):
-    assert own_comparisons(text, CAR) == found
+def kinds(*claims):
+    return {
+        "claims": [{"claim": c, "chunk_id": cid, "quote": q, "kind": k} for c, cid, q, k in claims],
+        "verdict": "pass",
+        "reason": "ok",
+    }
 
 
-def test_own_comparison_is_a_structure_problem_only_with_chunk_texts():
-    out = ScriptOutput(script="A stack works like a stack of plates.", citations=[])
-    assert script_problems(out, set()) == []
-    assert "stack of plates" in script_problems(out, set(), CAR)[0]
+def test_framing_needs_no_chunk_up_to_the_limit():
+    raw = kinds(("x", "c1", "Bundling data", "fact"), ("This will help.", None, None, "framing"))
+    assert check_prep_guardian(raw, ["c1"], require_claims=True, chunk_texts=TEXTS).passed
+    many = kinds(*[(f"f{n}", None, None, "framing") for n in range(3)])
+    check = check_prep_guardian(many, ["c1"], require_claims=False, max_framing=2)
+    assert check.problems == ["3 sentences carry no content; keep at most 2."]
+
+
+def test_example_needs_the_concept_it_illustrates():
+    tied = kinds(("Like a lunchbox.", "c1", "Bundling data and methods", "example"))
+    assert check_prep_guardian(tied, ["c1"], require_claims=True, chunk_texts=TEXTS).passed
+    loose = kinds(("Like a lunchbox.", None, None, "example"))
+    check = check_prep_guardian(loose, ["c1"], require_claims=True, chunk_texts=TEXTS)
+    assert check.problems == [
+        "Example not tied to a concept in the cited chunks: 'Like a lunchbox.'"
+    ]

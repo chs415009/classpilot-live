@@ -364,3 +364,11 @@ is no longer updated)
   options explained, the rest reveal only. Spot check: no misleading explanation; R-06
   calls overloading "polymorphism" (narrower than the lesson's definition) and q-05
   uses Abstraction as a wrong option (wrong only within the lesson's closed list).
+- 2026-11-06 [decision] User: allow content-free transition/motivation sentences, and the
+  writer's own examples, analogies, and rewordings when each fits an idea the chunks
+  state (materials do not have an example for every idea); new facts stay forbidden.
+  Reverses the Stage 7 "no writer-made examples" rule. pc-02 relabeled pass.
+- 2026-11-06 [change] Prep Guardian claims carry `kind` (fact / example / framing); code
+  allows up to `prep.max_framing_claims` (2) framing claims without a chunk and checks
+  an example's quote against the idea it illustrates. The own-comparison check is
+  removed. Dev cases: 8/8 caught, 3 false fails, poll options agree 16/18.

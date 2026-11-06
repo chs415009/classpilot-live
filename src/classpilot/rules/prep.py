@@ -22,7 +22,6 @@ from classpilot.contracts.prep import (
     SegmenterOutput,
 )
 from classpilot.prep.tts import tts_issues
-from classpilot.text import content_words
 
 
 def parse_output[M: BaseModel](model: type[M], raw: dict | None) -> M | None:
@@ -59,37 +58,6 @@ def _tts_problems(what: str, text: str) -> list[str]:
     ]
 
 
-# Stage 7/9: the writers keep adding comparisons of their own ("like a stack of plates",
-# "think of a menu"). A comparison whose words are not in the chunks goes back to the
-# writer as a structure problem, before the Guardian.
-COMPARISON = re.compile(
-    r"\b(?:just like|like|imagine|think of|picture|similar to|works the way)\s+"
-    r"((?:[A-Za-z'’-]+\s+){0,4}[A-Za-z'’-]+)",
-    re.IGNORECASE,
-)
-
-
-def own_comparisons(text: str, chunk_texts: list[str]) -> list[str]:
-    """Comparisons in `text` with a content word that no chunk has."""
-    vocabulary = set(content_words(" ".join(chunk_texts)))
-    found = []
-    for match in COMPARISON.finditer(text):
-        words = content_words(match.group(1))
-        if words and any(w not in vocabulary for w in words):
-            found.append(match.group(0).strip())
-    return found
-
-
-def _comparison_problems(text: str, chunk_texts: list[str] | None) -> list[str]:
-    if chunk_texts is None:
-        return []
-    return [
-        f"Remove the comparison {c!r}: it is not in the chunks. Use only examples and "
-        "analogies the chunks contain."
-        for c in own_comparisons(text, chunk_texts)
-    ]
-
-
 # ---------- structure checks ----------
 
 
@@ -118,12 +86,9 @@ def segmenter_problems(out: SegmenterOutput, slide_ids: list[str]) -> list[str]:
     return problems
 
 
-def script_problems(
-    out: ScriptOutput, allowed_chunks: set[str], chunk_texts: list[str] | None = None
-) -> list[str]:
+def script_problems(out: ScriptOutput, allowed_chunks: set[str]) -> list[str]:
     problems = [] if out.script.strip() else ["The script is empty."]
     problems += _tts_problems("script", out.script)
-    problems += _comparison_problems(out.script, chunk_texts)
     return problems + _citation_problems(out.citations, allowed_chunks, required=False)
 
 
@@ -167,13 +132,10 @@ def explanation_problems(
     allowed_chunks: set[str],
     chunk_slide: dict[str, str | None],
     slide_ids: set[str],
-    chunk_texts: list[str] | None = None,
 ) -> list[str]:
-    """`chunk_slide` maps a chunk id to its slide id (None for reference pages);
-    `chunk_texts` (the writer's chunks) turns on the own-comparison check."""
+    """`chunk_slide` maps a chunk id to its slide id (None for reference pages)."""
     problems = [] if out.text.strip() else ["The explanation text is empty."]
     problems += _tts_problems("explanation", out.text)
-    problems += _comparison_problems(out.text, chunk_texts)
     problems += _citation_problems(out.citations, allowed_chunks, required=True)
     cited_slides = {chunk_slide.get(c) for c in out.citations} - {None}
     if out.show_slide not in slide_ids:
@@ -247,6 +209,7 @@ def check_prep_guardian(
     require_claims: bool,
     wrong_options: list[str] | None = None,
     chunk_texts: dict[str, str] | None = None,
+    max_framing: int = 2,
 ) -> PrepCheck:
     """Pass only if the Guardian says pass AND its claim list backs that up.
 
@@ -259,6 +222,10 @@ def check_prep_guardian(
     quote the cited chunks word for word (case and punctuation aside; `quote_found`); a
     missing or invented quote fails it. Stage 9: a Guardian named a chunk for a claim
     the chunk does not state. A real quote that does not mean the claim still passes.
+
+    A claim of kind "framing" (no fact: transition, motivation) needs no chunk, up to
+    `max_framing` per item; an "example" is checked like a fact, against the concept it
+    illustrates (Stage 9, user decision).
     """
     model = PollGuardianOutput if wrong_options is not None else PrepGuardianOutput
     output = parse_output(model, raw)
@@ -274,9 +241,17 @@ def check_prep_guardian(
         )
 
     problems = []
+    framing = [c for c in output.claims if c.kind == "framing"]
+    if len(framing) > max_framing:
+        problems.append(f"{len(framing)} sentences carry no content; keep at most {max_framing}.")
     for c in output.claims:
+        if c.kind == "framing":
+            continue
         if c.chunk_id not in cited:
-            problems.append(f"Not supported by the cited chunks: {c.claim!r}")
+            what = (
+                "Example not tied to a concept in" if c.kind == "example" else ("Not supported by")
+            )
+            problems.append(f"{what} the cited chunks: {c.claim!r}")
         elif not quoted(c.chunk_id, c.quote):
             problems.append(f"The quote for {c.claim!r} is not in the cited chunks.")
     if require_claims and not output.claims:

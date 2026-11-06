@@ -196,7 +196,11 @@ automatically.
 1. Each script, poll, and explanation cites the chunk ids it is based on. The Guardian
    checks it against only those chunks:
    - script: every factual claim must be supported; transitions ("Let's move on to…")
-     are not claims;
+     are not claims, and up to two content-free motivation sentences are allowed;
+   - script and explanation: the writer may add its own short example, analogy, or
+     rewording when it fits an idea the cited chunks state, and the Guardian names that
+     idea's chunk (user decision, Stage 9: materials do not have an example for every
+     idea). New facts are never allowed;
    - poll: the question and the correct option must be supported, and each wrong option
      must be shown wrong by the cited chunks;
    - explanation: every claim must be supported.

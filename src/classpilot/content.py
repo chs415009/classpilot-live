@@ -23,7 +23,7 @@ class Content:
     lesson_id: str  # the fixture lesson that the manifest and objectives belong to
     objectives: list[dict]
     chunks: list[dict]  # chunks of every fixture lesson, each with its lesson_id
-    manifest: Manifest
+    manifest: Manifest | None = None  # None for eval question sets (no poll path)
 
 
 def load_content(content_dir: Path = DEFAULT_CONTENT_DIR) -> Content:

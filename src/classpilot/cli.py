@@ -268,7 +268,12 @@ def main(argv: list[str] | None = None) -> None:
     run_cmd.add_argument("scenario", type=Path)
 
     sub.add_parser("run-all", help="run every file in scenarios/")
-    sub.add_parser("eval", help="run eval/test_questions.json")
+    eval_cmd = sub.add_parser(
+        "eval", help="run a labeled question set (default: v1 eval/test_questions.json)"
+    )
+    eval_cmd.add_argument(
+        "--set", type=Path, help="question set file, e.g. eval/questions_train.json"
+    )
 
     sub.add_parser(
         "guardian-eval", help="run eval/guardian_cases.json straight through the Guardian"
@@ -342,11 +347,13 @@ def main(argv: list[str] | None = None) -> None:
             print_scenario(run_scenario(path))
     elif args.command == "eval":
         backend = load_settings().backend
+        tag = backend if args.set is None else f"{args.set.stem}_{backend}"
         result = run_eval(
-            OUTPUT_DIR / f"eval_traces_{backend}.jsonl",
-            OUTPUT_DIR / f"eval_decision_log_{backend}.jsonl",
+            OUTPUT_DIR / f"eval_traces_{tag}.jsonl",
+            OUTPUT_DIR / f"eval_decision_log_{tag}.jsonl",
+            set_path=args.set,
         )
-        out = OUTPUT_DIR / f"eval_{backend}.json"
+        out = OUTPUT_DIR / f"eval_{tag}.json"
         out.write_text(json.dumps(result, indent=2))
         print(json.dumps(result["summary"], indent=2))
         print(f"wrote {out}")

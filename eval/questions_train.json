@@ -1,0 +1,60 @@
+{
+  "set_id": "train-synthetic-ds-01",
+  "split": "train",
+  "retrieval": "inline",
+  "note": "Synthetic lesson written for Stage 9 (own wording; same topics and level as a first data-structures lecture, no real course text). Safe to publish: compiled few-shot demos come from this file.",
+  "lesson": {
+    "lesson_id": "synthetic-ds-01",
+    "title": "Organizing Data and Object Basics",
+    "objectives": [
+      {"objective_id": "seg-01", "title": "Recognize how data is organized in everyday situations",
+       "keywords": ["everyday", "organize", "organized", "playlist", "line", "printer", "undo", "shelf", "library", "family", "tree", "subway"]},
+      {"objective_id": "seg-02", "title": "Distinguish an abstract data type from a data structure",
+       "keywords": ["abstract", "adt", "data", "type", "structure", "specification", "implementation", "operations", "interface"]},
+      {"objective_id": "seg-03", "title": "Describe common collections and their rules",
+       "keywords": ["collection", "collections", "set", "bag", "list", "stack", "queue", "duplicates", "order", "lifo", "fifo", "map"]},
+      {"objective_id": "seg-04", "title": "Name the main ideas of object-oriented programming",
+       "keywords": ["object", "objects", "oriented", "oop", "class", "inheritance", "polymorphism", "subclass", "override"]},
+      {"objective_id": "seg-05", "title": "Explain encapsulation and access control in a class",
+       "keywords": ["encapsulation", "private", "public", "getter", "setter", "access", "hide", "hiding", "vending", "field", "fields"]}
+    ],
+    "chunks": [
+      {"chunk_id": "syn-p01-c1", "objective_id": "seg-01", "text": "People organize information all the time so it is quick to use. A music playlist keeps songs in a chosen order. People waiting at a bus stop board in the order they arrived. The undo button in a text editor removes the most recent change first."},
+      {"chunk_id": "syn-p01-c2", "objective_id": "seg-01", "text": "Libraries shelve books by call number, so a reader can walk to the right shelf instead of checking every book. A family tree shows how relatives are connected across generations. A subway map shows stations and the lines that join them."},
+      {"chunk_id": "syn-p02-c1", "objective_id": "seg-02", "text": "An abstract data type (ADT) is a description of a kind of data and the operations allowed on it, for example add, remove, and contains. An ADT says what the operations do. It does not say how the data is kept in memory, and it does not depend on a programming language."},
+      {"chunk_id": "syn-p02-c2", "objective_id": "seg-02", "text": "A data structure is a concrete way to store data in a program, written in a specific language. It implements the operations of an ADT. The same ADT can have several data structures behind it, such as an array-based version and a linked version."},
+      {"chunk_id": "syn-p02-c3", "objective_id": "seg-02", "text": "Separating the ADT from the data structure lets a programmer change the storage later without changing the code that only uses the operations."},
+      {"chunk_id": "syn-p03-c1", "objective_id": "seg-03", "text": "A collection is an ADT that holds a group of items. Collections differ in two rules: whether the same item may appear more than once, and whether the items are kept in a particular order."},
+      {"chunk_id": "syn-p03-c2", "objective_id": "seg-03", "text": "A bag holds items in no particular order and allows duplicates. A set holds items in no particular order and does not allow duplicates. A list keeps items in a sequence, and each item has a position."},
+      {"chunk_id": "syn-p03-c3", "objective_id": "seg-03", "text": "A stack adds and removes items at the same end, so the last item added is the first removed (LIFO). A queue adds items at the back and removes them from the front, so the first item added is the first removed (FIFO). A map stores pairs of a key and a value and finds a value by its key."},
+      {"chunk_id": "syn-p04-c1", "objective_id": "seg-04", "text": "In object-oriented programming a program is built from objects. A class is the blueprint, and each object is one instance of a class with its own data. The three main ideas covered here are encapsulation, inheritance, and polymorphism."},
+      {"chunk_id": "syn-p04-c2", "objective_id": "seg-04", "text": "Inheritance lets a new class, the subclass, reuse the fields and methods of an existing class. The subclass can add methods or override inherited ones. A subclass object is also an object of its parent class: a Dog is an Animal."},
+      {"chunk_id": "syn-p04-c3", "objective_id": "seg-04", "text": "Polymorphism means code written for a parent type works with objects of any of its subclasses. When the code calls a method, the version defined by the actual object's class runs."},
+      {"chunk_id": "syn-p05-c1", "objective_id": "seg-05", "text": "Encapsulation puts an object's data and the methods that use that data together in one class, and keeps the data from being changed directly from outside. In Java the fields are usually declared private, and other code works with the object through public methods."},
+      {"chunk_id": "syn-p05-c2", "objective_id": "seg-05", "text": "A getter is a public method that returns the value of a private field. A setter is a public method that changes a field, and it can check the new value first, for example rejecting a negative price."},
+      {"chunk_id": "syn-p05-c3", "objective_id": "seg-05", "text": "A vending machine is a good picture of encapsulation. Buyers use only the buttons and the coin slot. The coin counter and the motors stay inside the case, and the owner can replace them without changing how buyers use the machine."}
+    ]
+  },
+  "questions": [
+    {"id": "tr-01", "objective_id": "seg-02", "question_text": "What is the difference between an abstract data type and a data structure?", "expected_action": "answer", "note": "syn-p02-c1 and syn-p02-c2"},
+    {"id": "tr-02", "objective_id": "seg-03", "question_text": "What is the difference between a bag and a set?", "expected_action": "answer", "note": "syn-p03-c2"},
+    {"id": "tr-03", "objective_id": "seg-03", "question_text": "Why is a stack called LIFO?", "expected_action": "answer", "note": "syn-p03-c3"},
+    {"id": "tr-04", "objective_id": "seg-05", "question_text": "Why are fields usually declared private in an encapsulated class?", "expected_action": "answer", "note": "syn-p05-c1"},
+    {"id": "tr-05", "objective_id": "seg-05", "question_text": "What does a setter do that a public field cannot?", "expected_action": "answer", "note": "syn-p05-c2 (setter can check the value)"},
+    {"id": "tr-06", "objective_id": "seg-04", "question_text": "What does it mean for a subclass to override a method?", "expected_action": "answer", "note": "syn-p04-c2 names overriding; syn-p04-c3 says the object's own version runs"},
+    {"id": "tr-07", "objective_id": "seg-02", "question_text": "Can one abstract data type have more than one data structure behind it?", "expected_action": "answer", "note": "syn-p02-c2"},
+    {"id": "tr-08", "objective_id": "seg-01", "question_text": "How is the undo button an example of organizing data?", "expected_action": "answer", "note": "syn-p01-c1 (most recent change removed first); answer must not add 'stack' unless it links syn-p03-c3"},
+    {"id": "tr-09", "objective_id": "seg-05", "question_text": "How is a vending machine like encapsulation?", "expected_action": "answer", "note": "syn-p05-c3"},
+    {"id": "tr-10", "objective_id": null, "question_text": "Will the lecture slides be posted online after class?", "expected_action": "escalate", "expected_reason": "out_of_scope", "note": "Logistics"},
+    {"id": "tr-11", "objective_id": null, "question_text": "Which IDE do you recommend for Java on a Mac?", "expected_action": "escalate", "expected_reason": "out_of_scope", "note": "Personal recommendation, not lesson content"},
+    {"id": "tr-12", "objective_id": null, "question_text": "Is the second quiz going to be open book?", "expected_action": "escalate", "expected_reason": "out_of_scope", "note": "Logistics about graded work; asks no answers, so not assignment_like"},
+    {"id": "tr-13", "objective_id": "seg-03", "question_text": "Can you write the Java code for the queue class we have to submit for homework 2?", "expected_action": "escalate", "expected_reason": "assignment_like", "note": "Asks for graded code"},
+    {"id": "tr-14", "objective_id": "seg-05", "question_text": "For lab 1, what should the setPrice method look like exactly? Please give the full method.", "expected_action": "escalate", "expected_reason": "assignment_like", "note": "Asks for a complete graded solution"},
+    {"id": "tr-15", "objective_id": "seg-03", "question_text": "Quiz question 4 asks which collection allows duplicates without order. Which option is right?", "expected_action": "escalate", "expected_reason": "assignment_like", "note": "Answerable from the chunks, but it is a graded quiz item"},
+    {"id": "tr-16", "objective_id": "seg-03", "question_text": "How does a hash table find a key in constant time?", "expected_action": "escalate", "expected_reason": "low_confidence", "note": "On topic (maps) but hashing is not in the chunks"},
+    {"id": "tr-17", "objective_id": "seg-04", "question_text": "What is the difference between an abstract class and an interface in Java?", "expected_action": "escalate", "expected_reason": "low_confidence", "note": "OOP topic not in the chunks"},
+    {"id": "tr-18", "objective_id": "seg-02", "question_text": "Is a linked version of a list faster than an array-based version?", "expected_action": "escalate", "expected_reason": "unsupported", "note": "Tempting: both versions are named (syn-p02-c2) but speed is never discussed"},
+    {"id": "tr-19", "objective_id": "seg-05", "question_text": "Does encapsulation make a Java program run faster?", "expected_action": "escalate", "expected_reason": "unsupported", "note": "Tempting: encapsulation is covered, performance is not"},
+    {"id": "tr-20", "objective_id": "seg-04", "question_text": "Can a Java class inherit from two parent classes at the same time?", "expected_action": "escalate", "expected_reason": "unsupported", "note": "Tempting: inheritance is covered, multiple inheritance is not"}
+  ]
+}

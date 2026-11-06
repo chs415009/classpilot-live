@@ -7,8 +7,11 @@ from pathlib import Path
 from classpilot import rules
 from classpilot.adapters import make_adapters
 from classpilot.adapters.llm import MockLLM
+from classpilot.adapters.retrieval import MockRetriever
 from classpilot.content import Content, load_content
 from classpilot.contracts import PollEvidence, StudentQuestion
+from classpilot.contracts.trace import PROMPT_VERSION
+from classpilot.eval_sets import QuestionSet, load_question_set
 from classpilot.live.poll import run_poll
 from classpilot.live.question_graph import Deps, run_question
 from classpilot.nodes.guardian import run_guardian
@@ -76,11 +79,35 @@ def scenario_files() -> list[Path]:
     return sorted(SCENARIO_DIR.glob("*.json"))
 
 
-def run_eval(trace_path: Path | None = None, log_path: Path | None = None) -> dict:
+def set_deps(settings: Settings, qset: QuestionSet) -> Deps:
+    """Deps for a question set: the backend's LLM; retrieval per the set's `retrieval`."""
+    llm, _ = make_adapters(settings, qset.content)
+    if qset.retrieval == "search" and settings.backend == "cortex":
+        from classpilot.adapters.retrieval import CortexSearchRetriever
+
+        retriever = CortexSearchRetriever(settings, service_name=settings.objects.search_service)
+    else:
+        retriever = MockRetriever(qset.content.chunks)
+    return Deps(settings, qset.content, llm, retriever)
+
+
+def run_eval(
+    trace_path: Path | None = None,
+    log_path: Path | None = None,
+    set_path: Path | None = None,
+) -> dict:
+    """Run a labeled question set; without `set_path`, the v1 set on the fixture lesson."""
     settings = load_settings()
-    content = load_content()
-    deps = make_deps(settings, content)
-    questions = json.loads(EVAL_PATH.read_text())
+    if set_path is None:
+        content = load_content()
+        deps = make_deps(settings, content)
+        questions = json.loads(EVAL_PATH.read_text())
+        set_id, split = "v1-fixture", None
+    else:
+        qset = load_question_set(set_path)
+        content, deps = qset.content, set_deps(settings, qset)
+        questions = [q.model_dump() for q in qset.questions]
+        set_id, split = qset.set_id, qset.split
     for out in (trace_path, log_path):
         if out is not None and out.exists():
             out.unlink()
@@ -120,6 +147,9 @@ def run_eval(trace_path: Path | None = None, log_path: Path | None = None) -> di
         )
     return {
         "backend": settings.backend,
+        "set_id": set_id,
+        "split": split,
+        "prompt_version": getattr(deps.llm, "prompt_version", PROMPT_VERSION),
         "summary": summarize(rows),
         "rows": rows,
     }

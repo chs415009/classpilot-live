@@ -4,7 +4,6 @@ import json
 import statistics
 from pathlib import Path
 
-from classpilot import rules
 from classpilot.adapters import make_adapters
 from classpilot.adapters.llm import MockLLM
 from classpilot.adapters.retrieval import MockRetriever
@@ -12,15 +11,14 @@ from classpilot.content import Content, load_content
 from classpilot.contracts import PollEvidence, StudentQuestion
 from classpilot.contracts.trace import PROMPT_VERSION
 from classpilot.eval_sets import QuestionSet, load_question_set
+from classpilot.guardian_cases import V1_CASES_PATH, load_cases, run_case_eval
 from classpilot.live.poll import run_poll
 from classpilot.live.question_graph import Deps, run_question
-from classpilot.nodes.guardian import run_guardian
 from classpilot.settings import PROJECT_ROOT, Settings, load_settings
 from classpilot.trace import DEFAULT_DECISION_LOG_PATH, DEFAULT_TRACE_PATH, write_run
 
 SCENARIO_DIR = PROJECT_ROOT / "scenarios"
 EVAL_PATH = PROJECT_ROOT / "eval" / "test_questions.json"
-GUARDIAN_CASES_PATH = PROJECT_ROOT / "eval" / "guardian_cases.json"
 OUTPUT_DIR = PROJECT_ROOT / "outputs"
 
 
@@ -155,52 +153,11 @@ def run_eval(
     }
 
 
-def run_guardian_eval() -> dict:
-    """Send hand-written answers straight to the Guardian, so its catch rate does not
-    depend on the responder happening to make a mistake."""
-    settings = load_settings()
-    content = load_content()
-    deps = make_deps(settings, content)
-    chunks = {c["chunk_id"]: c for c in content.chunks}
-    cases = json.loads(GUARDIAN_CASES_PATH.read_text())
-
-    rows = []
-    for case in cases:
-        cited = [chunks[i] for i in case["cited_chunk_ids"]]
-        result = run_guardian(
-            case["question_text"],
-            case["answer_text"],
-            cited,
-            deps.llm,
-            settings.llm.timeout_seconds,
-        )
-        check = rules.check_guardian(result.raw, case["cited_chunk_ids"])
-        verdict = {True: "pass", False: "fail", None: "error"}[check.passed]
-        rows.append(
-            {
-                "id": case["id"],
-                "expected": case["expected"],
-                "verdict": verdict if result.error is None else "error",
-                "reason": check.reason if result.error is None else result.error,
-                "note": case.get("note", ""),
-                "latency_ms": result.latency_ms,
-                "raw": result.raw,
-            }
-        )
-
-    should_fail = [r for r in rows if r["expected"] == "fail"]
-    should_pass = [r for r in rows if r["expected"] == "pass"]
-    summary = {
-        "cases": len(rows),
-        "caught": sum(r["verdict"] == "fail" for r in should_fail),
-        "should_fail": len(should_fail),
-        # Errors are listed on their own: in the graph they escalate as llm_error (fail-closed).
-        "missed": [r["id"] for r in should_fail if r["verdict"] == "pass"],
-        "false_fails": [r["id"] for r in should_pass if r["verdict"] == "fail"],
-        "errors": [r["id"] for r in rows if r["verdict"] == "error"],
-        "latency_ms_avg": round(statistics.mean(r["latency_ms"] for r in rows), 1),
-    }
-    return {"backend": settings.backend, "summary": summary, "rows": rows}
+def run_guardian_eval(cases_path: Path | None = None, overrides: dict | None = None) -> dict:
+    """Send labeled answers and prep items straight to the Guardian, so its catch rate
+    does not depend on a generator happening to make a mistake. Default: the v1 cases."""
+    settings = load_settings(overrides=overrides)
+    return run_case_eval(load_cases(cases_path or V1_CASES_PATH), settings)
 
 
 def summarize(rows: list[dict]) -> dict:

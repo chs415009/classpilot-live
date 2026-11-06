@@ -260,6 +260,28 @@ def run_prep_search(args) -> int:
     return 0
 
 
+def run_guardian_eval_file(path: Path | None, overrides: dict | None) -> None:
+    result = run_guardian_eval(path, overrides)
+    tag = result["backend"] if path is None else f"{path.stem}_{result['backend']}"
+    if overrides:
+        tag += f"_{overrides['prep']['model']}"
+    out = OUTPUT_DIR / f"guardian_eval_{tag}.json"
+    out.write_text(json.dumps(result, indent=2))
+    for row in result["rows"]:
+        if row["verdict"] == row["expected"]:
+            status = "OK "
+        elif row["verdict"] == "error":
+            status = "ERROR"
+        else:
+            status = "MISS" if row["expected"] == "fail" else "FALSE FAIL"
+        print(
+            f"[{status}] {row['id']} ({row['kind']}) expected={row['expected']} "
+            f"got={row['verdict']}: {row['reason']}"
+        )
+    print(json.dumps(result["summary"], indent=2))
+    print(f"wrote {out}")
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(prog="classpilot")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -275,9 +297,21 @@ def main(argv: list[str] | None = None) -> None:
         "--set", type=Path, help="question set file, e.g. eval/questions_train.json"
     )
 
-    sub.add_parser(
-        "guardian-eval", help="run eval/guardian_cases.json straight through the Guardian"
+    guardian_cmd = sub.add_parser(
+        "guardian-eval",
+        help="run labeled Guardian cases straight through the Guardian (default: v1 cases)",
     )
+    guardian_cmd.add_argument(
+        "--cases", type=Path, action="append", help="case file; repeat for several"
+    )
+    guardian_cmd.add_argument(
+        "--prep-model", help="Cortex model for the prep Guardian (overrides prep.model)"
+    )
+
+    sheet_cmd = sub.add_parser(
+        "guardian-sheet", help="write a labeling sheet for a Guardian case file (outputs/)"
+    )
+    sheet_cmd.add_argument("cases", type=Path)
 
     prep_cmd = sub.add_parser("prep", help="prep steps (before class)")
     prep_sub = prep_cmd.add_subparsers(dest="prep_command", required=True)
@@ -357,24 +391,18 @@ def main(argv: list[str] | None = None) -> None:
         out.write_text(json.dumps(result, indent=2))
         print(json.dumps(result["summary"], indent=2))
         print(f"wrote {out}")
+    elif args.command == "guardian-sheet":
+        from classpilot.guardian_cases import case_sheet, label_problems, load_cases
+
+        case_set = load_cases(args.cases)
+        out = OUTPUT_DIR / "labeling" / f"{args.cases.stem}.md"
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(case_sheet(case_set))
+        print(f"wrote {out}; {len(label_problems(case_set))} labels still open")
     elif args.command == "guardian-eval":
-        result = run_guardian_eval()
-        out = OUTPUT_DIR / f"guardian_eval_{result['backend']}.json"
-        out.write_text(json.dumps(result, indent=2))
-        for row in result["rows"]:
-            status = (
-                "OK "
-                if row["verdict"] == row["expected"]
-                else "MISS"
-                if row["expected"] == "fail"
-                else "FALSE FAIL"
-            )
-            print(
-                f"[{status}] {row['id']} expected={row['expected']} "
-                f"got={row['verdict']}: {row['reason']}"
-            )
-        print(json.dumps(result["summary"], indent=2))
-        print(f"wrote {out}")
+        overrides = {"prep": {"model": args.prep_model}} if args.prep_model else None
+        for path in args.cases or [None]:
+            run_guardian_eval_file(path, overrides)
 
 
 if __name__ == "__main__":

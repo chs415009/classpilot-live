@@ -246,6 +246,17 @@ def test_malformed_reply_is_asked_again_once_timeouts_are_not(tables):
     assert first.outcome == "llm_error" and first.calls == 2
 
 
+def test_guardian_sees_every_given_chunk_cited_ones_first(tables):
+    one = {"script": "x", "citations": [f"{P}02-c1"]}
+    llm = Rigged(script_writer=for_slide("02", one, times=1))
+    run(tables, llm)
+    given = next(i for i in llm.inputs_of("script_writer") if i["slide_id"] == f"{P}02")
+    seen = next(i for i in llm.inputs_of("script_guardian") if i["script"] == "x")
+    ids = [c["chunk_id"] for c in seen["cited_chunks"]]
+    assert ids[0] == f"{P}02-c1"
+    assert set(ids) == {c["chunk_id"] for c in given["chunks"]}
+
+
 # ---------- script fallbacks ----------
 
 

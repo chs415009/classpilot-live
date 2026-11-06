@@ -80,6 +80,7 @@ class PrepSettings(BaseModel):
     max_retries: int = 1  # retries with Guardian feedback before the fallback
     malformed_retries: int = 1  # same call again after an unparseable reply (not timeouts)
     max_framing_claims: int = 2  # content-free transition/motivation sentences allowed
+    rescue_coverage: float = 0.8  # claim words in a given chunk that pass a Guardian miss
     model: str | None = None  # Cortex model for generation; None: llm.model
     compiled_program: str | None = None  # compiled/<id>.json for prep tasks; None: uncompiled
     llm_timeout_seconds: float = 60  # per call; prep is not time-critical

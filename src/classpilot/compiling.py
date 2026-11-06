@@ -109,9 +109,14 @@ def to_example(item: WriterItem, index: int) -> dspy.Example:
 
 
 def writer_check(
-    item: WriterItem, raw: dict, guardian: LLMClient, timeout_s: float, max_framing: int = 2
+    item: WriterItem,
+    raw: dict,
+    guardian: LLMClient,
+    timeout_s: float,
+    rule_options: dict | None = None,
 ) -> list[str]:
-    """Problems of one writer output, as a prep run would find them; [] = pass."""
+    """Problems of one writer output, as a prep run would find them; [] = pass. As in a
+    prep run, the Guardian sees the cited chunks first, then the other given chunks."""
     allowed = {c["chunk_id"] for c in item.chunks}
     by_id = {c["chunk_id"]: c for c in item.chunks}
     if item.task == "script_writer":
@@ -138,14 +143,15 @@ def writer_check(
         require = True
     if problems:
         return problems
-    cited = [by_id[c] for c in out.citations if c in by_id]
+    ids = list(dict.fromkeys([*(c for c in out.citations if c in by_id), *by_id]))
+    shown = [by_id[i] for i in ids]
     try:
-        raw_g = call_llm(guardian, task, {**inputs, "cited_chunks": cited}, timeout_s)
+        raw_g = call_llm(guardian, task, {**inputs, "cited_chunks": shown}, timeout_s)
     except LLMError as exc:
         return [f"Guardian: {exc}"]
-    texts = {c["chunk_id"]: c["text"] for c in cited}
+    texts = {c["chunk_id"]: c["text"] for c in shown}
     check = check_prep_guardian(
-        raw_g, out.citations, require_claims=require, chunk_texts=texts, max_framing=max_framing
+        raw_g, ids, require_claims=require, chunk_texts=texts, **(rule_options or {})
     )
     return check.problems if check.passed is not None else ["Guardian output unusable."]
 
@@ -163,13 +169,15 @@ def compile_writer(
     timeout_s: float,
     max_demos: int = 2,
     log: CompileLog | None = None,
+    rule_options: dict | None = None,
 ) -> dspy.Predict:
     """BootstrapFewShot over `items` in file order; returns the Predict with demos."""
     log = log if log is not None else CompileLog()
 
     def metric(example, prediction, trace=None) -> bool:
         item = items[example.item_index]
-        problems = writer_check(item, prep_prediction_dict(task, prediction), guardian, timeout_s)
+        raw = prep_prediction_dict(task, prediction)
+        problems = writer_check(item, raw, guardian, timeout_s, rule_options)
         log.tried.append({"task": task, "item": item.item_id, "problems": problems})
         return not problems
 

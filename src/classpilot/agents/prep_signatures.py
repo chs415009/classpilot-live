@@ -5,10 +5,10 @@ generator takes a `feedback` input: "(none)" on the first attempt, then the prob
 the structure checks and the Guardian found (`rules/prep.py`). The retry loop is code
 (`prep/generate.py`), not DSPy.
 
-ScriptWriter, PollWriter, and ExplanationWriter cite chunk ids, and their Guardian sees
-only the cited chunks (IMPLEMENTATION_NOTES 7.4). Segmenter and PollPlacer produce
-structure, not text for students: they refer to slide and segment ids, and no Guardian
-checks them; code checks their structure.
+ScriptWriter, PollWriter, and ExplanationWriter cite chunk ids; their Guardian sees the
+chunks the writer was given, cited ones first (IMPLEMENTATION_NOTES 7.4, Stage 9).
+Segmenter and PollPlacer produce structure, not text for students: they refer to slide
+and segment ids, and no Guardian checks them; code checks their structure.
 
 The prep Guardian has one signature per item type, because each type has its own rule
 (scripts: transitions are not claims; polls: each wrong option shown wrong;
@@ -81,6 +81,9 @@ class ScriptWriterSignature(dspy.Signature):
       Cite the ids of the chunks you used.
     - If the slide only lists items, name them and say what they have in common, using
       what the chunks say.
+    - If the slide has only a title, a section name, or a short outline, say what it
+      shows in one or two sentences (for example "This part of the lecture is the Java
+      review."). Do not explain or preview the topics it names.
     - You may add a short transition (for example "Next, let's look at how data moves")
       that states no facts.
     - Plain spoken English only: no Markdown, bullets, backticks, or code. Spell out

@@ -294,6 +294,7 @@ def run_compile(args) -> int:
     from classpilot.agents.compiled import COMPILED_DIR, program_path, save_program
     from classpilot.agents.prep_program import DSPyPrepAgents
     from classpilot.compiling import CompileLog, compile_writer, load_prep_trainset
+    from classpilot.rules.prep import prep_rule_options
 
     settings = load_settings()
     if settings.backend != "cortex":
@@ -315,6 +316,7 @@ def run_compile(args) -> int:
             settings.prep.llm_timeout_seconds,
             args.max_demos,
             log,
+            prep_rule_options(settings.prep),
         )
         print(f"{task}: {len(modules[task].demos)} demos")
     meta = {

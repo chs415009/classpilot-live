@@ -497,7 +497,11 @@ Stage 2 draft (field names in `src/classpilot/contracts/trace.py`, examples in
 - Measure latency after compiling (few-shot demos lengthen prompts).
 
 ### 7.4 Guardian check and retry with feedback (prep only)
-- Every generator cites chunk ids; the Guardian sees only those chunks.
+- Every generator cites chunk ids; the Guardian sees the chunks the generator was given,
+  cited ones first (Stage 9; the manifest keeps the generator's citations). Each claim
+  carries a kind (fact, example, framing) and a quote checked by code; a claim the
+  Guardian cannot tie passes if code finds `prep.rescue_coverage` of its content words
+  in one given chunk, with no extra negation (`rules/prep.py`).
   - Scripts: every factual claim supported; transitions are not claims.
   - Polls: the question and the correct option must be supported; each wrong option
     must be shown wrong by the cited chunks.

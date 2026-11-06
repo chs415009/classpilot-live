@@ -380,3 +380,12 @@ is no longer updated)
 - 2026-11-06 [finding] `claude-sonnet-4-5` as prep Guardian on the 21 dev cases (new
   rules): 6/8 caught (missed pc-07 wrong course title, pc-08 wrong topic order), 4 false
   fails. Not better than mistral-large3 (8/8, 3); the prep Guardian stays on it.
+- 2026-11-06 [finding] Of 42 claims the prep Guardian called unsupported in two L1 runs,
+  7 (17%) were in a cited chunk (Guardian miss), 5 (12%) only in an uncited given chunk,
+  30 (71%) nowhere, mostly elaboration on title/outline slides. Cortex Search is not
+  involved: the Guardian gets chunk texts directly.
+- 2026-11-06 [decision] User: prep.max_retries 1 -> 2; the Guardian sees every chunk the
+  writer was given (cited first); code passes a claim the Guardian could not tie when
+  >= 0.8 of its content words are in one given chunk with no extra negation
+  (`prep.rescue_coverage`); title/outline slides get one or two sentences. Budget cap
+  raised to about 800 calls. pc-03 and pc-10 relabeled pass with the stating chunks.

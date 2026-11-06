@@ -57,6 +57,7 @@ from classpilot.rules.prep import (
     parse_output,
     placement_problems,
     poll_problems,
+    prep_rule_options,
     script_problems,
     segmenter_problems,
 )
@@ -138,6 +139,7 @@ class Attempt:
     # The generator's reply (text and citations), so failed drafts can become Guardian
     # eval cases (Stage 9). None after an LLM error.
     draft: dict | None = None
+    rescued: list[str] = field(default_factory=list)  # claims passed by the word check
 
 
 @dataclass
@@ -311,18 +313,29 @@ class Generator:
     def cited(self, ids: list[str]) -> list[dict]:
         return [self.m.chunks[i] for i in ids if i in self.m.chunks]
 
-    def guardian(self, task: str, inputs: dict, cited: list[str], **rule) -> Attempt:
+    def guardian(
+        self, task: str, inputs: dict, cited: list[str], given: list[dict], **rule
+    ) -> Attempt:
+        """The Guardian sees the writer's cited chunks first, then every other chunk the
+        writer was given (Stage 9, user decision: true content the writer forgot to cite
+        is not a failure). The manifest keeps the writer's own citations."""
+        ids = list(dict.fromkeys([*cited, *(c["chunk_id"] for c in given)]))
+        shown = self.cited(ids)
         try:
-            raw = self.call(task, {**inputs, "cited_chunks": self.cited(cited)})
+            raw = self.call(task, {**inputs, "cited_chunks": shown})
         except LLMError as exc:
             return Attempt("llm_error", [f"Guardian: {exc}"])
-        texts = {c["chunk_id"]: c["text"] for c in self.cited(cited)}
         check = check_prep_guardian(
-            raw, cited, chunk_texts=texts, max_framing=self.deps.prep.max_framing_claims, **rule
+            raw,
+            ids,
+            chunk_texts={c["chunk_id"]: c["text"] for c in shown},
+            **prep_rule_options(self.deps.prep),
+            **rule,
         )
         if check.passed is None:
             return Attempt("llm_error", check.problems, guardian=raw)
-        return Attempt("pass" if check.passed else "guardian", check.problems, guardian=raw)
+        outcome = "pass" if check.passed else "guardian"
+        return Attempt(outcome, check.problems, guardian=raw, rescued=check.rescued)
 
     def loop(self, generate, check):
         return with_retries(
@@ -420,7 +433,11 @@ class Generator:
             if problems:
                 return None, Attempt("structure", problems)
             attempt = self.guardian(
-                "script_guardian", {"script": out.script}, out.citations, require_claims=False
+                "script_guardian",
+                {"script": out.script},
+                out.citations,
+                chunks,
+                require_claims=False,
             )
             return out, attempt
 
@@ -523,6 +540,7 @@ class Generator:
                     "correct_option": out.correct_option,
                 },
                 out.citations,
+                chunks,
                 require_claims=True,
                 wrong_options=wrong,
             )
@@ -630,6 +648,7 @@ class Generator:
                     "explanation": out.text,
                 },
                 out.citations,
+                chunks,
                 require_claims=True,
             )
             return out, attempt

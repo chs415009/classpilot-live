@@ -194,7 +194,10 @@ automatically.
 ### 6.1 Before class (generated content)
 
 1. Each script, poll, and explanation cites the chunk ids it is based on. The Guardian
-   checks it against only those chunks:
+   checks it against the chunks the generator was given, the cited ones first (Stage 9:
+   true content the generator forgot to cite is not a failure). When the Guardian
+   cannot tie a sentence to a chunk but code finds nearly all of its words in one
+   given chunk, code passes that sentence:
    - script: every factual claim must be supported; transitions ("Let's move on to…")
      are not claims, and up to two content-free motivation sentences are allowed;
    - script and explanation: the writer may add its own short example, analogy, or
@@ -204,9 +207,10 @@ automatically.
    - poll: the question and the correct option must be supported, and each wrong option
      must be shown wrong by the cited chunks;
    - explanation: every claim must be supported.
-2. If it fails, the generator retries **once**, and the retry receives the Guardian's
-   feedback (which claims were unsupported and why).
-3. If the retry also fails, the system uses a safe fallback:
+2. If it fails, the generator retries up to `prep_max_retries` times (**2**; 1 until
+   Stage 9, raised because the prep Guardian's verdicts vary between calls), and each
+   retry receives the Guardian's feedback (which claims were unsupported and why).
+3. If the retries also fail, the system uses a safe fallback:
    - script: the slide's own text, cleaned for TTS (no code or symbols read
      literally). If the slide has no text, the vision description of the slide. If
      there is none, a fixed sentence asking students to look at the slide.
@@ -271,7 +275,7 @@ session after the fact.
 | `wrong_ratio_threshold` | 0.60 | Live: poll rule |
 | `confidence_threshold` | 0.70 | Live: Q&A validator |
 | `llm.timeout_seconds` | 10 | All LLM calls |
-| `prep_max_retries` | 1 | Prep: Guardian retry |
+| `prep_max_retries` | 2 | Prep: Guardian retries |
 
 ---
 

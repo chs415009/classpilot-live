@@ -22,6 +22,7 @@ from classpilot.contracts.prep import (
     SegmenterOutput,
 )
 from classpilot.prep.tts import generated_text_issues
+from classpilot.text import content_words
 
 
 def parse_output[M: BaseModel](model: type[M], raw: dict | None) -> M | None:
@@ -157,6 +158,12 @@ def manifest_poll_problems(manifest: Manifest, poll_count: int) -> list[str]:
 
 # ---------- prep Guardian rule ----------
 
+
+def prep_rule_options(prep) -> dict:
+    """The Guardian rule's settings from `PrepSettings` (framing limit, word rescue)."""
+    return {"max_framing": prep.max_framing_claims, "rescue_coverage": prep.rescue_coverage}
+
+
 OPTION_KEY = re.compile(r"^\s*\(?([A-D])\b")
 
 
@@ -191,10 +198,55 @@ def quote_found(quote: str | None, chunk_texts: list[str]) -> bool:
     return bool(parts) and all(any(f" {p} " in t for t in texts) for p in parts)
 
 
+NEGATIONS = {"not", "no", "never", "none", "nor", "cannot", "without"}
+_NEGATION_WORDS = re.compile(r"[a-z]+n['’]t\b|\b(?:" + "|".join(sorted(NEGATIONS)) + r")\b")
+
+
+def _negations(text: str) -> set[str]:
+    return set(_NEGATION_WORDS.findall(text.lower()))
+
+
+# Words that frame a comparison or set a tone; they carry no content of their own.
+RESCUE_IGNORED = {
+    "like",
+    "just",
+    "actually",
+    "really",
+    "basically",
+    "simply",
+    "think",
+    "imagine",
+    "picture",
+    "example",
+    "kind",
+    "way",
+    "thing",
+    "things",
+    "lot",
+}
+
+
+def rescued_by_words(claim: str, chunk_texts: list[str], min_coverage: float) -> bool:
+    """Code check for a claim the Guardian left without a chunk (Stage 9: 17% of its
+    "unsupported" claims were in a cited chunk). True if at least `min_coverage` of the
+    claim's content words (2 or more; comparison and tone words such as "like" do not
+    count) are in one chunk, and the claim has no negation that chunk lacks (so "an ADT
+    is not a blueprint" is not rescued by "think of it as a blueprint")."""
+    words = set(content_words(claim)) - RESCUE_IGNORED
+    if len(words) < 2:
+        return False
+    for text in chunk_texts:
+        share = len(words & set(content_words(text))) / len(words)
+        if share >= min_coverage and _negations(claim) <= _negations(text):
+            return True
+    return False
+
+
 @dataclass
 class PrepCheck:
     passed: bool | None  # None: the Guardian output does not match the schema
     problems: list[str] = field(default_factory=list)
+    rescued: list[str] = field(default_factory=list)  # claims passed by `rescued_by_words`
 
 
 def check_prep_guardian(
@@ -205,6 +257,7 @@ def check_prep_guardian(
     wrong_options: list[str] | None = None,
     chunk_texts: dict[str, str] | None = None,
     max_framing: int = 2,
+    rescue_coverage: float | None = None,
 ) -> PrepCheck:
     """Pass only if the Guardian says pass AND its claim list backs that up.
 
@@ -220,7 +273,9 @@ def check_prep_guardian(
 
     A claim of kind "framing" (no fact: transition, motivation) needs no chunk, up to
     `max_framing` per item; an "example" is checked like a fact, against the concept it
-    illustrates (Stage 9, user decision).
+    illustrates (Stage 9, user decision). With `rescue_coverage` and `chunk_texts`, a
+    fact or example the Guardian could not tie to a chunk passes if code finds its
+    words in a cited chunk (`rescued_by_words`).
     """
     model = PollGuardianOutput if wrong_options is not None else PrepGuardianOutput
     output = parse_output(model, raw)
@@ -235,13 +290,22 @@ def check_prep_guardian(
             quote, [chunk_texts[i] for i in cited_ids if i in chunk_texts]
         )
 
-    problems = []
+    cited_texts = [chunk_texts[i] for i in cited_ids if chunk_texts and i in chunk_texts]
+
+    def rescue(claim: str) -> bool:
+        return rescue_coverage is not None and rescued_by_words(claim, cited_texts, rescue_coverage)
+
+    problems, rescued = [], []
     framing = [c for c in output.claims if c.kind == "framing"]
     if len(framing) > max_framing:
         problems.append(f"{len(framing)} sentences carry no content; keep at most {max_framing}.")
     for c in output.claims:
         if c.kind == "framing":
             continue
+        if c.chunk_id not in cited or not quoted(c.chunk_id, c.quote):
+            if rescue(c.claim):
+                rescued.append(c.claim)
+                continue
         if c.chunk_id not in cited:
             what = (
                 "Example not tied to a concept in" if c.kind == "example" else ("Not supported by")
@@ -258,6 +322,6 @@ def check_prep_guardian(
             for o in wrong_options
             if o not in shown
         ]
-    if output.verdict != "pass" and not problems:
+    if output.verdict != "pass" and not problems and not rescued:
         problems.append(output.reason or "The Guardian failed the item.")
-    return PrepCheck(not problems, problems)
+    return PrepCheck(not problems, problems, rescued)

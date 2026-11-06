@@ -34,7 +34,12 @@ from classpilot import rules
 from classpilot.adapters.llm import LLMClient, LLMError, call_llm
 from classpilot.content import load_content
 from classpilot.nodes.guardian import run_guardian
-from classpilot.rules.prep import check_prep_guardian, option_key, quote_found
+from classpilot.rules.prep import (
+    check_prep_guardian,
+    option_key,
+    prep_rule_options,
+    quote_found,
+)
 from classpilot.settings import PROJECT_ROOT, Settings
 
 V1_CASES_PATH = PROJECT_ROOT / "eval" / "guardian_cases.json"
@@ -168,7 +173,9 @@ def prep_inputs(case: GuardianCase) -> dict:
     }
 
 
-def run_case(case: GuardianCase, llm: LLMClient, timeout_s: float, max_framing: int = 2) -> dict:
+def run_case(
+    case: GuardianCase, llm: LLMClient, timeout_s: float, rule_options: dict | None = None
+) -> dict:
     """The Guardian's verdict on one case, decided by the same rule code as in use."""
     row = {"id": case.id, "kind": case.kind, "expected": case.expected, "note": case.note}
     if case.kind == "live":
@@ -210,7 +217,7 @@ def run_case(case: GuardianCase, llm: LLMClient, timeout_s: float, max_framing: 
             require_claims=case.kind != "script",
             wrong_options=case.wrong_options if case.kind == "poll" else None,
             chunk_texts={c.chunk_id: c.text for c in case.chunks},
-            max_framing=max_framing,
+            **(rule_options or {}),
         )
     latency = round((time.perf_counter() - start) * 1000)
     if error is not None or check.passed is None:
@@ -308,7 +315,7 @@ def run_case_eval(
     for case in case_set.cases:
         live = case.kind == "live"
         timeout = settings.llm.timeout_seconds if live else settings.prep.llm_timeout_seconds
-        rows.append(run_case(case, llms[case.kind], timeout, settings.prep.max_framing_claims))
+        rows.append(run_case(case, llms[case.kind], timeout, prep_rule_options(settings.prep)))
     return {
         "backend": settings.backend,
         "set_id": case_set.set_id,

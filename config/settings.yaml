@@ -48,9 +48,11 @@ prep:
   # Generation + prep-time Guardian (prep generate / prep run). Prep runs are not traced
   # to the data model; each item's outcome is its manifest `status`.
   poll_count: 5                 # at most one poll per segment; fewer are accepted
-  max_retries: 1                # retries with the Guardian's feedback, then the fallback
+  max_retries: 2                # retries with the Guardian's feedback, then the fallback (Stage 9: 1 -> 2)
   malformed_retries: 1          # same call again after an unparseable reply (not timeouts)
   max_framing_claims: 2         # content-free transition/motivation sentences per item
+  rescue_coverage: 0.8          # share of a claim's words in one given chunk that
+                                # passes a claim the Guardian could not tie (Stage 9)
   model: null                   # Cortex model for generation; null: llm.model (Stage 7)
   compiled_program: null        # compiled/<id>.json for the prep writers (Stage 9)
   llm_timeout_seconds: 60

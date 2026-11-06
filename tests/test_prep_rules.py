@@ -397,3 +397,33 @@ def test_example_needs_the_concept_it_illustrates():
     assert check.problems == [
         "Example not tied to a concept in the cited chunks: 'Like a lunchbox.'"
     ]
+
+
+# ---------- word rescue (Stage 9) ----------
+
+BLUEPRINT = {"c1": "An ADT is language agnostic. Think of it as an architectural blueprint."}
+
+
+@pytest.mark.parametrize(
+    ("claim", "passed"),
+    [
+        ("An ADT is like a blueprint.", True),
+        ("An ADT is not a blueprint.", False),  # negation the chunk lacks
+        ("An ADT isn't language agnostic.", False),
+        ("Blueprint.", False),  # fewer than 2 content words
+        ("An ADT runs faster than a blueprint.", False),  # coverage below 0.8
+    ],
+)
+def test_code_rescues_a_claim_the_guardian_could_not_tie(claim, passed):
+    raw = kinds((claim, None, None, "example"))
+    raw["verdict"] = "fail"
+    check = check_prep_guardian(
+        raw, ["c1"], require_claims=True, chunk_texts=BLUEPRINT, rescue_coverage=0.8
+    )
+    assert check.passed is passed
+    assert check.rescued == ([claim] if passed else [])
+
+
+def test_no_rescue_without_the_setting():
+    raw = kinds(("An ADT is like a blueprint.", None, None, "example"))
+    assert not check_prep_guardian(raw, ["c1"], require_claims=True, chunk_texts=BLUEPRINT).passed

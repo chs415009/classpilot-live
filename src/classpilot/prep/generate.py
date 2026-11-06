@@ -161,6 +161,8 @@ class GenerationReport:
     poll_count: int
     llm_calls: int = 0
     items: list[ItemReport] = field(default_factory=list)
+    # Id of the prep program (compiled/<id>.json or "uncompiled-v1"); None for the mock.
+    prompt_version: str | None = None
 
     def statuses(self, prefix: str) -> list[Status]:
         return [i.status for i in self.items if i.item.startswith(prefix)]
@@ -261,7 +263,11 @@ class Generator:
         self.total = 2 + len(material.slides) + deps.prep.poll_count
         self.deps = deps
         self.llm = CountingLLM(deps.llm)
-        self.report = GenerationReport(material.lesson_id, deps.prep.poll_count)
+        self.report = GenerationReport(
+            material.lesson_id,
+            deps.prep.poll_count,
+            prompt_version=getattr(deps.llm, "prompt_version", None),
+        )
         # Footer/header lines of the deck, left out of the slide-text fallback.
         self.template = template_lines([s.page.text_layer for s in material.slides])
 

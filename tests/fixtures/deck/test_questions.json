@@ -1,0 +1,42 @@
+{
+  "lesson_id": "fixture-lesson",
+  "note": "Synthetic test questions for the fixture deck (Stage 10 dev report tests).",
+  "questions": [
+    {
+      "question_id": "fq-01",
+      "category": "direct",
+      "question_text": "Why is bronze never edited?",
+      "expected_action": "answer",
+      "accepted_reasons": [],
+      "sources": ["fixture-deck-p02-c1"],
+      "why": "Slide 2: bronze is never edited, so every load can be replayed."
+    },
+    {
+      "question_id": "fq-02",
+      "category": "reworded",
+      "question_text": "Where does the data get cleaned, in silver or in gold?",
+      "expected_action": "answer",
+      "accepted_reasons": [],
+      "sources": ["fixture-deck-p06-c1"],
+      "why": "The summary slide: clean once in silver."
+    },
+    {
+      "question_id": "fq-03",
+      "category": "partial",
+      "question_text": "How does bronze handle schema evolution and late arriving partitions?",
+      "expected_action": "escalate",
+      "accepted_reasons": ["unsupported", "low_confidence"],
+      "sources": [],
+      "why": "Bronze is covered; schema evolution and late partitions are not."
+    },
+    {
+      "question_id": "fq-04",
+      "category": "out_of_scope",
+      "question_text": "What is the best pizza topping?",
+      "expected_action": "escalate",
+      "accepted_reasons": ["out_of_scope"],
+      "sources": [],
+      "why": "Unrelated to the lesson."
+    }
+  ]
+}

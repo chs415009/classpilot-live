@@ -5,10 +5,10 @@ turns uploaded slides and readings into a spoken script per slide, polls, and an
 explanation for every wrong poll option, all checked automatically against the
 materials. In class it answers students' private questions with grounded, cited answers
 and triggers pre-generated explanations when many students pick the same wrong option.
-After class the professor gets one auditable report.
+After class the professor gets one auditable report (deferred for now; see below).
 
 This repo holds the prep service, parse layer, generators, live Q&A and poll endpoints,
-trace records, and the post-class report (LangGraph + DSPy + Snowflake Cortex). The front
+trace records, and a dev report for demos (LangGraph + DSPy + Snowflake Cortex). The front
 end, live backend, and data pipeline live elsewhere.
 
 **Status:** v2 in development, built stage by stage (`docs/v2/STAGES.md`). Results so far
@@ -26,10 +26,12 @@ are exploratory (small, synthetic data).
 | Generators: segments, scripts, polls, explanations, each checked by the prep Guardian (claims with quotes checked by code), retried twice, then a fallback; a wrong option whose explanation fails reveals only; team manifest | Stage 6-9 | mock, Cortex (L1: 13 of 14 scripts, 5 of 5 polls, 8 of 15 wrong options explained) |
 | Eval sets (train: synthetic, committed; dev: real lesson, gitignored), labeled Guardian cases with a labeling sheet | Stage 9 | mock, Cortex |
 | Compiled DSPy programs (`compiled/`, synthetic demos only): prep writers and live Analyst/Responder, loaded behind `prep.compiled_program` / `llm.compiled_program` | Stage 9 | Cortex |
-
 | Service API: lessons, uploads, background prep jobs with progress, manifest, slide images, `POST /questions`, `POST /polls/result` | Stage 8 | mock (Cortex: same code, not yet run live) |
+| Dev report (demo entry): prep a lesson folder, run its fixed test questions, static HTML with collapsible details and an index of runs | Stage 10 | mock, Cortex |
 
-Not yet: the post-class report (Stage 10).
+Not yet: the professor's post-class report is deferred (who builds it, and from which
+tables, is decided later). The trace, the decision log, and the manifest statuses hold
+its data.
 
 ## Docs
 
@@ -107,6 +109,49 @@ the stored parse, so changing `--poll-count` costs no parse calls.
 
 Settings (thresholds, `poll_count`, retries, timeouts, models, object names):
 `config/settings.yaml`. An example manifest from the mock: `tests/fixtures/deck/manifest_mock.json`.
+
+## Dev report (demo entry, Stage 10)
+
+Each lesson is a local folder (gitignored, real course content):
+
+```
+materials/lessons/<lesson_id>/
+  slides/               *.pptx | *.pdf
+  refs/                 *.pdf | *.docx
+  test_questions.json   fixed, hand-written test questions (format below)
+  lesson.yaml           optional: title, poll_count
+```
+
+```bash
+python -m classpilot.cli dev --list                          # lesson folders, last run
+python -m classpilot.cli dev info6205-l1                     # mock: prep + test questions
+BACKEND=cortex python -m classpilot.cli dev info6205-l1      # live (after approval): ~155 calls
+BACKEND=cortex python -m classpilot.cli dev info6205-l1 --skip-prep   # questions only: ~30
+open outputs/dev/index.html                                  # every run, newest first
+```
+
+One run writes `outputs/dev/<lesson_id>/<run_id>/`: `report.html`, `results.json` (all
+data behind the page), the slide images, and the real `traces.jsonl` /
+`decision_log.jsonl` of the test questions. The report has an overview (status counts,
+wrong options without an explanation, questions as expected, latency, program ids),
+then scripts, polls with each wrong option's explanation, and the test questions
+(mismatches first); long parts are collapsed. Code computes every number; no LLM writes
+any of it. `--skip-prep` reuses the lesson's last prep and must use the same backend.
+
+Test questions (`test_questions.json`), 3 per category: `direct`, `reworded`
+(rewording or a direct inference), `partial` (a full answer needs facts the materials
+never state, so escalate), `out_of_scope`. A question matches when the action equals
+`expected_action` and, on escalate, the reason is in `accepted_reasons`:
+
+```json
+{"lesson_id": "info6205-l1", "questions": [
+  {"question_id": "tq-07", "category": "partial",
+   "question_text": "What is the difference between private, protected, and public in Java?",
+   "expected_action": "escalate", "accepted_reasons": ["unsupported", "low_confidence"],
+   "sources": ["l1-pdf-p03-c2"], "why": "The reading never mentions protected."}]}
+```
+
+A synthetic example for the fixture deck is `tests/fixtures/deck/test_questions.json`.
 
 ## Eval and compile (Stage 9)
 

@@ -4,7 +4,8 @@ Status: personal working notes, written 2026-11-04, updated 2026-11-04 after the
 analysis review (`ANALYSIS.md`, answers in section 13). Companion to
 `CLASSPILOT_BEHAVIOR.md`.
 Covers my part: prep service, parse layer, content generation, DSPy agents, live Q&A
-and poll endpoints, trace records, post-class report. Items marked **[verify]** must be
+and poll endpoints, trace records, dev report (the post-class report is deferred,
+section 8). Items marked **[verify]** must be
 checked in current docs or by a live test before coding. Items marked **[team]** need
 agreement with Sai / Yaksha. The stage plan is in `STAGES.md`.
 
@@ -68,10 +69,11 @@ Front end (Sai) ──HTTP──> Prep service (FastAPI, mine)
 Live backend (Sai) ──HTTP──> same service (mine)
                              ├─ question     -> Q&A agent (LangGraph + DSPy) -> Cortex LLM + Search
                              ├─ poll result  -> poll rule (plain function, no LLM)
-                             └─ session end  -> post-class report (HTML)
+                             └─ session end  -> post-class report (deferred, section 8)
 
 Trace JSONL ──> Yaksha's dbt star schema (facts + dimensions)
-Decision log (text) + traces + poll evidence + manifest ──> report (mine)
+Decision log (text) + traces + poll evidence + manifest ──> post-class report (deferred)
+Lesson folder -> prep run + test questions -> dev report (HTML, mine, Stage 10)
 ```
 
 ### 2.1 Account portability and public repo
@@ -92,7 +94,7 @@ Decision log (text) + traces + poll evidence + manifest ──> report (mine)
 
 Separate service from Sai's live backend. Upload and preprocessing run as one flow from
 the front end's view (upload, then call process immediately). The same service also
-serves the live and report endpoints.
+serves the live endpoints.
 
 | Endpoint | Purpose |
 |---|---|
@@ -104,8 +106,8 @@ serves the live and report endpoints.
 | `GET /lessons/{id}/slides/{slide_id}` | Slide image (PNG) for playback |
 | `POST /questions` (draft) | Live: one student question → decision (answer / escalate) |
 | `POST /polls/result` (draft) | Live: poll evidence → `explain` (option, remediation text, `show_slide`) or `reveal` |
-| `POST /sessions/{id}/report` (draft) | Build the post-class report at session end |
-| `GET /sessions/{id}/report` (draft) | The report as an HTML page |
+| `POST /sessions/{id}/report` (deferred) | Build the post-class report at session end |
+| `GET /sessions/{id}/report` (deferred) | The report as an HTML page |
 
 Job steps: `queued → converting → uploading → parsing → chunking → generating →
 checking → assembling → done | failed`.
@@ -541,6 +543,20 @@ Stage 2 draft (field names in `src/classpilot/contracts/trace.py`, examples in
 
 ## 8. Post-class report
 
+**Deferred (user decision 2026-11-06).** The professor's report is not built for now.
+Who builds it, and from which tables (likely the pipeline's Gold tables), is decided
+later. The agent side keeps its trace (section 6.3), decision log (text), and manifest
+statuses complete so the data exists. The notes below are the earlier intent.
+
+Instead, Stage 10 builds a **dev report**: one static HTML page per run of
+`cli dev <lesson_id>`, which preps a lesson from `materials/lessons/<lesson_id>/` and
+runs that lesson's fixed, hand-written `test_questions.json` through the question
+graph. It shows every generated script, poll, and explanation with its status and
+Guardian decisions, and every test question with expected and actual results; large
+blocks are collapsed. No LLM writes any part of it, and it has no poll simulation (the
+poll path is code only). Details: STAGES Stage 10.
+
+Earlier intent:
 - Triggered by an endpoint that Sai's backend calls at the end of a session; a CLI
   command does the same.
 - Output: one HTML page.
@@ -831,3 +847,9 @@ Stage 8 (service API, mock) decisions:
 - 2026-11-06 (user) Compiled programs are the default: `llm.compiled_program:
   live-qa-v1`, `prep.compiled_program: prep-writers-v5` (best results in Stage 9; the
   live one adds about 0.7 s per answer on average).
+- 2026-11-06 (user, Stage 10) The post-class report is deferred: not built now, owner
+  and source tables (likely Gold) decided later; the agent side keeps trace, decision
+  log, and manifest statuses complete. Stage 10 builds a dev report instead: one CLI
+  command preps a lesson from a local folder, runs its fixed hand-written test
+  questions (4 categories × 3) through the question graph, and writes static HTML with
+  large blocks collapsed. No generated questions, no poll simulation, no endpoint.

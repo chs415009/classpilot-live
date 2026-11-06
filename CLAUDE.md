@@ -10,14 +10,15 @@ ClassPilot Live runs a full class session when the professor is unavailable: the
 professor uploads slides and readings, the system generates a spoken script per slide,
 polls, and an explanation for every wrong poll option (checked automatically), runs the
 session with TTS and polls, answers students' private questions from the materials, and
-produces one post-class report. 3-person course project (data engineering + GenAI).
+produces one post-class report (deferred for now). 3-person course project (data
+engineering + GenAI).
 Team-level behavior: `docs/v2/CLASSPILOT_BEHAVIOR.md`.
 
 ## Parts, owners, folders
 
 | Part | Owner | Folders | Part rules |
 |---|---|---|---|
-| Agent part: prep service, parse layer, generators, live Q&A and poll endpoints, trace records, post-class report | Han-Sheng | `src/classpilot/`, `tests/`, `config/`, `sql/`, `scripts/`, `content/`, `scenarios/`, `eval/`, `compiled/`, `docs/agent/`, `docs/v1/`, `docs/v2/`, `pyproject.toml` | `.claude/rules/agent.md` |
+| Agent part: prep service, parse layer, generators, live Q&A and poll endpoints, trace records, dev report | Han-Sheng | `src/classpilot/`, `tests/`, `config/`, `sql/`, `scripts/`, `content/`, `scenarios/`, `eval/`, `compiled/`, `docs/agent/`, `docs/v1/`, `docs/v2/`, `pyproject.toml` | `.claude/rules/agent.md` |
 | Front end + live backend (WebSocket, Redis, TTS playback, polls) | Sai | to be added, e.g. `frontend/` **[team]** | to be added |
 | Data pipeline (Snowflake star schema, dbt) | Yaksha | to be added, e.g. `pipeline/` **[team]** | to be added |
 

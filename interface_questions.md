@@ -16,7 +16,7 @@ Each item records:
 
 Status: `open` (needs input from another part), `decided` (decided by the agent side
 and implemented or planned for a named stage; written under the item), `agreed`
-(confirmed by the team), `dropped`. A `decided` item is not final: any teammate can
+(confirmed by the team), `deferred` (not built for now; decided later), `dropped`. A `decided` item is not final: any teammate can
 reopen it by writing what they need changed under it. Newest items at the bottom.
 Details and history stay in `docs/agent/note.md`.
 
@@ -88,11 +88,12 @@ Details and history stay in `docs/agent/note.md`.
   - Every decision appends its trace records to `<service.data_dir>/traces.jsonl` and one line to `decision_log.jsonl` (Q-21).
 
 ## Q-20 Post-class report: trigger and data source
-- **Status:** decided · **Area:** HTTP API, report · **Affects:** front end / backend (Sai), pipeline (Yaksha) · **Raised:** 2026-11-04
+- **Status:** deferred · **Area:** HTTP API, report · **Affects:** front end / backend (Sai), pipeline (Yaksha) · **Raised:** 2026-11-04
 - **Current approach (draft):** Sai's backend calls `POST /sessions/{id}/report` at session end; `GET /sessions/{id}/report` returns the HTML page; a CLI command does the same. Inputs: the agent's decision log (text), traces, poll evidence, manifest status values. No LLM summary.
 - **Why change:** The report reads text that Yaksha's Gold tables do not hold.
 - **Suggested direction:** Agree the endpoint and that the report does not read Gold tables.
 - **Decision (agent side, 2026-11-04):** As above: the report endpoint and the CLI read the agent's decision log, traces, and manifest statuses, not Gold tables (Stage 10).
+- **Update (agent side, 2026-11-06): deferred** (user decision). The post-class report is not built for now, and no report endpoint exists. Who builds it, and from which tables (likely the pipeline's Gold tables, after all prep and live data is collected), is decided later; the decision above no longer stands. The agent side keeps its data complete: trace records (Q-21), the decision log with question and answer text (`decision_log.jsonl`, one entry per decision), and the manifest statuses (Q-13). Nothing changes for the front end or the pipeline now.
 
 ## Q-21 Trace records for the star schema
 - **Status:** decided · **Area:** trace output · **Affects:** pipeline (Yaksha) · **Raised:** 2026-11-04

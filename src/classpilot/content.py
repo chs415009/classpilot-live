@@ -11,11 +11,13 @@ from pathlib import Path
 
 from classpilot.contracts.manifest import Manifest, load_manifest
 from classpilot.settings import PROJECT_ROOT
+from classpilot.text import content_words
 
 DEFAULT_CONTENT_DIR = PROJECT_ROOT / "content"
 
 
 LESSON_FILES = ["lesson_chunks.json", "other_lesson_chunks.json"]
+MAX_KEYWORDS = 40  # per objective, for the mock Analyst only
 
 
 @dataclass
@@ -39,3 +41,18 @@ def load_content(content_dir: Path = DEFAULT_CONTENT_DIR) -> Content:
     if manifest.lesson_id != main["lesson_id"]:
         raise ValueError("content/manifest.json and lesson_chunks.json name different lessons")
     return Content(main["lesson_id"], main["objectives"], chunks, manifest)
+
+
+def lesson_content(lesson_id: str, manifest: Manifest, chunks: list) -> Content:
+    """Live content of a prepped lesson: its manifest, objectives from its segments, and
+    its chunks (objects with `chunk_id`, `page_id`, `text`). Keywords feed the mock only."""
+    rows = [{"chunk_id": c.chunk_id, "text": c.text, "lesson_id": lesson_id} for c in chunks]
+    objectives = []
+    for seg in manifest.segments:
+        words = content_words(seg.objective)
+        words += [w for c in chunks if c.page_id in seg.slides for w in content_words(c.text)]
+        keywords = list(dict.fromkeys(words))[:MAX_KEYWORDS]
+        objectives.append(
+            {"objective_id": seg.segment_id, "title": seg.objective, "keywords": keywords}
+        )
+    return Content(lesson_id, objectives, rows, manifest)

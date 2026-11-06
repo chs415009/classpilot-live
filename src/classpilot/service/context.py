@@ -9,7 +9,7 @@ from pathlib import Path
 
 from classpilot.adapters.llm import LLMClient
 from classpilot.adapters.retrieval import Retriever
-from classpilot.content import Content
+from classpilot.content import Content, lesson_content
 from classpilot.contracts import Decision
 from classpilot.contracts.manifest import Manifest, load_manifest
 from classpilot.prep.generate import GenerateDeps, Generator, LessonMaterial, load_material
@@ -19,10 +19,7 @@ from classpilot.prep.tables import PrepTables
 from classpilot.service.schemas import ItemFailure, Progress
 from classpilot.service.store import JobStore, LessonStore, now, redact
 from classpilot.settings import PROJECT_ROOT, Settings
-from classpilot.text import content_words
 from classpilot.trace import RunOutput, write_run
-
-MAX_KEYWORDS = 40  # per objective, for the mock Analyst only
 
 
 @dataclass
@@ -113,17 +110,9 @@ class ServiceContext:
         manifest = self.manifest(lesson_id)
         if manifest is None:
             return None
-        chunks = self.backends.tables().lesson_chunks(lesson_id)
-        rows = [{"chunk_id": c.chunk_id, "text": c.text, "lesson_id": lesson_id} for c in chunks]
-        objectives = []
-        for seg in manifest.segments:
-            words = content_words(seg.objective)
-            words += [w for c in chunks if c.page_id in seg.slides for w in content_words(c.text)]
-            keywords = list(dict.fromkeys(words))[:MAX_KEYWORDS]
-            objectives.append(
-                {"objective_id": seg.segment_id, "title": seg.objective, "keywords": keywords}
-            )
-        content = Content(lesson_id, objectives, rows, manifest)
+        content = lesson_content(
+            lesson_id, manifest, self.backends.tables().lesson_chunks(lesson_id)
+        )
         with self.lock:
             self._live[lesson_id] = content
         return content

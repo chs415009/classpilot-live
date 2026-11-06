@@ -49,12 +49,12 @@ person before class. Automatic quality checks replace human review (see section 
 | Front end | Sai | Upload page, slide playback, TTS, polls, student phone UI |
 | Live backend | Sai | WebSocket, Redis, live state, poll counts |
 | Data pipeline | Yaksha | Bronze / Silver / Gold tables, dbt models, trace loading |
-| Prep service + agents | Han-Sheng | Upload API, parsing, content generation, quality checks, live Q&A and poll-rule endpoints, report endpoint, trace records |
+| Prep service + agents | Han-Sheng | Upload API, parsing, content generation, quality checks, live Q&A and poll-rule endpoints, trace records and decision log, dev report |
 
 The prep service is a separate service from the live backend. It also serves the two
-live endpoints (student question, poll result) and the report endpoint that Sai's
-backend calls. **[team]** The manifest format (the team's structure), the endpoint
-shapes, and the trace fields must be agreed with Sai and Yaksha.
+live endpoints (student question, poll result) that Sai's backend calls. **[team]**
+The manifest format (the team's structure), the endpoint shapes, and the trace fields
+must be agreed with Sai and Yaksha.
 
 ---
 
@@ -178,8 +178,9 @@ question -> Question Analyst -> retrieval (Cortex Search) -> Grounded Responder
 **Answer:** the student sees the answer and which source pages it came from.
 
 **Escalate:** the student sees a message that the question was saved for the professor.
-Escalated questions appear in the post-class report. Reasons: out of scope,
-assignment-like, low confidence, unsupported claims, or an LLM error / timeout.
+Escalated questions are stored in the agent's decision log for the post-class report
+(deferred, section 7). Reasons: out of scope, assignment-like, low confidence,
+unsupported claims, or an LLM error / timeout.
 
 Expected wait: a few seconds (v1 measured roughly 4–8 seconds for answered questions).
 The phone shows a waiting state.
@@ -219,11 +220,12 @@ automatically.
      option has no explanation; if it triggers in class, the correct option is only
      revealed (user decision, Stage 9: in Stage 7 this rule dropped every poll).
 4. Every retry and fallback is recorded in the manifest (a status per item; the
-   report counts them) and shown in the post-class report. Prep runs are not written to
-   the analytics data model.
+   statuses are the data for a quality summary). Prep runs are not written to the
+   analytics data model.
 
-There is no separate report after preprocessing. Prep quality results appear only in the
-post-class report.
+During development, the dev report (STAGES Stage 10) shows every generated item, its
+status, and the Guardian's decisions. For the professor, prep quality belongs in the
+post-class report (deferred, section 7).
 
 ### 6.2 During class (student answers)
 
@@ -240,11 +242,16 @@ post-class report.
   retrieved chunk, each Guardian claim, and the poll evidence. These traces are the only
   source of the team's analytics model. **[team]** (field names with Yaksha)
 - Every live decision is also stored with its text (question, answer, sources) in the
-  agent's decision log, which the report reads.
+  agent's decision log (the data for the post-class report).
 
 ---
 
 ## 7. Post-class report
+
+**Status: deferred (user decision 2026-11-06).** Not built for now. Who builds it, and
+from which tables (likely the pipeline's Gold tables, after all prep and live data is
+collected), is decided later. The agent side keeps its trace, decision log, and
+manifest statuses complete so the data exists. The contents below are the intent.
 
 One report for the professor, produced after the session. The live backend calls the
 report endpoint when the session ends; a CLI command does the same. The report is an

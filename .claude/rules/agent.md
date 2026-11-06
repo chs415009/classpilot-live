@@ -29,10 +29,11 @@ ClassPilot Live runs a full class session when the professor is unavailable. It 
 |---|---|
 | Front end, live backend (WebSocket, Redis, TTS playback, polls) | Sai |
 | Data pipeline (Snowflake star schema, dbt) | Yaksha |
-| **Prep service, parse layer, generators, live Q&A and poll endpoints, trace, report (this file)** | Han-Sheng |
+| **Prep service, parse layer, generators, live Q&A and poll endpoints, trace, dev report (this file)** | Han-Sheng |
 
-The professor does two things: upload materials, and read the post-class report. Nothing
-generated is reviewed by a person before class; automatic checks replace review.
+The professor does two things: upload materials, and read the post-class report
+(deferred: BEHAVIOR 7). Nothing generated is reviewed by a person before class;
+automatic checks replace review.
 
 Source of truth:
 - Behavior: `docs/v2/CLASSPILOT_BEHAVIOR.md`
@@ -46,13 +47,15 @@ Where v1 and v2 conflict, v2 wins. Where the v2 docs are unclear, ask; do not gu
 ## Architecture (summary)
 
 ```
-PREP (before class)                       LIVE (in class)                     REPORT
+PREP (before class)                       LIVE (in class)                     REPORT (deferred)
 upload -> convert (local) -> stage ->     question -> Analyst -> retrieval     decision log
 parse (AI_PARSE_DOCUMENT; vision only     -> Responder -> Guardian ->          + traces + poll
 for image pages) -> chunks ->             validator (rule) -> answer/escalate  evidence +
 LESSON_CHUNKS_V2 -> search service ->     poll result -> rule (code) ->        manifest status
 generate + Guardian check (DSPy) ->       explain (text + show_slide)/reveal   -> HTML report
 manifest
+
+DEV REPORT (Stage 10): lesson folder -> prep run + fixed test questions -> HTML
 ```
 
 - LangGraph controls the question flow; DSPy modules are the LLM nodes (Analyst,
@@ -60,8 +63,10 @@ manifest
   ExplanationWriter). The poll path is a plain function, no LLM.
 - Snowflake Cortex provides the LLM, parsing, and Cortex Search. All Snowflake code sits
   behind adapters; everything runs offline in mock mode.
-- One FastAPI service: prep endpoints, live endpoints (question, poll result), report
-  endpoint. Shapes are decided by the agent side and recorded in `interface_questions.md`.
+- One FastAPI service: prep endpoints and live endpoints (question, poll result).
+  Shapes are decided by the agent side and recorded in `interface_questions.md`.
+- Dev report (Stage 10): `cli dev <lesson_id>` preps a lesson folder, runs its fixed
+  test questions, and writes static HTML. The post-class report is deferred.
 
 ## Hard rules
 
@@ -95,7 +100,8 @@ manifest
 ## Scope
 
 In scope: prep service (upload, parse, chunk, generate, check, manifest), live Q&A and
-poll-rule endpoints, trace records and decision log, post-class report.
+poll-rule endpoints, trace records and decision log, the dev report (Stage 10). The
+post-class report is deferred (owner and source decided later).
 
 Out of scope for the agent part (other parts own them): front end, Redis/WebSocket, TTS, dbt
 models. Out of scope for everyone for now: deployment, auth, multi-user
@@ -181,8 +187,9 @@ classpilot-live/
   content/ scenarios/ eval/  # fixture lessons + manifest (v1 lesson), scenarios, eval sets
   tests/
   compiled/                  # saved DSPy programs (from Stage 9)
-  materials/                 # gitignored: real course slides and references
-  outputs/                   # gitignored: traces, eval results, reports
+  materials/                 # gitignored: real course content; lessons/<id>/ holds
+                             #   slides/, refs/, test_questions.json (Stage 10)
+  outputs/                   # gitignored: traces, eval results, dev reports
 ```
 
 ## Stages
@@ -199,10 +206,10 @@ classpilot-live/
 | 7 | Live prep run on one deck |
 | 8 | Service API (prep and live endpoints) |
 | 9 | Eval expansion, DSPy compile, baseline comparison |
-| 10 | Post-class report |
+| 10 | Dev report (prep output and live test questions) |
 | 11 | Integration, rehearsal, handoff |
 
-**Current stage: Stage 10 (not started).** Stages 0-2 accepted 2026-11-04, Stages 3-8 on 2026-11-05, Stage 9 on 2026-11-06. Every stage ends at its exit gate: run the
+**Current stage: Stage 11 (not started).** Stages 0-2 accepted 2026-11-04, Stages 3-8 on 2026-11-05, Stages 9-10 on 2026-11-06. Every stage ends at its exit gate: run the
 automated checks, report the results, list what the user must review, and wait for
 approval before the next stage. Details are in `docs/v2/STAGES.md`.
 

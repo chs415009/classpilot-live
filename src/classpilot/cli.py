@@ -11,6 +11,8 @@ python -m classpilot.cli prep search --lesson l1 "why keep raw data"
 python -m classpilot.cli prep generate --lesson l1 --poll-count 3
 python -m classpilot.cli prep check --lesson l1
 python -m classpilot.cli prep run --backend mock --lesson l1 deck.pptx --ref reading.pdf
+python -m classpilot.cli dev info6205-l1 [--backend cortex] [--skip-prep]
+python -m classpilot.cli dev --list
 """
 
 import argparse
@@ -25,6 +27,7 @@ CONVERT_DIR = OUTPUT_DIR / "convert"
 PREP_TABLES_DIR = OUTPUT_DIR / "prep_tables"  # mock-mode tables
 PARSE_REPORT_DIR = OUTPUT_DIR / "parse"
 PREP_DIR = OUTPUT_DIR / "prep"  # <lesson>/manifest.json, generation_report.json, slides/
+DEV_DIR = OUTPUT_DIR / "dev"  # <lesson>/<run>/report.html, results.json; index.html
 
 
 def print_scenario(result: dict) -> None:
@@ -266,6 +269,175 @@ def run_prep_search(args) -> int:
     return 0
 
 
+def live_adapters(settings, content):
+    """The live LLM and retriever of a prepped lesson, as the service uses them."""
+    from classpilot.adapters.retrieval import CortexSearchRetriever, MockRetriever
+
+    if settings.backend == "cortex":
+        from classpilot.adapters.cortex_engine import make_cortex_lm
+        from classpilot.agents.compiled import live_agents
+
+        retriever = CortexSearchRetriever(settings, service_name=settings.objects.search_service)
+        return live_agents(settings, make_cortex_lm(settings)), retriever
+    from classpilot.adapters.llm import MockLLM
+
+    return MockLLM(), MockRetriever(content.chunks)
+
+
+def run_dev_list(args) -> int:
+    from classpilot.dev.lessons import LessonError, list_lessons, load_lesson
+
+    names = list_lessons(args.lessons_dir)
+    if not names:
+        print(f"no lesson folders in {args.lessons_dir}")
+    for name in names:
+        try:
+            folder = load_lesson(name, args.lessons_dir)
+        except LessonError as exc:
+            print(f"{name}: not usable ({exc})")
+            continue
+        has_q = "test_questions.json" if folder.questions_path.is_file() else "no test questions"
+        runs = sorted((DEV_DIR / name).glob("*/results.json"))
+        last = runs[-1].parent.name if runs else "never run"
+        files = ", ".join(p.name for p in folder.slides + folder.refs)
+        print(f"{name}: {files} · {has_q} · last run {last}")
+    return 0
+
+
+def run_dev(args) -> int:
+    """Demo entry (Stage 10): prep a lesson folder, run its test questions, write the
+    dev report. With --skip-prep the last prep output of the lesson is reused."""
+    import shutil
+    from datetime import UTC, datetime
+
+    from classpilot.content import lesson_content
+    from classpilot.contracts.manifest import load_manifest
+    from classpilot.dev.lessons import LessonError, load_lesson, load_questions
+    from classpilot.dev.live_run import run_questions
+    from classpilot.dev.report import render_report, summarize, write_index
+    from classpilot.live.question_graph import Deps
+    from classpilot.prep.convert import file_sha256
+    from classpilot.prep.outputs import check_and_review
+    from classpilot.trace import utc_now
+
+    try:
+        folder = load_lesson(args.lesson, args.lessons_dir)
+        qset = load_questions(folder.questions_path, folder.lesson_id)
+    except LessonError as exc:
+        print(f"error: {exc}")
+        return 1
+    lesson = folder.lesson_id
+    settings = prep_settings(argparse.Namespace(backend=args.backend, poll_count=folder.poll_count))
+    prep_dir = PREP_DIR / lesson
+    manifest_path = prep_dir / "manifest.json"
+    print(f"dev: lesson={lesson} backend={settings.backend} questions={len(qset.questions)}")
+
+    if args.skip_prep:
+        tables = prep_tables(settings)
+    else:
+        started = time.time()
+        deps = build_parse_deps(settings)
+        parse_args = argparse.Namespace(
+            lesson=lesson, files=folder.slides, ref=folder.refs, source=None
+        )
+        if not parse_step(parse_args, settings, deps):
+            return 1
+        generate_step(lesson, settings, deps.tables)  # False also when only checks fail
+        tables = deps.tables
+        if not manifest_path.is_file() or manifest_path.stat().st_mtime < started:
+            print("error: prep wrote no new manifest; see the errors above")
+            return 1
+    if not manifest_path.is_file():
+        print(f"error: no manifest for {lesson!r}; run without --skip-prep first")
+        return 1
+    gen_path = prep_dir / "generation_report.json"
+    gen = json.loads(gen_path.read_text()) if gen_path.is_file() else None
+    prep_backend = (gen or {}).get("backend")
+    if args.skip_prep and prep_backend and prep_backend != settings.backend:
+        # Its chunks live in the other backend's tables; checks would fail on all of them.
+        print(
+            f"error: the last prep of {lesson!r} ran on {prep_backend}; "
+            f"use --backend {prep_backend}, or run without --skip-prep"
+        )
+        return 1
+    try:
+        manifest = load_manifest(manifest_path)
+        poll_count = (gen or {}).get("poll_count", settings.prep.poll_count)
+        problems, _ = check_and_review(prep_dir, lesson, tables, poll_count)
+    except ValueError as exc:
+        print(f"error: manifest does not validate: {exc}")
+        return 1
+    chunks = tables.lesson_chunks(lesson)
+    content = lesson_content(lesson, manifest, chunks)
+    llm, retriever = live_adapters(settings, content)
+    # Tables keep every file ever added to the lesson; flag the ones the folder lacks.
+    folder_ids = {file_sha256(p) for p in folder.slides + folder.refs}
+    extra = [f.original_name for f in tables.lesson_files(lesson) if f.file_id not in folder_ids]
+    if extra:
+        print(f"warning: the lesson also holds files not in the folder: {', '.join(extra)}")
+
+    run_id = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
+    run_dir = DEV_DIR / lesson / run_id
+    run_dir.mkdir(parents=True, exist_ok=True)
+    if (prep_dir / "slides").is_dir():
+        shutil.copytree(prep_dir / "slides", run_dir / "slides", dirs_exist_ok=True)
+    for name in ("manifest.json", "generation_report.json", "review.md"):
+        if (prep_dir / name).is_file():
+            shutil.copy2(prep_dir / name, run_dir / name)
+
+    def show(row: dict) -> None:
+        mark = "OK   " if row["match"] else "CHECK"
+        reason = f" {row['escalation_reason']}" if row["escalation_reason"] else ""
+        print(f"  [{mark}] {row['question_id']} {row['category']}: {row['action']}{reason}")
+
+    start = time.perf_counter()
+    rows = run_questions(
+        qset,
+        Deps(settings, content, llm, retriever),
+        f"dev-{run_id}",
+        run_dir / "traces.jsonl",
+        run_dir / "decision_log.jsonl",
+        on_row=show,
+    )
+    live_seconds = round(time.perf_counter() - start, 1)
+    data = {
+        "run_id": run_id,
+        "lesson_id": lesson,
+        "title": folder.title,
+        "created_at": utc_now(),
+        "backend": settings.backend,
+        "files": {
+            "slides": [p.name for p in folder.slides],
+            "refs": [p.name for p in folder.refs],
+        },
+        "prep": {
+            "ran": not args.skip_prep,
+            "model": (settings.prep.model or settings.llm.model)
+            if (gen or {}).get("backend") == "cortex"
+            else "mock",
+            "manifest": manifest.model_dump(mode="json"),
+            "generation_report": gen,
+            "check_problems": problems,
+            "extra_files": extra,
+        },
+        "live": {
+            "seconds": live_seconds,
+            "prompt_versions": sorted({v for r in rows for v in r["prompt_versions"]}),
+            "models": sorted({m for r in rows for m in r["models"]}),
+            "rows": rows,
+        },
+        "chunks": {c.chunk_id: c.text for c in chunks},
+    }
+    (run_dir / "results.json").write_text(json.dumps(data, indent=2, ensure_ascii=False))
+    (run_dir / "report.html").write_text(render_report(data))
+    index = write_index(DEV_DIR)
+    q = summarize(data)["questions"]
+    print(f"questions: {q['match']}/{q['total']} as expected, {q['llm_calls']} LLM calls")
+    print(f"wrote {run_dir / 'report.html'}")
+    print(f"index {index}")
+    return 0
+
+
 def run_guardian_eval_file(path: Path | None, overrides: dict | None) -> None:
     result = run_guardian_eval(path, overrides)
     tag = result["backend"] if path is None else f"{path.stem}_{result['backend']}"
@@ -479,7 +651,26 @@ def main(argv: list[str] | None = None) -> None:
     search_cmd.add_argument("queries", nargs="+")
     search_cmd.add_argument("--top-k", type=int, default=3)
 
+    from classpilot.dev.lessons import LESSONS_DIR
+
+    dev_cmd = sub.add_parser(
+        "dev", help="demo entry: prep a lesson folder, run its test questions, write the dev report"
+    )
+    dev_cmd.add_argument("lesson", nargs="?", help="folder name under materials/lessons/")
+    dev_cmd.add_argument("--list", action="store_true", help="list the lesson folders")
+    dev_cmd.add_argument("--backend", choices=["mock", "cortex"], help="overrides BACKEND")
+    dev_cmd.add_argument(
+        "--skip-prep", action="store_true", help="reuse the last prep output; questions only"
+    )
+    dev_cmd.add_argument("--lessons-dir", type=Path, default=LESSONS_DIR)
+
     args = parser.parse_args(argv)
+    if args.command == "dev":
+        if args.list:
+            raise SystemExit(run_dev_list(args))
+        if not args.lesson:
+            parser.error("dev needs a lesson (or --list)")
+        raise SystemExit(run_dev(args))
     if args.command == "compile":
         defaults = {
             "prep": (["script_writer", "explanation_writer"], "eval/prep_train.json"),

@@ -433,3 +433,40 @@ is no longer updated)
   the default; the Stage 9 cost reading (`sql/probes/stage9_cost_reading.sql`).
 - 2026-11-06 [decision] User: compiled programs are the default (`live-qa-v1`,
   `prep-writers-v5` in `config/settings.yaml`); tests use code defaults (uncompiled).
+- 2026-11-06 [result] Stage 9 cost (ACCOUNT_USAGE, `sql/probes/stage9_cost_reading.sql`,
+  read 2026-11-06): `CLASSPILOT_WH` 0.1026 + 0.4603 + 0.5132 + 0.1524 (04:00-07:00 UTC
+  hours) = 1.23 credits, about 4x Stage 7 for about 780 calls. The AI-function and
+  Cortex Search queries returned no rows yet (ACCOUNT_USAGE lag); at the Stage 7 rate
+  (0.00065 per prep call) AI cost would be about 0.5 credits, rough, since the Sonnet and
+  Haiku Guardian runs cost more per call. Warehouse time is still the largest item.
+
+## Stage 10: Dev report (prep output and live test questions) — accepted 2026-11-06
+
+- 2026-11-06 [decision] User: the post-class report is deferred (owner and source
+  tables, likely Gold, decided later); the agent side keeps trace, decision log, and
+  manifest statuses complete. Stage 10 is a dev report instead: `cli dev <lesson>` preps
+  a lesson folder (`materials/lessons/<id>/`) and runs its fixed, hand-written test
+  questions (4 categories × 3); static HTML, large blocks collapsed; no generated
+  questions, no poll simulation, no endpoint. Q-20 marked deferred.
+- 2026-11-06 [decision] User: test questions are fixed and hand-written per lesson
+  (`materials/lessons/<id>/test_questions.json`); no assignment category (4 × 3 = 12 for
+  L1); `partial` escalates when a full answer needs facts the materials never state
+  (tq-09 "cycles"); course logistics count as out of scope.
+- 2026-11-06 [finding] Prep tables keep every file ever added to a lesson (no removal),
+  so a lesson folder that loses a file still generates from it. `cli dev` warns and the
+  report shows a banner; no table delete was added.
+- 2026-11-06 [change] `generation_report.json` now records the prep program id
+  (`prompt_version`). Live Content for a prepped lesson is built by
+  `content.lesson_content` (shared by the service and `cli dev`).
+- 2026-11-06 [result] L1 dev report on Cortex (`dev info6205-l1 --skip-prep`, Stage 9
+  prep, live-qa-v1, mistral-large3; 24 LLM calls, 59 s): 7/12 as expected, 0 answered
+  that should escalate. To check: tq-02 polymorphism and tq-08 time complexity (Analyst
+  too strict: out_of_scope from the objective titles, as dv-10; tq-08 should pass the
+  Analyst and escalate unsupported or low_confidence), tq-04/tq-06 (live Guardian blocks
+  a direct inference; the word rescue does not cover conclusions), tq-05 (Guardian
+  timeout at 10 s). Open for later tuning; labels unchanged.
+- 2026-11-06 [decision] User: out_of_scope (and assignment_like) come only from the
+  Analyst; once it passes a question, an escalation is unsupported, low_confidence, or
+  llm_error. The `partial` category tests exactly that path.
+- 2026-11-06 [decision] User accepted Stage 10. Later: a full L1 run (prep + questions,
+  about 155 calls) once things are stable.

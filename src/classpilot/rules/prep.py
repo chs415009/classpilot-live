@@ -22,6 +22,7 @@ from classpilot.contracts.prep import (
     SegmenterOutput,
 )
 from classpilot.prep.tts import tts_issues
+from classpilot.text import content_words
 
 
 def parse_output[M: BaseModel](model: type[M], raw: dict | None) -> M | None:
@@ -43,13 +44,49 @@ def _citation_problems(citations: list[str], allowed: set[str], required: bool) 
     return problems
 
 
+# TTS reads these as a pause; generated prose may use them (Stage 9: a semicolon failed
+# otherwise good scripts and explanations). Slide-text cleaning still replaces them.
+SPOKEN_PUNCTUATION = {"semicolon"}
+
+
 def _tts_problems(what: str, text: str) -> list[str]:
-    issues = tts_issues(text)
+    issues = [i for i in tts_issues(text) if i not in SPOKEN_PUNCTUATION]
     if not issues:
         return []
     return [
         f"The {what} is read aloud: no Markdown, backticks, or code symbols "
         f"(found: {', '.join(issues)}). Spell code and symbols out in words."
+    ]
+
+
+# Stage 7/9: the writers keep adding comparisons of their own ("like a stack of plates",
+# "think of a menu"). A comparison whose words are not in the chunks goes back to the
+# writer as a structure problem, before the Guardian.
+COMPARISON = re.compile(
+    r"\b(?:just like|like|imagine|think of|picture|similar to|works the way)\s+"
+    r"((?:[A-Za-z'’-]+\s+){0,4}[A-Za-z'’-]+)",
+    re.IGNORECASE,
+)
+
+
+def own_comparisons(text: str, chunk_texts: list[str]) -> list[str]:
+    """Comparisons in `text` with a content word that no chunk has."""
+    vocabulary = set(content_words(" ".join(chunk_texts)))
+    found = []
+    for match in COMPARISON.finditer(text):
+        words = content_words(match.group(1))
+        if words and any(w not in vocabulary for w in words):
+            found.append(match.group(0).strip())
+    return found
+
+
+def _comparison_problems(text: str, chunk_texts: list[str] | None) -> list[str]:
+    if chunk_texts is None:
+        return []
+    return [
+        f"Remove the comparison {c!r}: it is not in the chunks. Use only examples and "
+        "analogies the chunks contain."
+        for c in own_comparisons(text, chunk_texts)
     ]
 
 
@@ -81,9 +118,12 @@ def segmenter_problems(out: SegmenterOutput, slide_ids: list[str]) -> list[str]:
     return problems
 
 
-def script_problems(out: ScriptOutput, allowed_chunks: set[str]) -> list[str]:
+def script_problems(
+    out: ScriptOutput, allowed_chunks: set[str], chunk_texts: list[str] | None = None
+) -> list[str]:
     problems = [] if out.script.strip() else ["The script is empty."]
     problems += _tts_problems("script", out.script)
+    problems += _comparison_problems(out.script, chunk_texts)
     return problems + _citation_problems(out.citations, allowed_chunks, required=False)
 
 
@@ -127,10 +167,13 @@ def explanation_problems(
     allowed_chunks: set[str],
     chunk_slide: dict[str, str | None],
     slide_ids: set[str],
+    chunk_texts: list[str] | None = None,
 ) -> list[str]:
-    """`chunk_slide` maps a chunk id to its slide id (None for reference pages)."""
+    """`chunk_slide` maps a chunk id to its slide id (None for reference pages);
+    `chunk_texts` (the writer's chunks) turns on the own-comparison check."""
     problems = [] if out.text.strip() else ["The explanation text is empty."]
     problems += _tts_problems("explanation", out.text)
+    problems += _comparison_problems(out.text, chunk_texts)
     problems += _citation_problems(out.citations, allowed_chunks, required=True)
     cited_slides = {chunk_slide.get(c) for c in out.citations} - {None}
     if out.show_slide not in slide_ids:

@@ -413,7 +413,7 @@ class Generator:
             out = parse_output(ScriptOutput, raw)
             if out is None:
                 return None, Attempt("structure", ["The output did not match the schema."])
-            problems = script_problems(out, allowed)
+            problems = script_problems(out, allowed, [c["text"] for c in chunks])
             if problems:
                 return None, Attempt("structure", problems)
             attempt = self.guardian(
@@ -614,7 +614,9 @@ class Generator:
             out = parse_output(ExplanationOutput, raw)
             if out is None:
                 return None, Attempt("structure", ["The output did not match the schema."])
-            problems = explanation_problems(out, allowed, chunk_slide, slide_ids)
+            problems = explanation_problems(
+                out, allowed, chunk_slide, slide_ids, [c["text"] for c in chunks]
+            )
             if problems:
                 return None, Attempt("structure", problems)
             attempt = self.guardian(

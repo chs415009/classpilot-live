@@ -1,0 +1,244 @@
+{
+  "program_id": "prep-writers-v1",
+  "created_at": "2026-11-06T05:50:10Z",
+  "dspy_version": "3.4.1",
+  "modules": {
+    "script_writer": {
+      "traces": [],
+      "train": [],
+      "demos": [
+        {
+          "augmented": true,
+          "objective": "Recognize how data is organized in everyday situations",
+          "slide": "syn-s02: slide 2 of 7; slide 2 of 3 in seg-01",
+          "chunks": "[syn-s02-c1] (syn-s02) Outline | - Organizing data | - Object basics\n[syn-p01-c1] (reference) People organize information all the time so it is quick to use. A music playlist keeps songs in a chosen order. People waiting at a bus stop board in the order they arrived. The undo button in a text editor removes the most recent change first.",
+          "feedback": "(none)",
+          "script": "Let’s start with how we organize things every day. A music playlist keeps songs in the order you pick, so you can play them fast. People at a bus stop get on in the same order they arrived. And when you hit undo in a text editor, it takes away the last change first. All of these are ways we arrange information so it’s easy to use.",
+          "citations": [
+            "syn-p01-c1"
+          ]
+        },
+        {
+          "augmented": true,
+          "objective": "Explain encapsulation and access control in a class",
+          "slide": "syn-s07: slide 7 of 7; slide 1 of 1 in seg-05",
+          "chunks": "[syn-s07-c1] (syn-s07) Encapsulation | - Keep data and methods together | - Hide the data inside the class | - Use it through public methods\n[syn-p05-c1] (reference) Encapsulation puts an object's data and the methods that use that data together in one class, and keeps the data from being changed directly from outside. In Java the fields are usually declared private, and other code works with the object through public methods.\n[syn-p05-c3] (reference) A vending machine is a good picture of encapsulation. Buyers use only the buttons and the coin slot. The coin counter and the motors stay inside the case, and the owner can replace them without changing how buyers use the machine.",
+          "feedback": "(none)",
+          "script": "Okay, so encapsulation is like putting a fence around an object's data and the code that works with it. This keeps the data safe inside the class, so nothing outside can change it directly. Instead, other code has to use public methods—kind of like how you can't reach into a vending machine to grab snacks, but you can press buttons to get what you want. The machine's inner parts stay hidden, just like the private fields in a class.",
+          "citations": [
+            "syn-s07-c1",
+            "syn-p05-c1",
+            "syn-p05-c3"
+          ]
+        }
+      ],
+      "signature": {
+        "instructions": "You write what the class assistant says aloud while one slide is on screen.\nThe professor is not in the room; a text-to-speech voice reads your script.\n- Teach this slide's content in 2 to 5 short spoken sentences, in service of the\n  segment objective.\n- Use only what the chunks given state. You may say it in simpler words, and you may\n  use examples and analogies that the chunks contain (the reference chunks often\n  have them). Do not add facts, examples, analogies, or explanations of your own,\n  and say nothing about what later lessons or the rest of the course cover.\n  Cite the ids of the chunks you used.\n- If the slide only lists items, name them and say what they have in common, using\n  what the chunks say.\n- You may add a short transition (for example \"Next, let's look at how data moves\")\n  that states no facts.\n- Plain spoken English only: no Markdown, bullets, backticks, or code. Spell out\n  code and symbols in words (say \"order id\" for order_id and \"dot s q l\" for .sql),\n  and describe what code does instead of reading it out.\n- If feedback is given, your previous script had these problems; fix all of them.",
+        "fields": [
+          {
+            "prefix": "Objective:",
+            "description": "the objective of the segment this slide is in"
+          },
+          {
+            "prefix": "Slide:",
+            "description": "the slide id and its position in the deck and segment"
+          },
+          {
+            "prefix": "Chunks:",
+            "description": "lesson chunks, one per line as '[<chunk_id>] (<slide id> or reference) <text>'"
+          },
+          {
+            "prefix": "Feedback:",
+            "description": "problems with your previous answer that you must fix, or '(none)'"
+          },
+          {
+            "prefix": "Script:",
+            "description": "${script}"
+          },
+          {
+            "prefix": "Citations:",
+            "description": "chunk ids the script relies on"
+          }
+        ]
+      },
+      "lm": null
+    },
+    "explanation_writer": {
+      "traces": [],
+      "train": [],
+      "demos": [
+        {
+          "augmented": true,
+          "question": "Which collection does not allow duplicate items?",
+          "options": "A: Bag\nB: Set\nC: List\nD: Stack",
+          "correct_option": "B",
+          "wrong_option": "A",
+          "misconception": "Bag rejects duplicates: Believes a bag keeps only one copy of each item.",
+          "chunks": "[syn-s05-c1] (syn-s05) Collections | - Bag | - Set | - List | - Stack | - Queue | - Map\n[syn-p03-c2] (reference) A bag holds items in no particular order and allows duplicates. A set holds items in no particular order and does not allow duplicates. A list keeps items in a sequence, and each item has a position.",
+          "feedback": "(none)",
+          "title": "When a collection allows duplicates",
+          "text": "A lot of you picked bag, thinking it rejects duplicates. But the lesson says a bag actually lets you add the same item more than once. The slide lists the collections, and only set is the one that keeps just one copy of each item. So bag is not the answer.",
+          "show_slide": "syn-s05",
+          "citations": [
+            "syn-s05-c1",
+            "syn-p03-c2"
+          ]
+        }
+      ],
+      "signature": {
+        "instructions": "Many students picked the same wrong option in a class poll. Write the short\nexplanation that the class assistant reads aloud while one slide is shown; after it,\nthe correct option is revealed.\n- Address the misconception behind the chosen option: say why it is wrong and what\n  the lesson says instead, in 2 to 4 short spoken sentences.\n- Use only what the chunks given state. You may say it in simpler words, and you may\n  use examples and analogies that the chunks contain. Do not add facts, examples,\n  analogies, or explanations of your own, and say nothing about what later lessons\n  or the rest of the course cover. Cite the ids of the chunks you used, including at\n  least one slide chunk.\n- To say why the option is wrong, use what the chunks state: a chunk that\n  contradicts it, a chunk that defines the idea the option really describes, or a\n  closed, complete list in a chunk that leaves it out.\n- show_slide is the slide id of one cited slide chunk that best shows the right idea.\n- Do not say the letter of the correct option; it is revealed after you.\n- Plain spoken English only: no Markdown, bullets, backticks, or code. Spell out\n  code and symbols in words (say \"order id\" for order_id and \"dot s q l\" for .sql),\n  and describe what code does instead of reading it out.\n- title names the idea in a few words (for the post-class report).\n- If feedback is given, your previous explanation had these problems; fix all of\n  them.",
+        "fields": [
+          {
+            "prefix": "Question:",
+            "description": "the poll question"
+          },
+          {
+            "prefix": "Options:",
+            "description": "the options, one per line as '<key>: <text>'"
+          },
+          {
+            "prefix": "Correct Option:",
+            "description": "key of the correct option"
+          },
+          {
+            "prefix": "Wrong Option:",
+            "description": "key of the wrong option the students picked"
+          },
+          {
+            "prefix": "Misconception:",
+            "description": "'<label>: <description>' of that option"
+          },
+          {
+            "prefix": "Chunks:",
+            "description": "lesson chunks, one per line as '[<chunk_id>] (<slide id> or reference) <text>'"
+          },
+          {
+            "prefix": "Feedback:",
+            "description": "problems with your previous answer that you must fix, or '(none)'"
+          },
+          {
+            "prefix": "Title:",
+            "description": "${title}"
+          },
+          {
+            "prefix": "Text:",
+            "description": "${text}"
+          },
+          {
+            "prefix": "Show Slide:",
+            "description": "slide id of a cited slide chunk"
+          },
+          {
+            "prefix": "Citations:",
+            "description": "chunk ids the explanation relies on"
+          }
+        ]
+      },
+      "lm": null
+    }
+  },
+  "meta": {
+    "trainset": "prep_train.json",
+    "metric": "structure check + uncompiled prep Guardian + Guardian rule (quotes)",
+    "optimizer": "BootstrapFewShot",
+    "max_bootstrapped_demos": 2,
+    "model": "mistral-large3",
+    "tried": [
+      {
+        "task": "script_writer",
+        "item": "syn-s01",
+        "problems": [
+          "Not supported by the cited chunks: 'A music playlist keeps songs in a specific order so you can find and play them easily.'",
+          "Not supported by the cited chunks: 'When people line up at a bus stop, they board in the order they arrived—first come, first served.'",
+          "Not supported by the cited chunks: 'The undo button removes the most recent change first, like peeling back layers.'",
+          "Not supported by the cited chunks: 'All these examples show how organizing data helps us use it quickly and efficiently.'"
+        ]
+      },
+      {
+        "task": "script_writer",
+        "item": "syn-s02",
+        "problems": []
+      },
+      {
+        "task": "script_writer",
+        "item": "syn-s03",
+        "problems": [
+          "The quote for 'You can play songs without searching.' is not in the cited chunks.",
+          "Not supported by the cited chunks: 'This is just like a line of data.'",
+          "Not supported by the cited chunks: 'A family tree shows how relatives connect across generations.'",
+          "Not supported by the cited chunks: 'This is like links between pieces of data.'"
+        ]
+      },
+      {
+        "task": "script_writer",
+        "item": "syn-s04",
+        "problems": [
+          "Not supported by the cited chunks: 'An ADT is like a recipe that tells you what you can do with the data—like add, remove, or check if something is there.'",
+          "Not supported by the cited chunks: 'A data structure is the actual way the data is organized and stored in a program, like using an array or a linked list.'",
+          "Not supported by the cited chunks: 'The ADT is the idea, and the data structure is the real thing that makes it happen.'"
+        ]
+      },
+      {
+        "task": "script_writer",
+        "item": "syn-s05",
+        "problems": [
+          "Not supported by the cited chunks: 'A stack works like a stack of plates—you add and remove from the same end, so the last item in is the first out.'",
+          "Not supported by the cited chunks: 'A queue is like a line at a store—you add to the back and remove from the front, so the first item in is the first out.'"
+        ]
+      },
+      {
+        "task": "script_writer",
+        "item": "syn-s06",
+        "problems": [
+          "Not supported by the cited chunks: 'Encapsulation means bundling data and the code that works on it into one unit, like a class.'"
+        ]
+      },
+      {
+        "task": "script_writer",
+        "item": "syn-s07",
+        "problems": []
+      },
+      {
+        "task": "explanation_writer",
+        "item": "syn-e01",
+        "problems": [
+          "Guardian: explanation_guardian: malformed reply: Failed to parse field claims with value [\n    {\n        \"chunk_id\": \"syn-p02-c1\",\n        \"claim\": \"An abstract data type (ADT) is a description of a kind of data and the operations allowed on it.\",\n        \"quote\": \"An abstract data type (ADT) is a description of a kind of data and the operations allowed on it\"\n    },\n    {\n        \"chunk_id\": \"syn-p02-c1\",\n        \"claim\": \"An ADT says what the operations do.\",\n        \"quote\": \"An ADT says what the operations do\"\n    },\n    {\n        \"chunk_id\": \"syn-p02-c1\",\n        \"examples\": \"Examples of operations allowed on an ADT include add, remove, and contains.\",\n        \"quote\": \"for example add, remove, and contains\"\n    },\n    {\n        \"chunk_id\": \"syn-p02-c1\",\n        \"claim\": \"An ADT does not say how the data is kept in memory.\",\n        \"quote\": \"It does not say how the data is kept in memory\"\n    },\n    {\n        \"chunk_id\": \"syn-p02-c1\",\n        \"claim\": \"An ADT does not depend on a programming language.\",\n        \"quote\": \"it does not depend on a programming language\"\n    },\n    {\n        \"chunk_id\": \"syn-s04-c1\",\n        \"claim\": \"A data structure is an implementation in a language.\",\n        \"quote\": \"Data structure: an implementation in a language\"\n    },\n    {\n        \"chunk_id\": \"syn-s04-c1\",\n        \"claim\": \"An ADT says what, not how.\",\n        \"quote\": \"Says what, not how\"\n    },\n    {\n        \"chunk_id\": null,\n        \"claim\": \"That’s the job of a data structure, not the ADT.\",\n        \"quote\": null\n    }\n] from the LM response. Error message: 1 validation error for list[PrepClaim]\n2.claim\n  Field required [type=missing, input_value={'chunk_id': 'syn-p02-c1'..., remove, and contains'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.14/v/missing\n\nAdapter ChatAdapter failed to parse the LM response. \n\nLM Response: [[ ## claims ## ]]\n[\n    {\n        \"chunk_id\": \"syn-p02-c1\",\n        \"claim\": \"An abstract data type (ADT) is a description of a kind of data and the operations allowed on it.\",\n        \"quote\": \"An abstract data type (ADT) is a description of a kind of data and the operations allowed on it\"\n    },\n    {\n        \"chunk_id\": \"syn-p02-c1\",\n        \"claim\": \"An ADT says what the operations do.\",\n        \"quote\": \"An ADT says what the operations do\"\n    },\n    {\n        \"chunk_id\": \"syn-p02-c1\",\n        \"examples\": \"Examples of operations allowed on an ADT include add, remove, and contains.\",\n        \"quote\": \"for example add, remove, and contains\"\n    },\n    {\n        \"chunk_id\": \"syn-p02-c1\",\n        \"claim\": \"An ADT does not say how the data is kept in memory.\",\n        \"quote\": \"It does not say how the data is kept in memory\"\n    },\n    {\n        \"chunk_id\": \"syn-p02-c1\",\n        \"claim\": \"An ADT does not depend on a programming language.\",\n        \"quote\": \"it does not depend on a programming language\"\n    },\n    {\n        \"chunk_id\": \"syn-s04-c1\",\n        \"claim\": \"A data structure is an implementation in a language.\",\n        \"quote\": \"Data structure: an implementation in a language\"\n    },\n    {\n        \"chunk_id\": \"syn-s04-c1\",\n        \"claim\": \"An ADT says what, not how.\",\n        \"quote\": \"Says what, not how\"\n    },\n    {\n        \"chunk_id\": null,\n        \"claim\": \"That’s the job of a data structure, not the ADT.\",\n        \"quote\": null\n    }\n]\n\n[[ ## verdict ## ]]\nfail\n\n[[ ## reason ## ]]\nThe claim \"That’s the job of a data structure, not the ADT\" is not supported by any cited chunk.\n\n[[ ## completed ## ]] \n\nExpected to find output fields in the LM response: [claims, verdict, reason] \n\n"
+        ]
+      },
+      {
+        "task": "explanation_writer",
+        "item": "syn-e02",
+        "problems": [
+          "Not supported by the cited chunks: 'An abstract data type is like a menu that lists the dishes but not the recipe.'"
+        ]
+      },
+      {
+        "task": "explanation_writer",
+        "item": "syn-e03",
+        "problems": []
+      },
+      {
+        "task": "explanation_writer",
+        "item": "syn-e04",
+        "problems": [
+          "Not supported by the cited chunks: 'A stack works the opposite way of a line at a coffee shop (FIFO).'",
+          "Not supported by the cited chunks: 'The analogy of a stack of plates (grab the top one, not the bottom one) illustrates LIFO.'"
+        ]
+      },
+      {
+        "task": "explanation_writer",
+        "item": "syn-e05",
+        "problems": [
+          "Not supported by the cited chunks: 'Recursion is a different way to solve problems, not one of the three OOP ideas.'"
+        ]
+      },
+      {
+        "task": "explanation_writer",
+        "item": "syn-e06",
+        "problems": [
+          "The explanation is read aloud: no Markdown, backticks, or code symbols (found: semicolon). Spell code and symbols out in words."
+        ]
+      }
+    ]
+  }
+}

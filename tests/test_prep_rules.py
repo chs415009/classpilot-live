@@ -17,6 +17,7 @@ from classpilot.rules.prep import (
     check_prep_guardian,
     explanation_problems,
     manifest_poll_problems,
+    own_comparisons,
     placement_problems,
     poll_problems,
     script_problems,
@@ -363,3 +364,36 @@ def test_quote_from_an_uncited_chunk_does_not_count():
     texts = {**TEXTS, "c9": "Uncited words."}
     raw = quoted([("x", "c1", "Uncited words")])
     assert not check_prep_guardian(raw, ["c1"], require_claims=True, chunk_texts=texts).passed
+
+
+def test_a_semicolon_in_generated_prose_is_not_a_problem():
+    out = ScriptOutput(script="A stack is last in, first out; a queue is first in.", citations=[])
+    assert script_problems(out, set()) == []
+
+
+CAR = [
+    "Think of encapsulation like a car's dashboard. The engine is hidden.",
+    "A stack adds and removes items at the same end.",
+]
+
+
+@pytest.mark.parametrize(
+    ("text", "found"),
+    [
+        ("A stack works like a stack of plates.", ["like a stack of plates"]),
+        ("An ADT is like a menu that lists dishes.", ["like a menu that lists dishes"]),
+        ("Imagine a coffee shop line.", ["Imagine a coffee shop line"]),
+        ("Encapsulation is like a car's dashboard.", []),
+        ("Think of the engine.", []),
+        ("A queue works like a stack, but not at the same end.", []),
+        ("Operations like add and remove.", []),  # "adds and removes" is in a chunk
+    ],
+)
+def test_own_comparisons(text, found):
+    assert own_comparisons(text, CAR) == found
+
+
+def test_own_comparison_is_a_structure_problem_only_with_chunk_texts():
+    out = ScriptOutput(script="A stack works like a stack of plates.", citations=[])
+    assert script_problems(out, set()) == []
+    assert "stack of plates" in script_problems(out, set(), CAR)[0]

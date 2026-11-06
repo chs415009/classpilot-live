@@ -94,8 +94,13 @@ def prep_settings(args):
     overrides = {}
     if getattr(args, "backend", None):
         overrides["backend"] = args.backend
+    prep = {}
     if getattr(args, "poll_count", None) is not None:
-        overrides["prep"] = {"poll_count": args.poll_count}
+        prep["poll_count"] = args.poll_count
+    if getattr(args, "compiled_program", None):
+        prep["compiled_program"] = args.compiled_program
+    if prep:
+        overrides["prep"] = prep
     return load_settings(overrides=overrides)
 
 
@@ -412,6 +417,9 @@ def main(argv: list[str] | None = None) -> None:
         cmd.add_argument("--backend", choices=["mock", "cortex"], help="overrides BACKEND")
     for cmd in (run_cmd_p, generate_cmd):
         cmd.add_argument("--poll-count", type=int, help="overrides prep.poll_count")
+        cmd.add_argument(
+            "--compiled-program", help="compiled/<id>.json for the prep writers (Stage 9)"
+        )
     search_cmd = prep_sub.add_parser("search", help="search a lesson's chunks")
     search_cmd.add_argument("--lesson", required=True)
     search_cmd.add_argument("queries", nargs="+")

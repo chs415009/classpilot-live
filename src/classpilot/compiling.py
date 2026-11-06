@@ -115,14 +115,16 @@ def writer_check(item: WriterItem, raw: dict, guardian: LLMClient, timeout_s: fl
         out = parse_output(ScriptOutput, raw)
         if out is None:
             return ["The output did not match the schema."]
-        problems = script_problems(out, allowed)
+        problems = script_problems(out, allowed, [c["text"] for c in item.chunks])
         task, inputs, require = "script_guardian", {"script": out.script}, False
     else:
         out = parse_output(ExplanationOutput, raw)
         if out is None:
             return ["The output did not match the schema."]
         chunk_slide = {c["chunk_id"]: c["slide_id"] for c in item.chunks}
-        problems = explanation_problems(out, allowed, chunk_slide, item.slide_ids)
+        problems = explanation_problems(
+            out, allowed, chunk_slide, item.slide_ids, [c["text"] for c in item.chunks]
+        )
         task = "explanation_guardian"
         inputs = {
             "question": item.inputs["question"],

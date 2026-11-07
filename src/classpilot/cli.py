@@ -790,7 +790,7 @@ def main(argv: list[str] | None = None) -> None:
     sheet_cmd.add_argument("cases", type=Path)
 
     opt_cmd = sub.add_parser(
-        "optimize-guardian", help="Stage 12 DSPy experiment on the live Guardian (cortex)"
+        "optimize-guardian", help="Stage 12 DSPy experiment on a Guardian, live or prep (cortex)"
     )
     opt_cmd.add_argument("--method", choices=["eval", "rs", "gepa"], required=True)
     opt_cmd.add_argument(

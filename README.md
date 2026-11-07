@@ -11,8 +11,15 @@ This repo holds the prep service, parse layer, generators, live Q&A and poll end
 trace records, and a dev report for demos (LangGraph + DSPy + Snowflake Cortex). The front
 end, live backend, and data pipeline live elsewhere.
 
-**Status:** v2 in development, built stage by stage (`docs/v2/STAGES.md`). Results so far
-are exploratory (small, synthetic data).
+**Status:** v2 in development, built stage by stage (`docs/v2/STAGES.md`); Stage 12
+(agent quality) is accepted, and Stage 11 (integration and rehearsal with the team) is
+next. Results come from four real lessons (L1-L4, one run each), so they are
+exploratory.
+
+**Teammates start here:** the front end and live backend read
+`docs/agent/handoff/FRONTEND_HANDOFF.md`; the data pipeline reads
+`docs/agent/handoff/PIPELINE_HANDOFF.md`. Both run in mock mode with no Snowflake account
+(see Setup), and every field is recorded in `interface_questions.md` (Q-13 to Q-22).
 
 ## What works now
 
@@ -68,8 +75,8 @@ pytest
 ruff check . && ruff format --check .
 python -m classpilot.cli run-all                       # all scenarios, mock
 python -m classpilot.cli run scenarios/02_question_in_scope.json
-python -m classpilot.cli eval                          # labeled eval set
-python -m classpilot.cli guardian-eval                 # Guardian-only cases
+python -m classpilot.cli eval                          # labeled questions on the fixture lesson
+python -m classpilot.cli guardian-eval                 # labeled Guardian cases (fixture lesson)
 scripts/check_secrets.sh --history                     # before every push
 ```
 

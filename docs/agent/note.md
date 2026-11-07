@@ -698,4 +698,8 @@ is no longer updated)
 - 2026-11-07 [change] Retired the v1 Snowflake path: removed `sql/02`, `sql/03`,
   `scripts/load_chunks.py`, and `question.search_service`. The `content/` fixture lesson
   reads its chunks locally also with `BACKEND=cortex`; `smoke_test.py` and
-  `search_service.py` use `objects` (V2). The Snowflake objects are not dropped yet.
+  `search_service.py` use `objects` (V2). The user dropped `LESSON_SEARCH` and
+  `LESSON_CHUNKS` in Snowflake by hand.
+- 2026-11-07 [decision] Stage 12 accepted. Defaults: `live-qa-v5` and `prep-v6`. Next:
+  Stage 11 integration and rehearsal with the team. Added Stage 13 (optional, further
+  optimization; starts only when the user asks).

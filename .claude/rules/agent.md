@@ -209,8 +209,9 @@ classpilot-live/
 | 10 | Dev report (prep output and live test questions) |
 | 11 | Integration, rehearsal, handoff |
 | 12 | Agent quality (live Q&A, prep, DSPy, more lessons) |
+| 13 | Further optimization (optional, when the user starts it) |
 
-**Current stage: Stage 12 (at its exit gate; the rest of Stage 11 follows it).** Stages 0-2 accepted 2026-11-04, Stages 3-8 on 2026-11-05, Stages 9-10 on 2026-11-06. Every stage ends at its exit gate: run the
+**Current stage: Stage 11 (integration and rehearsal with the team; Stage 13 is optional and starts only when the user asks).** Stages 0-2 accepted 2026-11-04, Stages 3-8 on 2026-11-05, Stages 9-10 on 2026-11-06, Stage 12 on 2026-11-07. Every stage ends at its exit gate: run the
 automated checks, report the results, list what the user must review, and wait for
 approval before the next stage. Details are in `docs/v2/STAGES.md`.
 

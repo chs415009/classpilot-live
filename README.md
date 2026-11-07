@@ -255,26 +255,22 @@ Account-specific values go only into `.env` (copy `.env.example`); never commit 
    ```
 3. Run `sql/01_setup_objects.sql`: paste the public key (without BEGIN/END lines) and your
    login user name where marked.
-4. `cp .env.example .env` and fill in the account and the key path.
-5. Run `sql/02_lesson_chunks_table.sql`, then load the v1 sample chunks:
+4. `cp .env.example .env`, fill in the account and the key path, then
+   `pip install -e ".[dev,snowflake]"` and `python scripts/smoke_test.py`.
+5. Create the parse objects (stage, RAW_FILES, PARSED_PAGES, LESSON_CHUNKS_V2) and, after
+   the first lesson is parsed, the search service. SQL templates are filled from `.env`
+   and `config/settings.yaml`; the script prints the SQL and runs it only with `--execute`:
+
    ```bash
-   pip install -e ".[dev,snowflake]"
-   python scripts/load_chunks.py
+   python scripts/run_sql.py sql/04_parse_objects.sql              # review, then --execute
+   python -m classpilot.cli prep parse --backend cortex --lesson l1 deck.pptx --ref reading.pdf
+   python scripts/run_sql.py sql/05_search_service_v2.sql          # once, after the first chunks
+   python scripts/search_service.py status                         # also: resume | suspend
+   python scripts/smoke_test.py --search l1 "what is a stack"      # chunks per lesson + a query
    ```
-6. Run `sql/03_search_service.sql`, then `python scripts/smoke_test.py --search`.
 
-Then, for example: `BACKEND=cortex python -m classpilot.cli run-all` (v1 sample lesson).
-
-**v2 parse objects** (stage, RAW_FILES, PARSED_PAGES, LESSON_CHUNKS_V2, search service).
-SQL templates are filled from `.env` and `config/settings.yaml`; the script prints the
-SQL and runs it only with `--execute`:
-
-```bash
-python scripts/run_sql.py sql/04_parse_objects.sql              # review, then --execute
-python -m classpilot.cli prep parse --backend cortex --lesson l1 deck.pptx --ref reading.pdf
-python scripts/run_sql.py sql/05_search_service_v2.sql          # once, after the first chunks
-python scripts/search_service.py status                         # also: resume | suspend
-```
+With `BACKEND=cortex`, the fixture lesson in `content/` (scenarios, `cli eval`) uses the
+Cortex LLM but reads its chunks locally; only prepped lessons use Cortex Search.
 
 Suspend the search service when it is not in use. Cost readings:
 `sql/probes/cost_reading.sql`, run in Snowsight as ACCOUNTADMIN (ACCOUNT_USAGE views lag

@@ -6,14 +6,13 @@ python scripts/search_service.py suspend   # ALTER CORTEX SEARCH SERVICE <name> 
 
 Without INDEXING or SERVING, both layers are resumed or suspended (Snowflake docs,
 ALTER CORTEX SEARCH SERVICE). Needs OPERATE on the service. Only these three fixed
-statements can run; the service name is a choice, not free text.
+statements can run, on `objects.search_service` from config/settings.yaml.
 """
 
 import argparse
 
 from classpilot.adapters.snowflake import connect
-
-SERVICES = ["LESSON_SEARCH_V2", "LESSON_SEARCH"]  # v2 (objects.search_service), v1
+from classpilot.settings import load_settings
 
 
 def state(cursor, name: str) -> dict:
@@ -30,16 +29,16 @@ def state(cursor, name: str) -> dict:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("action", choices=["status", "resume", "suspend"])
-    parser.add_argument("--service", choices=SERVICES, default=SERVICES[0])
     args = parser.parse_args()
+    service = load_settings().objects.search_service
 
     conn = connect()
     try:
         cursor = conn.cursor()
         if args.action != "status":
-            cursor.execute(f"ALTER CORTEX SEARCH SERVICE {args.service} {args.action.upper()}")
+            cursor.execute(f"ALTER CORTEX SEARCH SERVICE {service} {args.action.upper()}")
             print(f"{args.action}: {cursor.fetchone()}")
-        print(state(cursor, args.service))
+        print(state(cursor, service))
     finally:
         conn.close()
 

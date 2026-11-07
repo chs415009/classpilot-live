@@ -47,8 +47,8 @@ class CortexSearchRetriever:
     unbounded and depend on the query.
 
     Every query is filtered on the LESSON_ID attribute (syntax checked in Stage 1).
-    The service is `question.search_service` unless `service_name` is given; v1
-    LESSON_SEARCH and v2 LESSON_SEARCH_V2 both return CHUNK_ID and CHUNK_TEXT.
+    The service is `objects.search_service` (over the prep chunks) unless
+    `service_name` is given.
     """
 
     def __init__(self, settings: Settings, service=None, service_name: str | None = None):
@@ -64,7 +64,7 @@ class CortexSearchRetriever:
                 Root(shared_connection())
                 .databases[os.environ["SNOWFLAKE_DATABASE"]]
                 .schemas[os.environ["SNOWFLAKE_SCHEMA"]]
-                .cortex_search_services[service_name or settings.question.search_service]
+                .cortex_search_services[service_name or settings.objects.search_service]
             )
         self.service = service
 

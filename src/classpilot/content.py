@@ -1,7 +1,7 @@
 """Load the fixture lessons from content/: chunks (mock retrieval) and the manifest.
 
-lesson_chunks.json is the v1 lesson (also loaded into the v1 LESSON_CHUNKS table for
-the Stage 3 parity check). other_lesson_chunks.json is a second lesson whose chunks
+lesson_chunks.json is the v1 lesson; it lives only here (mock retrieval, also with
+BACKEND=cortex), not in Snowflake. other_lesson_chunks.json is a second lesson whose chunks
 the lesson_id filter must keep out. Objective keywords are used by the mock only.
 """
 

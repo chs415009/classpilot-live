@@ -216,8 +216,9 @@ Implemented in Stage 5 (`prep/parse.py`, `adapters/parse.py`):
   reply leaves the page with its text (`+vision_failed`).
 - `PARSED_PAGES.PARSE_METHOD` = text source (`local_text` | `ai_parse_layout` |
   `local_text_fallback`) + `+vision` / `+vision_failed`.
-- Live Q&A keeps `question.search_service` (v1 `LESSON_SEARCH` for the `content/`
-  lesson); prep lessons are in `LESSON_SEARCH_V2`.
+- Live Q&A on prepped lessons uses `objects.search_service` (`LESSON_SEARCH_V2`). The
+  `content/` fixture lesson is not in Snowflake; it always reads its chunks locally
+  (since 2026-11-07).
 
 ### 4.3 Chunking
 
@@ -237,8 +238,8 @@ Implemented in Stage 5 (`prep/parse.py`, `adapters/parse.py`):
 - Load into `LESSON_CHUNKS_V2` (change tracking on) → the v2 search service refreshes.
   Add `lesson_id` as a filter column so one service serves many lessons.
   **[verify]** filter syntax and target lag for faster refresh after upload.
-- The v1 `LESSON_CHUNKS` / `LESSON_SEARCH` stay for the baseline comparison and are
-  suspended when not in use.
+- The v1 `LESSON_CHUNKS` / `LESSON_SEARCH` are retired (2026-11-07): their SQL, loader,
+  and setting are removed from the repo.
 - With hash reuse across lessons, a file's chunks are copied per lesson. Key =
   (`lesson_id`, `chunk_id`). The data is small, and the Cortex Search `lesson_id` filter
   stays simple.
@@ -593,8 +594,7 @@ Rough estimate: $160–460 total. Largest items: DSPy compiling and warehouse up
 | Demo / Search | < $20 |
 
 Controls: develop in mock mode; cheap model for iteration; DSPy cache on; small
-compiles first; resource monitor on the warehouse; suspend search services when idle
-(including the v1 `LESSON_SEARCH`); check `CORTEX_AI_FUNCTIONS_USAGE_HISTORY` and
+compiles first; resource monitor on the warehouse; suspend the search service when idle; check `CORTEX_AI_FUNCTIONS_USAGE_HISTORY` and
 `WAREHOUSE_METERING_HISTORY` after every live stage. Re-estimate after Stage 1 from
 real usage.
 

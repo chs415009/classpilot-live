@@ -181,7 +181,7 @@ classpilot-live/
   config/settings.yaml       # thresholds, parameters, model names (no account values)
   docs/v1/  docs/v2/         # v1 archive + results; v2 design and plan
   sql/                       # setup scripts; shown before they run
-  scripts/                   # smoke test, probes, check_secrets.sh
+  scripts/                   # smoke test, search service, SQL runner, check_secrets.sh
   src/classpilot/            # package; contracts/, rules/, live/ are in the ANALYSIS 2.6
                              #   layout, the rest moves there stage by stage
   content/ scenarios/ eval/  # fixture lessons + manifest (v1 lesson), scenarios, eval sets

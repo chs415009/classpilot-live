@@ -83,7 +83,7 @@ def set_deps(settings: Settings, qset: QuestionSet) -> Deps:
     if qset.retrieval == "search" and settings.backend == "cortex":
         from classpilot.adapters.retrieval import CortexSearchRetriever
 
-        retriever = CortexSearchRetriever(settings, service_name=settings.objects.search_service)
+        retriever = CortexSearchRetriever(settings)
     else:
         retriever = MockRetriever(qset.content.chunks)
     return Deps(settings, qset.content, llm, retriever)

@@ -12,7 +12,6 @@ poll:
 question:
   confidence_threshold: 0.70            # responder confidence below this -> escalate
   retrieval_top_k: 3
-  search_service: LESSON_SEARCH         # v1 fixture lesson; prep lessons: objects.search_service
   guardian_rescue_coverage: 0.8         # claim words in one retrieved chunk that pass a
                                         # claim the Guardian could not tie (Stage 9)
   guardian_timeout_seconds: 15          # Guardian's own timeout (Stage 12; others: llm.timeout_seconds)

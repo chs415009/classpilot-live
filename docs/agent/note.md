@@ -695,3 +695,7 @@ is no longer updated)
   `prep-v6`. Local `outputs/` keeps the 8 comparison runs (`dev/l1-l4`, prep `l<n>` and
   `l<n>.uncompiled`), parses and conversions of L1-L4, the v5 dev-set eval, and the
   Guardian baselines in `optimize/`.
+- 2026-11-07 [change] Retired the v1 Snowflake path: removed `sql/02`, `sql/03`,
+  `scripts/load_chunks.py`, and `question.search_service`. The `content/` fixture lesson
+  reads its chunks locally also with `BACKEND=cortex`; `smoke_test.py` and
+  `search_service.py` use `objects` (V2). The Snowflake objects are not dropped yet.

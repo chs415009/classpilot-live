@@ -22,9 +22,6 @@ class PollSettings(BaseModel):
 class QuestionSettings(BaseModel):
     confidence_threshold: float = 0.70
     retrieval_top_k: int = 3
-    # Cortex Search service for live Q&A. v1 LESSON_SEARCH serves the v1 fixture lesson
-    # in content/; lessons prepared by `prep parse` are in objects.search_service.
-    search_service: str = "LESSON_SEARCH"
     # Stage 9: a Guardian claim with no chunk passes if this share of its content words
     # is in one retrieved chunk (no extra negation); None turns the word check off.
     guardian_rescue_coverage: float | None = 0.8

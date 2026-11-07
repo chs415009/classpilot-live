@@ -61,5 +61,5 @@ def make_generate_deps(settings: Settings, material: LessonMaterial) -> Generate
         from classpilot.agents.compiled import prep_agents
 
         llm = prep_agents(settings, make_prep_lm(settings))
-        retriever = CortexSearchRetriever(settings, service_name=settings.objects.search_service)
+        retriever = CortexSearchRetriever(settings)
     return GenerateDeps(llm, retriever, settings.prep, settings.poll)

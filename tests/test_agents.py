@@ -105,7 +105,7 @@ def test_signature_output_fields_match_pydantic_model(task):
 
 
 @pytest.mark.parametrize("task", list(SIGNATURES))
-def test_signature_instructions_are_the_v1_text(task):
+def test_signature_instructions_keep_their_opening_line(task):
     signature, _ = SIGNATURES[task]
     first_line = {
         "analyst": "You help run a class session on this lesson.",

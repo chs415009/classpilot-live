@@ -52,7 +52,7 @@ def default_backends(settings: Settings, data_dir: Path) -> Backends:
         from classpilot.adapters.retrieval import CortexSearchRetriever, MockRetriever
 
         if settings.backend == "cortex":
-            return CortexSearchRetriever(settings, service_name=settings.objects.search_service)
+            return CortexSearchRetriever(settings)
         return MockRetriever(content.chunks)
 
     return Backends(

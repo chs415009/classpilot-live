@@ -263,7 +263,7 @@ def run_prep_search(args) -> int:
         ]
         retriever = MockRetriever(rows)
     else:
-        retriever = CortexSearchRetriever(settings, service_name=settings.objects.search_service)
+        retriever = CortexSearchRetriever(settings)
     for query in args.queries:
         print(f"query: {query}")
         for hit in retriever.search(query, args.top_k, args.lesson):
@@ -278,7 +278,7 @@ def live_adapters(settings, content):
     if settings.backend == "cortex":
         from classpilot.agents.compiled import cortex_live_agents
 
-        retriever = CortexSearchRetriever(settings, service_name=settings.objects.search_service)
+        retriever = CortexSearchRetriever(settings)
         return cortex_live_agents(settings), retriever
     from classpilot.adapters.llm import MockLLM
 

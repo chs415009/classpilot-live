@@ -302,10 +302,10 @@ def guardian_llms(settings: Settings, kinds: set[str]) -> dict[str, LLMClient]:
 
         live, prep = MockLLM(), MockPrepLLM()
     else:
-        from classpilot.adapters.cortex_engine import make_cortex_lm, make_prep_lm
-        from classpilot.agents.compiled import live_agents, prep_agents
+        from classpilot.adapters.cortex_engine import make_prep_lm
+        from classpilot.agents.compiled import cortex_live_agents, prep_agents
 
-        live = live_agents(settings, make_cortex_lm(settings)) if "live" in kinds else None
+        live = cortex_live_agents(settings) if "live" in kinds else None
         prep = prep_agents(settings, make_prep_lm(settings)) if kinds - {"live"} else None
     for kind in kinds:
         out[kind] = live if kind == "live" else prep
@@ -323,7 +323,11 @@ def run_case_eval(
     rows = []
     for case in case_set.cases:
         live = case.kind == "live"
-        timeout = settings.llm.timeout_seconds if live else settings.prep.llm_timeout_seconds
+        timeout = (
+            settings.question.guardian_timeout_seconds
+            if live
+            else settings.prep.llm_timeout_seconds
+        )
         rows.append(
             run_case(
                 case,
@@ -353,7 +357,7 @@ Differences in wording, transitions, content-free motivation sentences (at most 
 sentences that only describe the slide ("this slide lists the main topics") are not
 claims. The writer's own example or analogy passes if it fits an idea the chunks state.
 New knowledge and wrong facts fail, and so does true content found only in chunks not
-listed here. A live answer must also not give finished graded work. For polls, also set
+listed here. For polls, also set
 each wrong option in `shown_wrong` to true if the chunks show it is wrong (a closed,
 complete list in a chunk that leaves the option out counts; a list of examples does
 not), and `expected` to "pass" only if the question, the correct option, and every wrong

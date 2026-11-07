@@ -59,17 +59,17 @@ decision (a "run") writes one `run` record plus its children.
 |---|---|---|---|
 | `run` | FACT_PIPELINE_RUN | one decision | `path` (`question` \| `poll`), `lesson_id`, `input_ref` (event_id or poll_id), `segment_id`, `misconception_id`, `remediation_id` (poll explain only), `final_action` (`answer` \| `escalate` \| `explain` \| `reveal`), `escalation_reason`, `deciding_node`, `started_at`, `ended_at`, `latency_ms`, `llm_call_count`, `confidence`, `backend` (`mock` \| `cortex`) |
 | `node` | FACT_NODE_EXECUTION | one step of a run | `node_seq` (1-based), `node_name`, `status` (`pass` \| `block` \| `fail` \| `skip`), `latency_ms`, `llm_call_count` |
-| `llm_call` | FACT_LLM_CALL | one LLM call | `call_id`, `node_name`, `model`, `prompt_version` (compiled program id, e.g. `live-qa-v1`, or `uncompiled-v1`; feeds DIM_PROMPT), `latency_ms`, `retry_count`, `error_count` |
+| `llm_call` | FACT_LLM_CALL | one LLM call | `call_id`, `node_name`, `model`, `prompt_version` (compiled program id, e.g. `live-qa-v2`, or `uncompiled-v3`; feeds DIM_PROMPT), `latency_ms`, `retry_count` (since Stage 12: 1 when a malformed reply was asked again in the same node; the row then covers both calls), `error_count` |
 | `retrieval` | FACT_RETRIEVAL | one retrieved chunk | `rank` (1-based), `chunk_id`, `similarity_score`, `cited` (bool), `query_hash` |
 | `claim` | FACT_CLAIM_CHECK | one Guardian claim | `claim_seq`, `claim_hash`, `supporting_chunk_id` (null = none), `supported` (bool) |
 | `poll_evidence` | FACT_POLL_EVIDENCE | one option of one poll | `poll_id`, `option`, `response_count`, `is_correct`, `connected_students` |
 
 Values worth knowing:
-- Question path nodes: `analyst`, `retrieval`, `responder`, `guardian`, `validator`
-  (skipped nodes still get a row with `skip`). Poll path: `threshold_check`,
+- Question path nodes, in order (`node_seq`): `retrieval`, `analyst`, `responder`,
+  `guardian`, `validator` (skipped nodes still get a row with `skip`). Since Stage 12
+  retrieval runs first, also for questions the Analyst then blocks. Poll path: `threshold_check`,
   `decide_poll`, `explanation_lookup`; no LLM.
-- `escalation_reason`: `out_of_scope` and `assignment_like` come from the Analyst (the
-  first step); `low_confidence`, `unsupported`, `llm_error` come after it.
+- `escalation_reason`: `out_of_scope` comes from the Analyst (the first step); `low_confidence`, `unsupported`, `llm_error` come after it.
 - `deciding_node`: the first node that blocked or failed, else `validator` (question)
   or `decide_poll` (poll).
 - `similarity_score`: cosine from Cortex Search; word overlap in mock runs, where

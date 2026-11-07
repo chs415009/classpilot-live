@@ -5,6 +5,7 @@ non-empty list fails the attempt and goes back to the generator as its `feedback
 The LLM never decides: a Guardian "pass" next to an unsupported claim still fails.
 """
 
+import html
 import re
 from dataclasses import dataclass, field
 
@@ -180,7 +181,9 @@ _QUOTE_CHARS = str.maketrans({"\u2018": "'", "\u2019": "'", "\u201c": '"', "\u20
 
 def normalize_words(text: str) -> str:
     """Lower case, words only: punctuation, line breaks, and the ' | ' line joins of the
-    prompt do not count when a quote is matched against a chunk."""
+    prompt do not count when a quote is matched against a chunk. HTML entities are
+    decoded first (Stage 12: L2's reading has "$x &gt; 0$", the Guardian quoted "x > 0")."""
+    text = html.unescape(text)
     return " ".join(_NON_WORD.sub(" ", text.translate(_QUOTE_CHARS).lower()).split())
 
 

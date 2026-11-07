@@ -49,7 +49,13 @@ from classpilot.contracts.prep import (
 from classpilot.prep.chunking import clean_text
 from classpilot.prep.records import ParsedPage
 from classpilot.prep.tables import PrepTables
-from classpilot.prep.tts import clean_for_tts, strip_emphasis, strip_lines, template_lines
+from classpilot.prep.tts import (
+    clean_for_tts,
+    strip_boilerplate,
+    strip_lines,
+    template_lines,
+    tidy_generated,
+)
 from classpilot.rules.prep import (
     check_prep_guardian,
     explanation_problems,
@@ -161,7 +167,7 @@ class GenerationReport:
     poll_count: int
     llm_calls: int = 0
     items: list[ItemReport] = field(default_factory=list)
-    # Id of the prep program (compiled/<id>.json or "uncompiled-v1"); None for the mock.
+    # Id of the prep program (compiled/<id>.json or "uncompiled-v2"); None for the mock.
     prompt_version: str | None = None
 
     def statuses(self, prefix: str) -> list[Status]:
@@ -434,7 +440,7 @@ class Generator:
             out = parse_output(ScriptOutput, raw)
             if out is None:
                 return None, Attempt("structure", ["The output did not match the schema."])
-            out = out.model_copy(update={"script": strip_emphasis(out.script)})
+            out = out.model_copy(update={"script": tidy_generated(out.script)})
             problems = script_problems(out, allowed)
             if problems:
                 return None, Attempt("structure", problems)
@@ -458,13 +464,15 @@ class Generator:
         return out.script.strip(), status
 
     def fallback_script(self, page: ParsedPage) -> tuple[str, str]:
-        text = clean_for_tts(strip_lines(clean_text(page.text_layer), self.template))
+        text = clean_for_tts(
+            strip_boilerplate(strip_lines(clean_text(page.text_layer), self.template))
+        )
         if text:
             return text, "slide_text"
         vision = page.llm_description
         if vision is not None:
             described = vision.diagram_description if vision.has_visuals else ""
-            text = clean_for_tts(described.strip() or vision.slide_text)
+            text = clean_for_tts(strip_boilerplate(described.strip() or vision.slide_text))
             if text:
                 return text, "vision_description"
         return self.deps.prep.fallback_script, "fixed_sentence"
@@ -641,7 +649,7 @@ class Generator:
             out = parse_output(ExplanationOutput, raw)
             if out is None:
                 return None, Attempt("structure", ["The output did not match the schema."])
-            out = out.model_copy(update={"text": strip_emphasis(out.text)})
+            out = out.model_copy(update={"text": tidy_generated(out.text)})
             problems = explanation_problems(out, allowed, chunk_slide, slide_ids)
             if problems:
                 return None, Attempt("structure", problems)

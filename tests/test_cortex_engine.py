@@ -111,3 +111,28 @@ def test_flatten_keeps_system_and_roles():
 def test_needs_a_model():
     with pytest.raises(ValueError):
         make_cortex_lm(Settings(llm={"model": None}), connection=FakeConnection())
+
+
+def test_engines_with_different_timeouts_get_different_sessions(monkeypatch):
+    # Stage 12: the statement timeout is a session setting, so the live, Guardian, and
+    # prep engines must not share one connection.
+    from classpilot.adapters import snowflake
+    from classpilot.adapters.cortex_engine import make_prep_lm
+    from classpilot.agents.compiled import cortex_live_agents
+
+    asked = []
+
+    def fake_llm_connection(seconds):
+        asked.append(seconds)
+        return FakeConnection()
+
+    monkeypatch.setattr(snowflake, "llm_connection", fake_llm_connection)
+    settings = Settings(
+        llm={"model": "mistral-large3", "timeout_seconds": 10},
+        question={"guardian_timeout_seconds": 15},
+        prep={"llm_timeout_seconds": 60},
+    )
+    agents = cortex_live_agents(settings)
+    make_prep_lm(settings)
+    assert asked == [15, 10, 60]
+    assert agents.task_lms["guardian"].engine.connection is not agents.lm.engine.connection

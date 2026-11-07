@@ -20,8 +20,10 @@ from classpilot.agents.compiled import (
 from classpilot.agents.prep_signatures import PREP_SIGNATURES
 from classpilot.agents.program import DSPyAgents
 from classpilot.compiling import (
+    CompileLog,
     compile_live,
     compile_writer,
+    load_guardian_trainset,
     load_live_trainset,
     load_prep_trainset,
     responder_check,
@@ -110,11 +112,14 @@ LIVE = load_live_trainset()
 
 
 def test_live_trainset_puts_the_dev_failure_patterns_first():
-    assert [i.item_id for i in LIVE["analyst"][:2]] == ["tr-09", "tr-06"]
+    assert [i.item_id for i in LIVE["analyst"][:3]] == ["tr-09", "tr-17", "tr-12"]
     labels = {i.item_id: i.expected for i in LIVE["analyst"]}
-    assert labels["tr-12"] == "out_of_scope" and labels["tr-15"] == "assignment_like"
+    assert labels["tr-12"] == "out_of_scope"
     assert labels["tr-16"] == "in_scope"  # low_confidence is decided after the Analyst
     assert len(LIVE["responder"]) == 9 and all(i.chunks for i in LIVE["responder"])
+    # Stage 12: the Analyst sees the retrieved chunks, cut short.
+    assert all(i.inputs["chunks"] for i in LIVE["analyst"])
+    assert all(len(c["text"]) <= 600 for i in LIVE["analyst"] for c in i.inputs["chunks"])
 
 
 def test_analyst_compile_keeps_only_matching_categories():
@@ -136,3 +141,25 @@ def test_responder_check_runs_the_live_rules():
     assert responder_check(item, good, MockLLM(), 5, 0.7, 0.8) == []
     low = {**good, "confidence": 0.2}
     assert responder_check(item, low, MockLLM(), 5, 0.7, 0.8) == ["check_response: low_confidence"]
+
+
+# ---------- live Guardian (Stage 12) ----------
+
+
+def test_guardian_trainset_alternates_fail_and_pass():
+    items = load_guardian_trainset()
+    labels = [i.expected for i in items]
+    assert labels[:4] == ["fail", "pass", "fail", "pass"]
+    assert all(i.inputs["cited_chunks"] and i.chunks for i in items)
+
+
+def test_guardian_compile_keeps_only_outputs_that_match_the_label():
+    items = load_guardian_trainset()
+    # Every reply leaves its claim without a chunk -> code says fail: only "fail" items match.
+    reply = chat_reply(claims=[{"claim": "x", "chunk_id": None}], verdict="fail", reason="x")
+    log = CompileLog()
+    compiled = compile_live("guardian", items[:4], lm(FakeEngine(reply)), max_demos=2, log=log)
+    tried = {t["item"]: t["problems"] for t in log.tried}
+    assert tried[items[1].item_id] == ["verdict fail, label pass"]  # not a demo
+    assert tried[items[0].item_id] == []
+    assert len(compiled.demos) == 2 and all(d["verdict"] == "fail" for d in compiled.demos)

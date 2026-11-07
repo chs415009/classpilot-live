@@ -16,7 +16,7 @@
         }
       ],
       "signature": {
-        "instructions": "You help run a class session on this lesson.\nClassify the student question into exactly one category:\n- in_scope: about the lesson objectives below\n- out_of_scope: not about this lesson (logistics, other topics, personal requests)\n- assignment_like: asks for answers to graded work (assignments, homework, quizzes)",
+        "instructions": "You help run a class session on this lesson.\nClassify the student question into exactly one category:\n- in_scope: about the lesson objectives below\n- out_of_scope: not about this lesson (logistics, other topics, personal requests)",
         "fields": [
           {
             "prefix": "Objectives:",

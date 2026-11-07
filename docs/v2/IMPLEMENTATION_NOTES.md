@@ -15,7 +15,8 @@ agreement with Sai / Yaksha. The stage plan is in `STAGES.md`.
 
 ### Kept
 - LangGraph as the flow controller for Path B; rules make all final decisions.
-- Path B structure: Analyst → retrieval → Responder → Guardian → validator (3 agents fixed).
+- Path B structure: Analyst → retrieval → Responder → Guardian → validator (3 agents fixed);
+  retrieval before the Analyst since Stage 12.
 - `check_response` before the Guardian; Guardian skipped when escalation is certain.
 - Strict Guardian: claim list + `rules.check_guardian`.
 - Cortex adapters, key-pair auth on a service user, a Cortex Search service.
@@ -35,8 +36,8 @@ agreement with Sai / Yaksha. The stage plan is in `STAGES.md`.
   for Yaksha's star schema (section 6.3).
 
 ### Removed
-- Protected-question check and `protected_questions.json` (future work).
-  The Analyst still classifies `assignment_like`.
+- Protected-question check and `protected_questions.json`. The `assignment_like`
+  category and reason were removed too (Stage 12, user: no assignments in the system).
 - `misconception_map.json`, `remediations.json` as hand-written files;
   `remediation_limit` / `no_mapping` escalation reasons (Path A no longer escalates).
 - 2-agent mode and the `AGENT_MODE` toggle. v1 mode-2 numbers stay in `docs/v1/note_v1.md`
@@ -396,8 +397,8 @@ Rules:
 - Same graph as Stage 4, minus `protected_check`. Mode 3 only; `AGENT_MODE` removed.
 - Served through an HTTP endpoint that Sai's backend calls per question. **[team]** (Sai)
 - Answer goes only to the asking student (Sai's backend routes it).
-- No retry in class. Escalate reasons: `out_of_scope`, `assignment_like`,
-  `low_confidence`, `unsupported`, `llm_error`.
+- No retry in class. Escalate reasons: `out_of_scope`, `low_confidence`,
+  `unsupported`, `llm_error`.
 - Retrieval filtered by `lesson_id`.
 - Guardian (Stage 9, user decision): it sees every retrieved chunk, cited ones first, so
   true content the Responder forgot to cite is not a failure. `rules.check_guardian`
@@ -405,6 +406,13 @@ Rules:
   (0.8) of its content words are in one retrieved chunk and it adds no negation
   (`rules/support.py`). The bar: rewording and direct inferences from the materials
   pass; anything made up or beyond the syllabus escalates.
+- Stage 12: retrieval runs first and the Analyst sees the retrieved chunks
+  (`question.analyst_chunk_chars` each), so scope is judged from the materials, not
+  only from the objective titles. The Responder answers in 2-4 sentences. The Guardian
+  prompt states the bar (direct conclusions name the chunk they rest on) and runs with
+  its own timeout (`question.guardian_timeout_seconds`, 15 s, on its own Cortex
+  connection) capped by what is left of `question.deadline_seconds` (30 s), so the
+  answer still comes within about 30 s (Q-19).
 - Every decision is also written to the decision log with its text (question, answer,
   citations, escalation reason) for the report.
 
@@ -429,7 +437,7 @@ Values:
 - `FINAL_ACTION`: `explain` / `reveal` / `answer` / `escalate`.
 - `ESCALATION_REASON`: `remediation_limit` and `no_mapping` no longer occur.
 - `BATCH` = one class session (the report filters by it).
-- Prompt version = the id of the compiled DSPy program (or `uncompiled-v1`); it feeds
+- Prompt version = the id of the compiled DSPy program (or `uncompiled-v2` and `-v3` for the live prompts of Stage 12, `uncompiled-v1` before and for prep); it feeds
   `DIM_PROMPT`, which is SCD2.
 
 Decisions are also stored with their text in the decision log (section 6.2), which the
@@ -861,3 +869,14 @@ Stage 8 (service API, mock) decisions:
   decision (also after a restart); the agent never touches Redis or WebSocket.
   Pipeline: one zip per session (`GET /sessions/{id}/export`: traces, decision log,
   manifests); loading is theirs.
+- 2026-11-06 (user, Stage 12) No assignment concept in the system: the Analyst
+  classifies only in_scope / out_of_scope, the Guardian has no `reveals_graded_work`,
+  and `assignment_like` is no longer an escalation reason (Q-15, Q-19 updated; 4
+  reasons). `live-qa-v1` is replaced by `live-qa-v1b` (its quiz-question Analyst demo
+  removed, Analyst instructions updated; no recompile).
+- 2026-11-07 (Stage 12) Live flow: retrieval before the Analyst; Guardian timeout 15 s
+  on its own connection, capped by a 30 s deadline; one repeat after a malformed reply.
+  One Cortex connection per statement timeout. Guardians (live and prep) compiled with
+  `BootstrapFewShotWithRandomSearch` on user-labeled synthetic cases, scored on labeled
+  dev cases; GEPA tried and not kept. Programs: `live-qa-v5`, `prep-v6`. Demo baseline:
+  the same code without compiled programs.

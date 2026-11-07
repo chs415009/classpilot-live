@@ -1,5 +1,9 @@
 """Path B (student question) as a LangGraph flow:
-analyst -> retrieval -> responder -> guardian -> validator. Path A is `live/poll.py`."""
+retrieval -> analyst -> responder -> guardian -> validator. Path A is `live/poll.py`.
+
+Stage 12: retrieval runs first, so the Analyst judges scope from the lesson material
+(slides and readings), not only from the objective titles. The Guardian has its own
+timeout, capped by what is left of the per-question deadline."""
 
 import operator
 import time
@@ -30,7 +34,7 @@ from classpilot.contracts.trace import (
     RetrievalRecord,
     RunRecord,
 )
-from classpilot.nodes import elapsed_ms
+from classpilot.nodes import RetryPolicy, elapsed_ms
 from classpilot.nodes.analyst import run_analyst
 from classpilot.nodes.guardian import run_guardian
 from classpilot.nodes.responder import run_responder
@@ -38,7 +42,7 @@ from classpilot.nodes.retrieval import run_retrieval
 from classpilot.settings import Settings
 from classpilot.trace import RunOutput, new_decision_id, short_hash, utc_now, utc_now_ms
 
-QUESTION_NODES = ["analyst", "retrieval", "responder", "guardian", "validator"]
+QUESTION_NODES = ["retrieval", "analyst", "responder", "guardian", "validator"]
 LLM_NODES = {"analyst", "responder", "guardian"}
 
 
@@ -56,11 +60,13 @@ class Deps:
 
 class QuestionState(TypedDict, total=False):
     question: StudentQuestion
+    started: float  # time.perf_counter() when the question entered the graph
     nodes_run: Annotated[list[str], operator.add]
     llm_calls: Annotated[int, operator.add]
     latency_ms: Annotated[dict[str, int], merge_dicts]
     early_reason: EscalationReason | None  # set by a rule or an LLM failure
     errors: Annotated[dict[str, str], merge_dicts]  # node -> error message
+    retries: Annotated[dict[str, int], merge_dicts]  # node -> repeated calls (malformed)
     analyst_raw: dict | None
     responder_raw: dict | None
     guardian_raw: dict | None
@@ -71,21 +77,41 @@ class QuestionState(TypedDict, total=False):
 def build_question_graph(deps: Deps):
     settings = deps.settings
     timeout_s = settings.llm.timeout_seconds
+    q = settings.question
 
-    def analyst(state: QuestionState) -> dict:
-        result = run_analyst(
-            state["question"].question_text, deps.content.objectives, deps.llm, timeout_s
-        )
+    def retry_policy(state: QuestionState) -> RetryPolicy:
+        def seconds_left() -> float:
+            return q.deadline_seconds - (time.perf_counter() - state["started"])
+
+        return RetryPolicy(q.malformed_retries, q.min_retry_seconds, seconds_left)
+
+    def llm_update(name: str, result, raw_key: str) -> dict:
         update = {
-            "nodes_run": ["analyst"],
-            "llm_calls": 1,
-            "latency_ms": {"analyst": result.latency_ms},
-            "analyst_raw": result.raw,
+            "nodes_run": [name],
+            "llm_calls": 1 + result.retries,
+            "latency_ms": {name: result.latency_ms},
+            "retries": {name: result.retries},
+            raw_key: result.raw,
         }
         if result.error:
             update["early_reason"] = "llm_error"
-            update["errors"] = {"analyst": result.error}
+            update["errors"] = {name: result.error}
         return update
+
+    def analyst(state: QuestionState) -> dict:
+        shown = [
+            {"chunk_id": c.chunk_id, "text": c.text[: q.analyst_chunk_chars]}
+            for c in state.get("retrieved", [])
+        ]
+        result = run_analyst(
+            state["question"].question_text,
+            deps.content.objectives,
+            deps.llm,
+            timeout_s,
+            shown,
+            retry_policy(state),
+        )
+        return llm_update("analyst", result, "analyst_raw")
 
     def retrieval(state: QuestionState) -> dict:
         question = state["question"]
@@ -108,18 +134,13 @@ def build_question_graph(deps: Deps):
 
     def responder(state: QuestionState) -> dict:
         result = run_responder(
-            state["question"].question_text, state["retrieved"], deps.llm, timeout_s
+            state["question"].question_text,
+            state["retrieved"],
+            deps.llm,
+            timeout_s,
+            retry_policy(state),
         )
-        update = {
-            "nodes_run": ["responder"],
-            "llm_calls": 1,
-            "latency_ms": {"responder": result.latency_ms},
-            "responder_raw": result.raw,
-        }
-        if result.error:
-            update["early_reason"] = "llm_error"
-            update["errors"] = {"responder": result.error}
-        return update
+        return llm_update("responder", result, "responder_raw")
 
     def guardian(state: QuestionState) -> dict:
         response = ResponderOutput.model_validate(state["responder_raw"])
@@ -128,18 +149,14 @@ def build_question_graph(deps: Deps):
         ordered = sorted(state["retrieved"], key=lambda c: c.chunk_id not in response.citations)
         shown = [{"chunk_id": c.chunk_id, "text": c.text} for c in ordered]
         result = run_guardian(
-            state["question"].question_text, response.answer_text, shown, deps.llm, timeout_s
+            state["question"].question_text,
+            response.answer_text,
+            shown,
+            deps.llm,
+            guardian_timeout(q.guardian_timeout_seconds, q.deadline_seconds, state["started"]),
+            retry_policy(state),
         )
-        update = {
-            "nodes_run": ["guardian"],
-            "llm_calls": 1,
-            "latency_ms": {"guardian": result.latency_ms},
-            "guardian_raw": result.raw,
-        }
-        if result.error:
-            update["early_reason"] = "llm_error"
-            update["errors"] = {"guardian": result.error}
-        return update
+        return llm_update("guardian", result, "guardian_raw")
 
     def validator(state: QuestionState) -> dict:
         result = rules.validate_final(
@@ -155,14 +172,14 @@ def build_question_graph(deps: Deps):
         return {"result": result, "nodes_run": ["validator"]}
 
     # Routing only skips ahead to the validator; it never makes the final decision.
+    def after_retrieval(state: QuestionState) -> str:
+        return "validator" if state.get("early_reason") else "analyst"
+
     def after_analyst(state: QuestionState) -> str:
         analysis = rules.parse_or_none(AnalystOutput, state.get("analyst_raw"))
         if state.get("early_reason") or analysis is None or analysis.category != "in_scope":
             return "validator"
-        return "retrieval"
-
-    def after_retrieval(state: QuestionState) -> str:
-        return "validator" if state.get("early_reason") else "responder"
+        return "responder"
 
     def after_responder(state: QuestionState) -> str:
         # Skip the Guardian when the validator will escalate no matter what it says.
@@ -183,13 +200,24 @@ def build_question_graph(deps: Deps):
         ("validator", validator),
     ]:
         graph.add_node(name, node)
-    graph.add_edge(START, "analyst")
-    graph.add_conditional_edges("analyst", after_analyst)
+    graph.add_edge(START, "retrieval")
     graph.add_conditional_edges("retrieval", after_retrieval)
+    graph.add_conditional_edges("analyst", after_analyst)
     graph.add_conditional_edges("responder", after_responder)
     graph.add_edge("guardian", "validator")
     graph.add_edge("validator", END)
     return graph.compile()
+
+
+MIN_GUARDIAN_SECONDS = 1.0
+
+
+def guardian_timeout(own_s: float, deadline_s: float, started: float) -> float:
+    """The Guardian's own timeout, capped by what is left of the question's deadline.
+    At least MIN_GUARDIAN_SECONDS, so a call is never made with no time at all (the
+    Analyst and Responder timeouts leave the Guardian about 10 s in the worst case)."""
+    left = deadline_s - (time.perf_counter() - started)
+    return max(MIN_GUARDIAN_SECONDS, min(own_s, left))
 
 
 def run_question(
@@ -200,7 +228,15 @@ def run_question(
     """`details`, if given, is filled with the raw node outputs (for eval only, not the trace)."""
     started_at, start = utc_now_ms(), time.perf_counter()
     state = build_question_graph(deps).invoke(
-        {"question": question, "nodes_run": [], "llm_calls": 0, "latency_ms": {}, "errors": {}}
+        {
+            "question": question,
+            "started": start,
+            "nodes_run": [],
+            "llm_calls": 0,
+            "latency_ms": {},
+            "errors": {},
+            "retries": {},
+        }
     )
     total_ms = elapsed_ms(start)
     if details is not None:
@@ -250,13 +286,16 @@ def question_records(
     with the same rules the graph used; nothing here changes the decision."""
     question = state["question"]
     ran, errors, latency = set(state["nodes_run"]), state["errors"], state["latency_ms"]
+    retries = state.get("retries", {})
     analysis = rules.parse_or_none(AnalystOutput, state.get("analyst_raw"))
     response = rules.parse_or_none(ResponderOutput, state.get("responder_raw"))
     guardian = rules.parse_or_none(GuardianOutput, state.get("guardian_raw"))
     citations = response.citations if response else []
 
     status: dict[str, NodeStatus] = {}
-    if "analyst" in errors or analysis is None:
+    if "analyst" not in ran:
+        status["analyst"] = "skip"  # retrieval failed first (Stage 12 order)
+    elif "analyst" in errors or analysis is None:
         status["analyst"] = "fail"
     else:
         status["analyst"] = "pass" if analysis.category == "in_scope" else "block"
@@ -325,7 +364,7 @@ def question_records(
         )
     ]
     for seq, name in enumerate(QUESTION_NODES, start=1):
-        llm_calls = 1 if name in LLM_NODES and name in ran else 0
+        llm_calls = 1 + retries.get(name, 0) if name in LLM_NODES and name in ran else 0
         records.append(
             NodeRecord(
                 **base,
@@ -345,8 +384,8 @@ def question_records(
                     model=model or "unknown",
                     prompt_version=prompt_version,
                     latency_ms=latency.get(name, 0),
-                    retry_count=0,
-                    error_count=1 if name in errors else 0,
+                    retry_count=retries.get(name, 0),
+                    error_count=retries.get(name, 0) + (1 if name in errors else 0),
                 )
             )
     query_hash = short_hash(question.question_text)

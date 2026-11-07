@@ -12,7 +12,6 @@ GOOD_RESPONSE = {
 
 GOOD_GUARDIAN = {
     "claims": [{"claim": "Bronze keeps raw data.", "chunk_id": "chunk-01"}],
-    "reveals_graded_work": False,
     "verdict": "pass",
     "reason": "x",
 }
@@ -102,7 +101,7 @@ def test_validator_answers_good_response():
 
 
 def test_validator_early_reason_wins():
-    assert validate(early_reason="assignment_like").escalation_reason == "assignment_like"
+    assert validate(early_reason="llm_error").escalation_reason == "llm_error"
 
 
 def test_validator_analyst_category():
@@ -139,10 +138,9 @@ def test_validator_low_confidence():
     assert result.confidence == 0.5
 
 
-def guardian(verdict="pass", claims=(("Bronze keeps raw data.", "chunk-01"),), reveals=False):
+def guardian(verdict="pass", claims=(("Bronze keeps raw data.", "chunk-01"),)):
     return {
         "claims": [{"claim": text, "chunk_id": chunk_id} for text, chunk_id in claims],
-        "reveals_graded_work": reveals,
         "verdict": verdict,
         "reason": "x",
     }
@@ -173,8 +171,7 @@ def test_check_guardian_rejects_claim_from_a_chunk_it_did_not_see():
     assert rules.check_guardian(guardian(claims=claims), ["chunk-05"]).passed is False
 
 
-def test_check_guardian_fails_on_graded_work_or_no_claims():
-    assert rules.check_guardian(guardian(reveals=True), ["chunk-01"]).passed is False
+def test_check_guardian_fails_with_no_claims():
     assert rules.check_guardian(guardian(claims=()), ["chunk-01"]).passed is False
 
 

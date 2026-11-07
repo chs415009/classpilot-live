@@ -94,18 +94,43 @@ def apply_program[A: (DSPyAgents, DSPyPrepAgents)](agents: A, data: dict) -> A:
             f"program {data['program_id']!r} has modules {sorted(other)} of the other side"
         )
     for task, state in data["modules"].items():
+        # DSPy maps saved field labels by position, so a signature that gained or lost a
+        # field would get the wrong labels (Stage 12: the Analyst gained `chunks`).
+        expected = list(agents.modules[task].signature.fields)
+        saved = state.get("signature", {}).get("fields", [])
+        if len(saved) != len(expected):
+            raise CompiledProgramError(
+                f"program {data['program_id']!r}: {task} was compiled with {len(saved)} "
+                f"fields, the signature now has {len(expected)} ({', '.join(expected)}); "
+                "recompile it"
+            )
         agents.modules[task].load_state(state)
     agents.prompt_version = data["program_id"]
     return agents
 
 
-def live_agents(settings: Settings, lm: dspy.LM, directory: Path = COMPILED_DIR) -> DSPyAgents:
+def live_agents(
+    settings: Settings,
+    lm: dspy.LM,
+    directory: Path = COMPILED_DIR,
+    guardian_lm: dspy.LM | None = None,
+) -> DSPyAgents:
     """The live Analyst, Responder, and Guardian; compiled when `llm.compiled_program`
-    names a program."""
-    agents = DSPyAgents(lm)
+    names a program. `guardian_lm`, if given, runs the Guardian (its own timeout)."""
+    agents = DSPyAgents(lm, task_lms={"guardian": guardian_lm} if guardian_lm else None)
     if settings.llm.compiled_program:
         apply_program(agents, load_program(settings.llm.compiled_program, directory))
     return agents
+
+
+def cortex_live_agents(settings: Settings) -> DSPyAgents:
+    """Live agents on Cortex: the Guardian on its own connection whose statement timeout
+    is `question.guardian_timeout_seconds` (Stage 12); the graph caps it further by the
+    question's deadline."""
+    from classpilot.adapters.cortex_engine import make_cortex_lm
+
+    guardian_lm = make_cortex_lm(settings, timeout_s=settings.question.guardian_timeout_seconds)
+    return live_agents(settings, make_cortex_lm(settings), guardian_lm=guardian_lm)
 
 
 def prep_agents(settings: Settings, lm: dspy.LM, directory: Path = COMPILED_DIR) -> DSPyPrepAgents:

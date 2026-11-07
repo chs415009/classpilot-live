@@ -93,6 +93,27 @@ def strip_lines(text: str, drop: set[str]) -> str:
     return "\n".join(kept)
 
 
+# Stage 12: lines no one should hear read aloud in a slide-text fallback (L1's title
+# slide read its ISBN and publisher line). A whole line goes when one of these matches.
+BOILERPLATE = [
+    re.compile(r"\bISBN\b", re.IGNORECASE),
+    re.compile(r"©|\(c\)\s*\d{4}|\bcopyright\b", re.IGNORECASE),
+    re.compile(r"\ball rights reserved\b", re.IGNORECASE),
+    re.compile(
+        r"\b(materials|slides|content)\b.{0,40}\b(edited|adapted|based on|taken)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(r"\b(19|20)\d{2}\b.*\b(inc|ltd|llc)\b", re.IGNORECASE),
+]
+
+
+def strip_boilerplate(text: str) -> str:
+    """Remove ISBN, copyright, publisher, and "materials edited by" lines."""
+    return "\n".join(
+        line for line in text.splitlines() if not any(p.search(line) for p in BOILERPLATE)
+    )
+
+
 def _apply_rules(text: str) -> tuple[str, list[str]]:
     found: list[str] = []
     for name, pattern, replacement in RULES:
@@ -109,6 +130,18 @@ def strip_emphasis(text: str) -> str:
         if name == "Markdown emphasis":
             text = pattern.sub(replacement, text)
     return text
+
+
+ROUND_OR_SQUARE = re.compile(r"[()\[\]]")
+
+
+def tidy_generated(text: str) -> str:
+    """Generated text without Markdown emphasis and without round or square brackets
+    (Stage 12: L2's title script failed the TTS lint for copying "(Jones)"). Removing
+    the marks changes no words, so code does it instead of a retry. Curly braces stay
+    for the lint: they mean code."""
+    text = ROUND_OR_SQUARE.sub("", strip_emphasis(text))
+    return re.sub(r"[ \t]{2,}", " ", text).replace(" ,", ",").replace(" .", ".")
 
 
 def tts_issues(text: str) -> list[str]:

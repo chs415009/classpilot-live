@@ -8,8 +8,7 @@ from classpilot.settings import Settings
 
 def make_adapters(settings: Settings, content: Content) -> tuple[LLMClient, Retriever]:
     if settings.backend == "cortex":
-        from classpilot.adapters.cortex_engine import make_cortex_lm
-        from classpilot.agents.compiled import live_agents
+        from classpilot.agents.compiled import cortex_live_agents
 
-        return live_agents(settings, make_cortex_lm(settings)), CortexSearchRetriever(settings)
+        return cortex_live_agents(settings), CortexSearchRetriever(settings)
     return MockLLM(), MockRetriever(content.chunks)

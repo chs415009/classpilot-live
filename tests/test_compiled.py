@@ -26,7 +26,8 @@ from classpilot.live.question_graph import Deps, run_question
 from classpilot.settings import Settings, load_settings
 
 FIXTURE_DIR = Path(__file__).parent / "fixtures" / "compiled"
-FIXTURE_ID = "fixture-compiled-v0"
+FIXTURE_ID = "fixture-compiled-v1"
+OLD_FIXTURE_ID = "fixture-compiled-v0"  # Analyst without the Stage 12 `chunks` field
 
 
 def lm(engine):
@@ -41,10 +42,16 @@ def test_fixture_loads_and_sets_the_prompt_version():
     assert agents.modules["guardian"].demos == []  # not in the file: uncompiled
 
 
+def test_program_with_an_old_field_list_is_refused():
+    settings = load_settings(overrides={"llm": {"compiled_program": OLD_FIXTURE_ID}})
+    with pytest.raises(CompiledProgramError, match="recompile"):
+        live_agents(settings, lm(FakeEngine()), FIXTURE_DIR)
+
+
 def test_uncompiled_by_default():
     # Code defaults (config/settings.yaml may name a program).
     agents = live_agents(Settings(), lm(FakeEngine()), FIXTURE_DIR)
-    assert agents.prompt_version == PROMPT_VERSION == "uncompiled-v1"
+    assert agents.prompt_version == PROMPT_VERSION == "uncompiled-v4"
     assert all(m.demos == [] for m in agents.modules.values())
 
 
@@ -101,3 +108,11 @@ def test_mismatched_id_or_lm_state_fails(tmp_path):
     (tmp_path / f"{FIXTURE_ID}.json").write_text(json.dumps(data))
     with pytest.raises(CompiledProgramError, match="LM"):
         load_program(FIXTURE_ID, tmp_path)
+
+
+def test_guardian_can_run_on_its_own_lm():
+    main, guard = FakeEngine(GOOD["analyst"][1]), FakeEngine(GOOD["guardian"][1])
+    agents = live_agents(Settings(), lm(main), FIXTURE_DIR, guardian_lm=lm(guard))
+    call_llm(agents, "guardian", GOOD["guardian"][0], timeout_s=5)
+    call_llm(agents, "analyst", GOOD["analyst"][0], timeout_s=5)
+    assert len(guard.requests) == 1 and len(main.requests) == 1

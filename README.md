@@ -19,13 +19,15 @@ are exploratory (small, synthetic data).
 | Feature | Since | Backend |
 |---|---|---|
 | Live poll rule: poll evidence → explain (remediation text + slide) or reveal | Stage 2 | code only |
-| Live student question: Analyst → retrieval → Responder → Guardian → rule (DSPy) | Stage 3 | mock, Cortex |
+| Live student question: retrieval → Analyst → Responder → Guardian → rule (DSPy; retrieval first since Stage 12) | Stage 3 | mock, Cortex |
 | Trace records (JSONL) and decision log for every live decision | Stage 2 | — |
 | Local conversion: PPTX/PDF/DOCX → page text, notes, PNGs, image-page flag | Stage 4 | local + Docker |
 | Parse layer: vision for image pages, AI_PARSE_DOCUMENT for references, chunks, Cortex Search | Stage 5 | mock, Cortex |
-| Generators: segments, scripts, polls, explanations, each checked by the prep Guardian (claims with quotes checked by code), retried twice, then a fallback; a wrong option whose explanation fails reveals only; team manifest | Stage 6-9 | mock, Cortex (L1: 13 of 14 scripts, 5 of 5 polls, 8 of 15 wrong options explained) |
+| Generators: segments, scripts, polls, explanations, each checked by the prep Guardian (claims with quotes checked by code), retried twice, then a fallback; a wrong option whose explanation fails reveals only; team manifest | Stage 6-12 | mock, Cortex (L1-L4 with `prep-v6`: 63 of 67 scripts, 19 polls, 40 of 57 wrong options explained) |
 | Eval sets (train: synthetic, committed; dev: real lesson, gitignored), labeled Guardian cases with a labeling sheet | Stage 9 | mock, Cortex |
-| Compiled DSPy programs (`compiled/`, synthetic demos only): prep writers and live Analyst/Responder, loaded behind `prep.compiled_program` / `llm.compiled_program` | Stage 9 | Cortex |
+| Compiled DSPy programs (`compiled/`, synthetic demos only): `live-qa-v5` (Analyst, Responder, Guardian) and `prep-v6` (writers, script and explanation Guardians), loaded behind `llm.compiled_program` / `prep.compiled_program` | Stage 9, 12 | Cortex |
+| Live Q&A quality (Stage 12): retrieval before the Analyst, Guardian bar "rewording, direct conclusions, and tied examples pass", Guardian deadline, one repeat after a malformed reply | Stage 12 | mock, Cortex |
+| DSPy experiments: `optimize-guardian` (random search or GEPA on labeled synthetic cases, scored on labeled dev cases) | Stage 12 | Cortex |
 | Service API: lessons, uploads, background prep jobs with progress, manifest, slide images, `POST /questions`, `POST /polls/result` | Stage 8 | mock (Cortex: same code, not yet run live) |
 | Dev report (demo entry): prep a lesson folder, run its fixed test questions, static HTML with collapsible details and an index of runs | Stage 10 | mock, Cortex |
 | Handoff to the other parts: lesson bundle zip, repeat-safe live calls, session export zip (traces, decision log, manifests) | Stage 11 | mock |
@@ -126,9 +128,9 @@ materials/lessons/<lesson_id>/
 
 ```bash
 python -m classpilot.cli dev --list                          # lesson folders, last run
-python -m classpilot.cli dev info6205-l1                     # mock: prep + test questions
-BACKEND=cortex python -m classpilot.cli dev info6205-l1      # live (after approval): ~155 calls
-BACKEND=cortex python -m classpilot.cli dev info6205-l1 --skip-prep   # questions only: ~30
+python -m classpilot.cli dev l1                              # mock: prep + test questions
+BACKEND=cortex python -m classpilot.cli dev l1               # live (after approval): ~100-170 calls
+BACKEND=cortex python -m classpilot.cli dev l1 --skip-prep   # questions only: ~30
 open outputs/dev/index.html                                  # every run, newest first
 ```
 
@@ -146,7 +148,7 @@ never state, so escalate), `out_of_scope`. A question matches when the action eq
 `expected_action` and, on escalate, the reason is in `accepted_reasons`:
 
 ```json
-{"lesson_id": "info6205-l1", "questions": [
+{"lesson_id": "l1", "questions": [
   {"question_id": "tq-07", "category": "partial",
    "question_text": "What is the difference between private, protected, and public in Java?",
    "expected_action": "escalate", "accepted_reasons": ["unsupported", "low_confidence"],
@@ -155,33 +157,58 @@ never state, so escalate), `out_of_scope`. A question matches when the action eq
 
 A synthetic example for the fixture deck is `tests/fixtures/deck/test_questions.json`.
 
-## Eval and compile (Stage 9)
+### Demo: L1-L4 with and without DSPy (Stage 12)
+
+`outputs/dev/index.html` lists two full runs per lesson (prep + 12 test questions), same
+code: one with the compiled programs (`live-qa-v5`, `prep-v6`) and one without
+(`uncompiled-v4` live, `uncompiled-v2` prep); each report shows its program ids. The prep
+outputs are `outputs/prep/l<n>/` (compiled) and `outputs/prep/l<n>.uncompiled/`.
+
+| Lesson | Questions as expected (DSPy / none) | Script fallbacks | Wrong options explained |
+|---|---|---|---|
+| L1 (tuned on) | 12 / 8 of 12 | 0 / 2 of 14 | 12/12 / 7/12 |
+| L2 | 11 / 11 | 1 / 1 of 18 | 10/15 / 10/15 |
+| L3 | 11 / 11 | 0 / 8 of 18 | 11/15 / 5/15 |
+| L4 | 10 / 9 | 3 / 3 of 17 | 7/15 / 6/15 |
+
+Single runs; a lesson moves by about 2 questions between runs. To rerun the baseline,
+set both `compiled_program` values in `config/settings.yaml` to `null` (the prep output
+of `l<n>` is overwritten, so copy it first). Details: `docs/agent/note.md`, Stage 12.
+
+## Eval, compile, and DSPy experiments (Stages 9 and 12)
 
 ```bash
 # labeled question sets (train is synthetic and committed; dev is under materials/)
 python -m classpilot.cli eval --set eval/questions_train.json
 BACKEND=cortex python -m classpilot.cli eval --set materials/eval/questions_dev.json \
-    [--compiled-program live-qa-v1]                  # needs the search service resumed
+    [--compiled-program live-qa-v5]                  # needs the search service resumed
 
 # Guardian cases: write a labeling sheet, then evaluate labeled cases
 python -m classpilot.cli guardian-sheet eval/guardian_cases_train.json   # -> outputs/labeling/
 python -m classpilot.cli guardian-eval --cases eval/guardian_cases_train.json [--prep-model M]
 
-# compile on the synthetic trainsets (BACKEND=cortex, after approval)
-python -m classpilot.cli compile --side prep --program-id prep-writers-v5
-python -m classpilot.cli compile --side live --program-id live-qa-v1
-python -m classpilot.cli prep generate --lesson l1 --compiled-program prep-writers-v5
+# compile with BootstrapFewShot on the synthetic trainsets (BACKEND=cortex, after approval)
+python -m classpilot.cli compile --side prep --program-id <id>
+python -m classpilot.cli compile --side live --program-id <id> [--task analyst|responder|guardian]
+
+# Guardian experiments (Stage 12): train = labeled synthetic cases, val = labeled dev cases
+BACKEND=cortex python -m classpilot.cli optimize-guardian --method eval --program uncompiled \
+    --program live-qa-v5 --runs 2                                  # score programs on val
+BACKEND=cortex python -m classpilot.cli optimize-guardian --method rs --program-id <id>
+BACKEND=cortex python -m classpilot.cli optimize-guardian --method rs --kind script \
+    --base prep-v6 --program-id <id>                               # prep Guardians: script|poll|explanation
+BACKEND=cortex python -m classpilot.cli optimize-guardian --method gepa --program-id <id>
 
 python scripts/search_service.py status|resume|suspend   # suspend after every live run
-python scripts/stage9_comparison.py                      # -> outputs/stage9_comparison.md
 ```
 
 The service and the CLI use the programs named in `config/settings.yaml`
-(`llm.compiled_program: live-qa-v1`, `prep.compiled_program: prep-writers-v5`; `null`
-runs the uncompiled prompts); a program id becomes `prompt_version` in the trace. Cases and question sets
-built from real course material (`materials/eval/`) are never committed. Helper scripts:
-`scripts/eval_lesson_snapshot.py` (dev set from a parsed lesson),
-`scripts/draft_prep_guardian_cases.py` and `scripts/draft_live_guardian_cases.py`
+(`llm.compiled_program: live-qa-v5`, `prep.compiled_program: prep-v6`; `null` runs the
+uncompiled prompts); a program id becomes `prompt_version` in the trace. Results go to
+`outputs/optimize/`; a saved program is checked for course content (`leak_problems`).
+Cases and question sets built from real course material (`materials/`) are never
+committed. Helper scripts: `scripts/eval_lesson_snapshot.py` (dev set from a parsed
+lesson), `scripts/draft_prep_guardian_cases.py` and `scripts/draft_live_guardian_cases.py`
 (unlabeled cases from stored runs).
 
 ## Service (FastAPI)
@@ -250,14 +277,8 @@ python scripts/search_service.py status                         # also: resume |
 ```
 
 Suspend the search service when it is not in use. Cost readings:
-`sql/probes/stage5_cost_reading.sql` (ACCOUNT_USAGE views, which lag behind real time).
-
-Read-only checks with the agent's connection (only SHOW, DESC, SELECT run; output stays
-in the terminal):
-
-```bash
-python scripts/probes/readonly_sql.py sql/probes/stage7_account_inventory.sql
-```
+`sql/probes/cost_reading.sql`, run in Snowsight as ACCOUNTADMIN (ACCOUNT_USAGE views lag
+behind real time; the service user cannot read them).
 
 All Cortex runs use Snowflake credits; this is a shared account, so ask before running
 them.

@@ -13,7 +13,6 @@ Path = Literal["poll", "question"]
 Action = Literal["explain", "reveal", "answer", "escalate"]
 EscalationReason = Literal[
     "out_of_scope",
-    "assignment_like",
     "low_confidence",
     "unsupported",
     "llm_error",
@@ -74,7 +73,7 @@ class Decision(BaseModel):
 
 
 class AnalystOutput(BaseModel):
-    category: Literal["in_scope", "out_of_scope", "assignment_like"]
+    category: Literal["in_scope", "out_of_scope"]
     objective_id: str | None = None
     reason: str
 
@@ -93,6 +92,5 @@ class GuardianClaim(BaseModel):
 
 class GuardianOutput(BaseModel):
     claims: list[GuardianClaim]
-    reveals_graded_work: bool
     verdict: Literal["pass", "fail"]
     reason: str

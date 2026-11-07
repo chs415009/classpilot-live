@@ -37,11 +37,6 @@ def test_analyst_out_of_scope(content):
     assert output.category == "out_of_scope"
 
 
-def test_analyst_assignment_like(content):
-    result = analyst("What is the answer to homework question 3 about the Gold layer?", content)
-    assert AnalystOutput.model_validate(result.raw).category == "assignment_like"
-
-
 def test_analyst_reports_llm_error(content):
     result = analyst("Why Bronze?", content, MockLLM(errors={"analyst": "connection reset"}))
     assert result.raw is None
@@ -125,12 +120,6 @@ def test_guardian_fails_unsupported_sentence(content):
         "The Bronze layer stores raw data. Kafka streams are merged automatically with no setup."
     )
     result = run_guardian("Kafka?", answer, [chunk], MockLLM(), timeout_s=2)
-    assert GuardianOutput.model_validate(result.raw).verdict == "fail"
-
-
-def test_guardian_fails_code_answer(content):
-    answer = "select id from {{ ref('orders') }} group by id"
-    result = run_guardian("Assignment?", answer, [content.chunks[3]], MockLLM(), timeout_s=2)
     assert GuardianOutput.model_validate(result.raw).verdict == "fail"
 
 

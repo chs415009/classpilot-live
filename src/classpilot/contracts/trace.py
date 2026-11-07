@@ -25,7 +25,7 @@ from classpilot.contracts.live import (
 )
 
 SCHEMA_VERSION = "v2-draft"
-PROMPT_VERSION = "uncompiled-v1"  # id of the compiled DSPy program from Stage 9
+PROMPT_VERSION = "uncompiled-v4"  # live prompts without a compiled program (Stage 12: v2-v4)
 
 NodeStatus = Literal["pass", "fail", "block", "skip"]
 

@@ -92,7 +92,7 @@ def write_questions(path: Path, **changes) -> Path:
 @pytest.mark.parametrize(
     "changes",
     [
-        {"category": "assignment_like"},  # not a test category
+        {"category": "assignment"},  # not a test category
         {"expected_action": "reveal"},
         {"expected_action": "escalate", "accepted_reasons": []},
         {"accepted_reasons": ["out_of_scope"]},  # answer takes no reasons

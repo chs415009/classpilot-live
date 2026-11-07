@@ -10,7 +10,9 @@ import re
 import textwrap
 
 import dspy
+from dspy.utils.exceptions import AdapterParseError
 
+from classpilot.adapters.llm import MalformedReplyError
 from classpilot.agents.signatures import SIGNATURES
 from classpilot.contracts.trace import PROMPT_VERSION
 
@@ -31,7 +33,11 @@ def chunk_lines(chunks: list[dict]) -> str:
 def signature_inputs(task: str, inputs: dict) -> dict:
     if task == "analyst":
         objectives = "\n".join(f"- {o['objective_id']}: {o['title']}" for o in inputs["objectives"])
-        return {"objectives": objectives, "question": inputs["question_text"]}
+        return {
+            "objectives": objectives,
+            "chunks": chunk_lines(inputs.get("chunks", [])),
+            "question": inputs["question_text"],
+        }
     if task == "responder":
         return {"chunks": chunk_lines(inputs["chunks"]), "question": inputs["question_text"]}
     if task == "guardian":
@@ -86,13 +92,22 @@ class DSPyAgents:
 
     prompt_version = PROMPT_VERSION
 
-    def __init__(self, lm: dspy.LM, adapter: dspy.Adapter | None = None):
+    def __init__(
+        self,
+        lm: dspy.LM,
+        adapter: dspy.Adapter | None = None,
+        task_lms: dict[str, dspy.LM] | None = None,
+    ):
         self.lm = lm
+        self.task_lms = task_lms or {}  # per-task LM (Stage 12: the Guardian's timeout)
         self.adapter = adapter or RulesFirstChatAdapter(use_json_adapter_fallback=False)
         self.modules = {task: dspy.Predict(sig) for task, (sig, _) in SIGNATURES.items()}
 
     def complete(self, task: str, inputs: dict) -> dict:
         # dspy.context is per thread; call_llm runs this in its worker thread.
-        with dspy.context(lm=self.lm, adapter=self.adapter):
-            prediction = self.modules[task](**signature_inputs(task, inputs))
+        with dspy.context(lm=self.task_lms.get(task, self.lm), adapter=self.adapter):
+            try:
+                prediction = self.modules[task](**signature_inputs(task, inputs))
+            except AdapterParseError as exc:
+                raise MalformedReplyError(f"{task}: malformed reply: {exc}") from exc
         return prediction_dict(task, prediction)

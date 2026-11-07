@@ -1,0 +1,299 @@
+{
+  "program_id": "prep-v6",
+  "created_at": "2026-11-07T01:32:32Z",
+  "dspy_version": "3.4.1",
+  "modules": {
+    "script_writer": {
+      "traces": [],
+      "train": [],
+      "demos": [
+        {
+          "augmented": true,
+          "objective": "Recognize how data is organized in everyday situations",
+          "slide": "syn-s01: slide 1 of 7; slide 1 of 3 in seg-01",
+          "chunks": "[syn-s01-c1] (syn-s01) Lecture 3 | Organizing Data and Object Basics | Sample Course 101\n[syn-p01-c1] (reference) People organize information all the time so it is quick to use. A music playlist keeps songs in a chosen order. People waiting at a bus stop board in the order they arrived. The undo button in a text editor removes the most recent change first.",
+          "feedback": "(none)",
+          "script": "This slide starts our look at how we organize data in everyday life. Think of a music playlist—you put songs in a certain order so you can play them quickly. Or people lining up at a bus stop—they board in the order they arrived. Even the undo button in a text editor works the same way, removing the most recent change first. All of these are simple ways we arrange things so they’re easy to use.",
+          "citations": [
+            "syn-p01-c1"
+          ]
+        },
+        {
+          "augmented": true,
+          "objective": "Recognize how data is organized in everyday situations",
+          "slide": "syn-s02: slide 2 of 7; slide 2 of 3 in seg-01",
+          "chunks": "[syn-s02-c1] (syn-s02) Outline | - Organizing data | - Object basics\n[syn-p01-c1] (reference) People organize information all the time so it is quick to use. A music playlist keeps songs in a chosen order. People waiting at a bus stop board in the order they arrived. The undo button in a text editor removes the most recent change first.",
+          "feedback": "(none)",
+          "script": "This slide shows two main ideas about how we organize data in daily life. First, we often arrange information so we can find or use it quickly. For example, a music playlist keeps songs in a set order, and people boarding a bus follow the order they arrived in. Second, some systems work like a stack—like the undo button in a text editor, which always removes the most recent change first.",
+          "citations": [
+            "syn-s02-c1",
+            "syn-p01-c1"
+          ]
+        }
+      ],
+      "signature": {
+        "instructions": "You write what the class assistant says aloud while one slide is on screen.\nThe professor is not in the room; a text-to-speech voice reads your script.\n- Teach this slide's content in 2 to 5 short spoken sentences, in service of the\n  segment objective.\n- Teach only ideas the chunks given state; say them in simpler words if that helps.\n  Use the examples and analogies the chunks contain first (the reference chunks\n  often have them). You may add a short example or analogy of your own only to\n  illustrate an idea the chunks state; it must fit that idea exactly and add no new\n  fact. Say nothing about what later lessons or the rest of the course cover.\n  Cite the ids of the chunks you used.\n- If the slide only lists items, name them and say what they have in common, using\n  what the chunks say.\n- If the slide has only a title, a section name, or a short outline, say what it\n  shows in one or two sentences (for example \"This part of the lecture is the Java\n  review.\"). Name its items in the slide's own order and words, and keep each name\n  for what the slide calls it (a lecture title is not the course name). Do not\n  explain or preview the topics it names, and add no topics from other slides.\n- You may add a short transition (for example \"Next, let's look at how data moves\")\n  that states no facts.\n- Plain spoken English only: no Markdown, bullets, backticks, or code. Spell out\n  code and symbols in words (say \"order id\" for order_id and \"dot s q l\" for .sql),\n  and describe what code does instead of reading it out.\n- If feedback is given, your previous script had these problems; fix all of them.",
+        "fields": [
+          {
+            "prefix": "Objective:",
+            "description": "the objective of the segment this slide is in"
+          },
+          {
+            "prefix": "Slide:",
+            "description": "the slide id and its position in the deck and segment"
+          },
+          {
+            "prefix": "Chunks:",
+            "description": "lesson chunks, one per line as '[<chunk_id>] (<slide id> or reference) <text>'"
+          },
+          {
+            "prefix": "Feedback:",
+            "description": "problems with your previous answer that you must fix, or '(none)'"
+          },
+          {
+            "prefix": "Script:",
+            "description": "${script}"
+          },
+          {
+            "prefix": "Citations:",
+            "description": "chunk ids the script relies on"
+          }
+        ]
+      },
+      "lm": null
+    },
+    "explanation_writer": {
+      "traces": [],
+      "train": [],
+      "demos": [
+        {
+          "augmented": true,
+          "question": "Which collection does not allow duplicate items?",
+          "options": "A: Bag\nB: Set\nC: List\nD: Stack",
+          "correct_option": "B",
+          "wrong_option": "A",
+          "misconception": "Bag rejects duplicates: Believes a bag keeps only one copy of each item.",
+          "chunks": "[syn-s05-c1] (syn-s05) Collections | - Bag | - Set | - List | - Stack | - Queue | - Map\n[syn-p03-c2] (reference) A bag holds items in no particular order and allows duplicates. A set holds items in no particular order and does not allow duplicates. A list keeps items in a sequence, and each item has a position.",
+          "feedback": "(none)",
+          "title": "Bags allow duplicates, sets do not",
+          "text": "A lot of you picked bag, thinking it rejects duplicates. But the lesson says a bag is like a shopping bag—you can toss in two identical apples and both stay. A set is the one that keeps only one copy, like a club guest list that won’t let the same name in twice. So bag is not the right answer here.",
+          "show_slide": "syn-s05",
+          "citations": [
+            "syn-s05-c1",
+            "syn-p03-c2"
+          ]
+        },
+        {
+          "augmented": true,
+          "question": "Which item does a stack remove first?",
+          "options": "A: The item added most recently\nB: The item added first\nC: The smallest item\nD: A random item",
+          "correct_option": "A",
+          "wrong_option": "B",
+          "misconception": "Stack works like a queue: Believes a stack removes the oldest item first, as a queue does.",
+          "chunks": "[syn-s05-c1] (syn-s05) Collections | - Bag | - Set | - List | - Stack | - Queue | - Map\n[syn-p03-c3] (reference) A stack adds and removes items at the same end, so the last item added is the first removed (LIFO). A queue adds items at the back and removes them from the front, so the first item added is the first removed (FIFO). A map stores pairs of a key and a value and finds a value by its key.",
+          "feedback": "(none)",
+          "title": "Stack removes the newest item first",
+          "text": "A lot of you thought a stack works like a line at the grocery store—first in, first out. But a stack is more like a stack of plates: you always take the top one, which is the last one you put there. The lesson says a stack adds and removes at the same end, so the newest item is the first one out. Queues are the ones that work like grocery lines, not stacks.",
+          "show_slide": "syn-s05",
+          "citations": [
+            "syn-s05-c1",
+            "syn-p03-c3"
+          ]
+        }
+      ],
+      "signature": {
+        "instructions": "Many students picked the same wrong option in a class poll. Write the short\nexplanation that the class assistant reads aloud while one slide is shown; after it,\nthe correct option is revealed.\n- Address the misconception behind the chosen option: say why it is wrong and what\n  the lesson says instead, in 2 to 4 short spoken sentences.\n- Use only ideas the chunks given state; say them in simpler words if that helps.\n  Use the examples and analogies the chunks contain first. You may add a short\n  example or analogy of your own only to illustrate an idea the chunks state; it\n  must fit that idea exactly and add no new fact. Say nothing about what later\n  lessons or the rest of the course cover. Cite the ids of the chunks you used,\n  including at least one slide chunk.\n- To say why the option is wrong, use what the chunks state: a chunk that\n  contradicts it, a chunk that defines the idea the option really describes, or a\n  closed, complete list in a chunk that leaves it out.\n- Do not describe the chosen option's own topic beyond what the chunks state. If the\n  chunks say nothing about it (for example an everyday object, or a technique the\n  lesson does not teach), say only that it is not what the lesson describes, then\n  explain the right idea from the chunks.\n- At most one example or analogy of your own.\n- show_slide is the slide id of one cited slide chunk that best shows the right idea.\n- Do not say the letter of the correct option; it is revealed after you.\n- Plain spoken English only: no Markdown, bullets, backticks, or code. Spell out\n  code and symbols in words (say \"order id\" for order_id and \"dot s q l\" for .sql),\n  and describe what code does instead of reading it out.\n- title names the idea in a few words (for the post-class report).\n- If feedback is given, your previous explanation had these problems; fix all of\n  them.",
+        "fields": [
+          {
+            "prefix": "Question:",
+            "description": "the poll question"
+          },
+          {
+            "prefix": "Options:",
+            "description": "the options, one per line as '<key>: <text>'"
+          },
+          {
+            "prefix": "Correct Option:",
+            "description": "key of the correct option"
+          },
+          {
+            "prefix": "Wrong Option:",
+            "description": "key of the wrong option the students picked"
+          },
+          {
+            "prefix": "Misconception:",
+            "description": "'<label>: <description>' of that option"
+          },
+          {
+            "prefix": "Chunks:",
+            "description": "lesson chunks, one per line as '[<chunk_id>] (<slide id> or reference) <text>'"
+          },
+          {
+            "prefix": "Feedback:",
+            "description": "problems with your previous answer that you must fix, or '(none)'"
+          },
+          {
+            "prefix": "Title:",
+            "description": "${title}"
+          },
+          {
+            "prefix": "Text:",
+            "description": "${text}"
+          },
+          {
+            "prefix": "Show Slide:",
+            "description": "slide id of a cited slide chunk"
+          },
+          {
+            "prefix": "Citations:",
+            "description": "chunk ids the explanation relies on"
+          }
+        ]
+      },
+      "lm": null
+    },
+    "script_guardian": {
+      "traces": [],
+      "train": [],
+      "demos": [
+        {
+          "augmented": true,
+          "chunks": "[syn-s02-c1] Outline | - Organizing data | - Object basics",
+          "script": "Here is today's outline: first how we organize data, and then the basics of objects.",
+          "claims": [
+            {
+              "claim": "Today's outline includes how we organize data.",
+              "chunk_id": "syn-s02-c1",
+              "quote": "Organizing data",
+              "kind": "fact"
+            },
+            {
+              "claim": "Today's outline includes the basics of objects.",
+              "chunk_id": "syn-s02-c1",
+              "quote": "Object basics",
+              "kind": "fact"
+            }
+          ],
+          "verdict": "pass",
+          "reason": "Every factual claim in the script is directly supported by the cited chunk."
+        }
+      ],
+      "signature": {
+        "instructions": "You check a script that a text-to-speech voice reads to students while a\nslide is shown. Be strict: if you are not sure a claim is supported, treat it as not\nsupported.\n1. List every factual claim in the script. A sentence can hold more than one claim;\n   list each one.\n   For each claim, give the id of the cited chunk that states it, or null if no\n   cited chunk states it, and copy the words of that chunk that state it as quote\n   (a short exact span, not a paraphrase).\n   - Only the cited chunks count. Do not use your own knowledge.\n   - A claim that is true in general but not stated in the cited chunks is not\n     supported.\n   - A claim the chunk states in other words is supported: judge the meaning, not\n     the wording.\n   - A chunk that only names a term, without explaining it, does not support an\n     explanation of that term.\n   - Give each claim a kind:\n     \"fact\": a statement about the subject or the course. Its chunk must state it.\n     \"example\": an example, analogy, or rewording that only illustrates an idea.\n     Give the chunk and quote of the idea it illustrates. If it does not fit that\n     idea exactly, or it brings in a new fact, give null.\n     \"framing\": a sentence with no fact at all (motivation or encouragement, such as\n     \"This will help you later\" or \"Let's make sure we all start together\"). Give\n     null for its chunk id and quote.\n   - Transitions, sign-posts, and sentences that only say what the slide is or what\n     it shows or lists (\"Next, let's look at ...\", \"Let's recap\", \"This slide lists\n     the main topics\", \"These are the starting points for this class\") state no\n     facts about the subject; they are not claims, so leave them out.\n2. verdict is \"pass\" only if every fact and example has a chunk id and a quote.",
+        "fields": [
+          {
+            "prefix": "Chunks:",
+            "description": "cited chunks, one per line as '[<chunk_id>] <text>'"
+          },
+          {
+            "prefix": "Script:",
+            "description": "the script to check"
+          },
+          {
+            "prefix": "Claims:",
+            "description": "every factual claim, each with the id of the cited chunk that states it, or null, and the quote from that chunk"
+          },
+          {
+            "prefix": "Verdict:",
+            "description": "${verdict}"
+          },
+          {
+            "prefix": "Reason:",
+            "description": "one sentence"
+          }
+        ]
+      },
+      "lm": null
+    },
+    "explanation_guardian": {
+      "traces": [],
+      "train": [],
+      "demos": [
+        {
+          "augmented": true,
+          "chunks": "[syn-s04-c1] ADT and Data Structure | - ADT: the data and its operations | - Says what, not how | - Data structure: an implementation in a language\n[syn-p02-c1] An abstract data type (ADT) is a description of a kind of data and the operations allowed on it, for example add, remove, and contains. An ADT says what the operations do. It does not say how the data is kept in memory, and it does not depend on a programming language.\n[syn-p02-c2] A data structure is a concrete way to store data in a program, written in a specific language. It implements the operations of an ADT. The same ADT can have several data structures behind it, such as an array-based version and a linked version.",
+          "question": "Which one does not depend on any programming language?",
+          "wrong_option": "B: A data structure",
+          "explanation": "Many of you picked this one, and it is an easy mix-up. A data structure is written in a specific language; it is the abstract data type that does not depend on a language.",
+          "claims": [
+            {
+              "claim": "An abstract data type (ADT) does not depend on a programming language.",
+              "chunk_id": "syn-p02-c1",
+              "quote": "It does not depend on a programming language",
+              "kind": "fact"
+            },
+            {
+              "claim": "A data structure is written in a specific language.",
+              "chunk_id": "syn-p02-c2",
+              "quote": "written in a specific language",
+              "kind": "fact"
+            }
+          ],
+          "verdict": "pass",
+          "reason": "Every factual claim in the explanation is supported by a cited chunk and a direct quote."
+        },
+        {
+          "augmented": true,
+          "chunks": "[syn-s05-c1] Collections | - Bag | - Set | - List | - Stack | - Queue | - Map\n[syn-p03-c2] A bag holds items in no particular order and allows duplicates. A set holds items in no particular order and does not allow duplicates. A list keeps items in a sequence, and each item has a position.",
+          "question": "Which collection allows duplicates and keeps no particular order?",
+          "wrong_option": "A: A set",
+          "explanation": "A set does not allow duplicates because it uses hashing to check each new item.",
+          "claims": [
+            {
+              "claim": "A set does not allow duplicates.",
+              "chunk_id": "syn-p03-c2",
+              "quote": "A set holds items in no particular order and does not allow duplicates.",
+              "kind": "fact"
+            },
+            {
+              "claim": "A set uses hashing to check each new item.",
+              "chunk_id": "syn-p03-c2",
+              "quote": null,
+              "kind": "fact"
+            }
+          ],
+          "verdict": "fail",
+          "reason": "The claim \"A set uses hashing to check each new item\" is not supported by any cited chunk."
+        }
+      ],
+      "signature": {
+        "instructions": "You check an explanation that a text-to-speech voice reads to students after\nthey picked a wrong option in a poll. Be strict: if you are not sure a claim is\nsupported, treat it as not supported.\n1. List every factual claim in the explanation. A sentence can hold more than one\n   claim; list each one.\n   For each claim, give the id of the cited chunk that states it, or null if no\n   cited chunk states it, and copy the words of that chunk that state it as quote\n   (a short exact span, not a paraphrase).\n   - Only the cited chunks count. Do not use your own knowledge.\n   - A claim that is true in general but not stated in the cited chunks is not\n     supported.\n   - A claim the chunk states in other words is supported: judge the meaning, not\n     the wording.\n   - A chunk that only names a term, without explaining it, does not support an\n     explanation of that term.\n   - Give each claim a kind:\n     \"fact\": a statement about the subject or the course. Its chunk must state it.\n     \"example\": an example, analogy, or rewording that only illustrates an idea.\n     Give the chunk and quote of the idea it illustrates. If it does not fit that\n     idea exactly, or it brings in a new fact, give null.\n     \"framing\": a sentence with no fact at all (motivation or encouragement, such as\n     \"This will help you later\" or \"Let's make sure we all start together\"). Give\n     null for its chunk id and quote.\n   - Sentences that only refer to the poll (\"Many of you chose this option\", \"The\n     answer comes next\") are not claims; leave them out.\n   - A sentence that restates the chosen option in order to reject it (\"Some of you\n     thought private fields make programs faster\", \"The option you picked describes\n     a queue\") is not a claim of the explanation; leave it out. The claim to check\n     is what the explanation says instead.\n   - A claim that the chosen option is wrong, or that it really describes another\n     idea, is supported by a chunk that contradicts the option or that defines that\n     other idea.\n   - If a cited chunk gives a closed, complete list (for example \"The three pillars\n     are: 1, 2, 3\" or an outline of the lecture's topics), an option or idea that\n     the list leaves out is shown wrong by that list. A list of examples (\"for\n     example\", \"such as\", \"examples of\") is not complete and shows nothing wrong.\n   - A claim about what later lessons or the rest of the course cover is supported\n     only if a cited chunk states it.\n2. verdict is \"pass\" only if every fact and example has a chunk id and a quote.",
+        "fields": [
+          {
+            "prefix": "Chunks:",
+            "description": "cited chunks, one per line as '[<chunk_id>] <text>'"
+          },
+          {
+            "prefix": "Question:",
+            "description": "the poll question"
+          },
+          {
+            "prefix": "Wrong Option:",
+            "description": "'<key>: <text>' of the option the students picked"
+          },
+          {
+            "prefix": "Explanation:",
+            "description": "the explanation to check"
+          },
+          {
+            "prefix": "Claims:",
+            "description": "every factual claim, each with the id of the cited chunk that states it, or null, and the quote from that chunk"
+          },
+          {
+            "prefix": "Verdict:",
+            "description": "${verdict}"
+          },
+          {
+            "prefix": "Reason:",
+            "description": "one sentence"
+          }
+        ]
+      },
+      "lm": null
+    }
+  },
+  "meta": {
+    "base_program": "prep-writers-v6",
+    "note": "Stage 12: writers compiled with BootstrapFewShot (prep-writers-v6); script and explanation Guardian demos from random search (prep-v6-spe, val = L1 prep dev cases); poll Guardian uncompiled (random search gave no gain)."
+  }
+}

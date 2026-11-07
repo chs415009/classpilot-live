@@ -1,0 +1,860 @@
+{
+  "set_id": "train-prep-guardian-synthetic-ds-01",
+  "split": "train",
+  "cases": [
+    {
+      "id": "ps-01",
+      "kind": "script",
+      "source": "written",
+      "slide_id": "syn-s03",
+      "chunks": [
+        {
+          "chunk_id": "syn-s03-c1",
+          "text": "Data Organization Around Us\n- Music playlist\n- Bus stop line\n- Undo button\n- Library shelves\n- Family tree\n- Subway map"
+        },
+        {
+          "chunk_id": "syn-p01-c1",
+          "text": "People organize information all the time so it is quick to use. A music playlist keeps songs in a chosen order. People waiting at a bus stop board in the order they arrived. The undo button in a text editor removes the most recent change first."
+        }
+      ],
+      "script": "This slide shows everyday ways people organize information. A playlist keeps songs in a chosen order, and people at a bus stop board in the order they arrived. The undo button removes your most recent change first.",
+      "expected": "pass",
+      "note": "Rewording of the slide and its reference. (Stage 12 prep experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "ps-02",
+      "kind": "script",
+      "source": "written",
+      "slide_id": "syn-s03",
+      "chunks": [
+        {
+          "chunk_id": "syn-s03-c1",
+          "text": "Data Organization Around Us\n- Music playlist\n- Bus stop line\n- Undo button\n- Library shelves\n- Family tree\n- Subway map"
+        },
+        {
+          "chunk_id": "syn-p01-c2",
+          "text": "Libraries shelve books by call number, so a reader can walk to the right shelf instead of checking every book. A family tree shows how relatives are connected across generations. A subway map shows stations and the lines that join them."
+        }
+      ],
+      "script": "Libraries shelve books by call number, so a reader can walk straight to the right shelf instead of checking every book. It is a bit like using a street address instead of knocking on every door.",
+      "expected": "pass",
+      "note": "Own comparison tied to the call-number idea; no new fact. (Stage 12 prep experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "ps-03",
+      "kind": "script",
+      "source": "written",
+      "slide_id": "syn-s03",
+      "chunks": [
+        {
+          "chunk_id": "syn-s03-c1",
+          "text": "Data Organization Around Us\n- Music playlist\n- Bus stop line\n- Undo button\n- Library shelves\n- Family tree\n- Subway map"
+        },
+        {
+          "chunk_id": "syn-p01-c2",
+          "text": "Libraries shelve books by call number, so a reader can walk to the right shelf instead of checking every book. A family tree shows how relatives are connected across generations. A subway map shows stations and the lines that join them."
+        }
+      ],
+      "script": "A subway map shows stations and the lines that join them. The first subway opened in London in 1863.",
+      "expected": "fail",
+      "note": "Second sentence is a new fact. (Stage 12 prep experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "ps-04",
+      "kind": "script",
+      "source": "written",
+      "slide_id": "syn-s04",
+      "chunks": [
+        {
+          "chunk_id": "syn-s04-c1",
+          "text": "ADT and Data Structure\n- ADT: the data and its operations\n- Says what, not how\n- Data structure: an implementation in a language"
+        },
+        {
+          "chunk_id": "syn-p02-c1",
+          "text": "An abstract data type (ADT) is a description of a kind of data and the operations allowed on it, for example add, remove, and contains. An ADT says what the operations do. It does not say how the data is kept in memory, and it does not depend on a programming language."
+        },
+        {
+          "chunk_id": "syn-p02-c2",
+          "text": "A data structure is a concrete way to store data in a program, written in a specific language. It implements the operations of an ADT. The same ADT can have several data structures behind it, such as an array-based version and a linked version."
+        }
+      ],
+      "script": "An abstract data type describes the data and the operations allowed on it, but not how the data is kept in memory. A data structure is the concrete version written in a specific language that implements those operations.",
+      "expected": "pass",
+      "note": "Rewording. (Stage 12 prep experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "ps-05",
+      "kind": "script",
+      "source": "written",
+      "slide_id": "syn-s04",
+      "chunks": [
+        {
+          "chunk_id": "syn-s04-c1",
+          "text": "ADT and Data Structure\n- ADT: the data and its operations\n- Says what, not how\n- Data structure: an implementation in a language"
+        },
+        {
+          "chunk_id": "syn-p02-c1",
+          "text": "An abstract data type (ADT) is a description of a kind of data and the operations allowed on it, for example add, remove, and contains. An ADT says what the operations do. It does not say how the data is kept in memory, and it does not depend on a programming language."
+        },
+        {
+          "chunk_id": "syn-p02-c2",
+          "text": "A data structure is a concrete way to store data in a program, written in a specific language. It implements the operations of an ADT. The same ADT can have several data structures behind it, such as an array-based version and a linked version."
+        }
+      ],
+      "script": "An ADT describes the operations, and a data structure implements them. That is why an ADT always runs faster than a data structure.",
+      "expected": "fail",
+      "note": "Speed claim is new and wrong. (Stage 12 prep experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "ps-06",
+      "kind": "script",
+      "source": "written",
+      "slide_id": "syn-s05",
+      "chunks": [
+        {
+          "chunk_id": "syn-s05-c1",
+          "text": "Collections\n- Bag\n- Set\n- List\n- Stack\n- Queue\n- Map"
+        },
+        {
+          "chunk_id": "syn-p03-c2",
+          "text": "A bag holds items in no particular order and allows duplicates. A set holds items in no particular order and does not allow duplicates. A list keeps items in a sequence, and each item has a position."
+        },
+        {
+          "chunk_id": "syn-p03-c3",
+          "text": "A stack adds and removes items at the same end, so the last item added is the first removed (LIFO). A queue adds items at the back and removes them from the front, so the first item added is the first removed (FIFO). A map stores pairs of a key and a value and finds a value by its key."
+        }
+      ],
+      "script": "Here are six collections. A bag and a set keep no order, but only a bag allows duplicates. A list keeps a sequence with positions, a stack removes the last item added, a queue removes the first item added, and a map finds a value by its key.",
+      "expected": "pass",
+      "note": "Rewording of the two reference chunks. (Stage 12 prep experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "ps-07",
+      "kind": "script",
+      "source": "written",
+      "slide_id": "syn-s05",
+      "chunks": [
+        {
+          "chunk_id": "syn-s05-c1",
+          "text": "Collections\n- Bag\n- Set\n- List\n- Stack\n- Queue\n- Map"
+        },
+        {
+          "chunk_id": "syn-p03-c2",
+          "text": "A bag holds items in no particular order and allows duplicates. A set holds items in no particular order and does not allow duplicates. A list keeps items in a sequence, and each item has a position."
+        },
+        {
+          "chunk_id": "syn-p03-c3",
+          "text": "A stack adds and removes items at the same end, so the last item added is the first removed (LIFO). A queue adds items at the back and removes them from the front, so the first item added is the first removed (FIFO). A map stores pairs of a key and a value and finds a value by its key."
+        }
+      ],
+      "script": "These are the collections for today. A tree is another collection that stores items in levels, with a root at the top.",
+      "expected": "fail",
+      "note": "The tree definition is in no chunk. (Stage 12 prep experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "ps-08",
+      "kind": "script",
+      "source": "written",
+      "slide_id": "syn-s06",
+      "chunks": [
+        {
+          "chunk_id": "syn-s06-c1",
+          "text": "Object-Oriented Programming\n- Encapsulation\n- Inheritance\n- Polymorphism"
+        },
+        {
+          "chunk_id": "syn-p04-c1",
+          "text": "In object-oriented programming a program is built from objects. A class is the blueprint, and each object is one instance of a class with its own data. The three main ideas covered here are encapsulation, inheritance, and polymorphism."
+        }
+      ],
+      "script": "Now we meet the three main ideas of object-oriented programming: encapsulation, inheritance, and polymorphism. Let's look at each one in turn.",
+      "expected": "pass",
+      "note": "Listed ideas plus a transition; nothing new. (Stage 12 prep experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "ps-09",
+      "kind": "script",
+      "source": "written",
+      "slide_id": "syn-s06",
+      "chunks": [
+        {
+          "chunk_id": "syn-s06-c1",
+          "text": "Object-Oriented Programming\n- Encapsulation\n- Inheritance\n- Polymorphism"
+        },
+        {
+          "chunk_id": "syn-p04-c1",
+          "text": "In object-oriented programming a program is built from objects. A class is the blueprint, and each object is one instance of a class with its own data. The three main ideas covered here are encapsulation, inheritance, and polymorphism."
+        }
+      ],
+      "script": "Object-oriented programming builds programs from objects. It was invented in the 1960s with a language called Simula.",
+      "expected": "fail",
+      "note": "History is a new fact. (Stage 12 prep experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "ps-10",
+      "kind": "script",
+      "source": "written",
+      "slide_id": "syn-s01",
+      "chunks": [
+        {
+          "chunk_id": "syn-s01-c1",
+          "text": "Lecture 3\nOrganizing Data and Object Basics\nSample Course 101"
+        }
+      ],
+      "script": "Welcome to lecture three, Organizing Data and Object Basics.",
+      "expected": "pass",
+      "note": "Title slide read with a short welcome. (Stage 12 prep experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "ps-11",
+      "kind": "script",
+      "source": "written",
+      "slide_id": "syn-s01",
+      "chunks": [
+        {
+          "chunk_id": "syn-s01-c1",
+          "text": "Lecture 3\nOrganizing Data and Object Basics\nSample Course 101"
+        }
+      ],
+      "script": "Welcome to lecture three. Later this semester we will also cover sorting algorithms and graphs.",
+      "expected": "fail",
+      "note": "Claim about later lessons that no chunk states. (Stage 12 prep experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "ps-12",
+      "kind": "script",
+      "source": "written",
+      "slide_id": "syn-s07",
+      "chunks": [
+        {
+          "chunk_id": "syn-s07-c1",
+          "text": "Encapsulation\n- Keep data and methods together\n- Hide the data inside the class\n- Use it through public methods"
+        },
+        {
+          "chunk_id": "syn-p05-c1",
+          "text": "Encapsulation puts an object's data and the methods that use that data together in one class, and keeps the data from being changed directly from outside. In Java the fields are usually declared private, and other code works with the object through public methods."
+        }
+      ],
+      "script": "Encapsulation keeps an object's data and its methods together and hides the data inside the class; other code uses public methods. It is like a TV remote: you press the buttons without opening the case.",
+      "expected": "pass",
+      "note": "Own comparison tied to the hiding idea; no new fact. (Stage 12 prep experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "ps-13",
+      "kind": "script",
+      "source": "written",
+      "slide_id": "syn-s02",
+      "chunks": [
+        {
+          "chunk_id": "syn-s02-c1",
+          "text": "Outline\n- Organizing data\n- Object basics"
+        }
+      ],
+      "script": "Here is today's outline: first how we organize data, and then the basics of objects.",
+      "expected": "pass",
+      "note": "Outline read as it is. (Stage 12 prep experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "ps-14",
+      "kind": "script",
+      "source": "written",
+      "slide_id": "syn-s07",
+      "chunks": [
+        {
+          "chunk_id": "syn-s07-c1",
+          "text": "Encapsulation\n- Keep data and methods together\n- Hide the data inside the class\n- Use it through public methods"
+        },
+        {
+          "chunk_id": "syn-p05-c1",
+          "text": "Encapsulation puts an object's data and the methods that use that data together in one class, and keeps the data from being changed directly from outside. In Java the fields are usually declared private, and other code works with the object through public methods."
+        }
+      ],
+      "script": "Encapsulation hides an object's data. In Java, private fields can never be read by any other class, not even through methods.",
+      "expected": "fail",
+      "note": "Contradicts the chunk: other code works through public methods. (Stage 12 prep experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "pp-01",
+      "kind": "poll",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-p03-c3",
+          "text": "A stack adds and removes items at the same end, so the last item added is the first removed (LIFO). A queue adds items at the back and removes them from the front, so the first item added is the first removed (FIFO). A map stores pairs of a key and a value and finds a value by its key."
+        },
+        {
+          "chunk_id": "syn-p03-c2",
+          "text": "A bag holds items in no particular order and allows duplicates. A set holds items in no particular order and does not allow duplicates. A list keeps items in a sequence, and each item has a position."
+        }
+      ],
+      "question": "Which collection removes the first item that was added?",
+      "options": {
+        "A": "A stack",
+        "B": "A queue",
+        "C": "A set",
+        "D": "A bag"
+      },
+      "correct_option": "B",
+      "expected": "pass",
+      "shown_wrong": {
+        "A": true,
+        "C": true,
+        "D": true
+      },
+      "note": "Queue is FIFO; stack is LIFO (contradicted); set and bag keep no order, so they have no first item to remove. (Stage 12 prep experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "pp-02",
+      "kind": "poll",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-s03-c1",
+          "text": "Data Organization Around Us\n- Music playlist\n- Bus stop line\n- Undo button\n- Library shelves\n- Family tree\n- Subway map"
+        },
+        {
+          "chunk_id": "syn-p01-c1",
+          "text": "People organize information all the time so it is quick to use. A music playlist keeps songs in a chosen order. People waiting at a bus stop board in the order they arrived. The undo button in a text editor removes the most recent change first."
+        }
+      ],
+      "question": "Which is an example of organized information from the lesson?",
+      "options": {
+        "A": "A music playlist",
+        "B": "A pile of laundry",
+        "C": "A shoebox of receipts",
+        "D": "A messy drawer"
+      },
+      "correct_option": "A",
+      "expected": "fail",
+      "shown_wrong": {
+        "B": false,
+        "C": false,
+        "D": false
+      },
+      "note": "The chunks give examples, not a closed list, and never say the other options are unorganized. (Stage 12 prep experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "pp-03",
+      "kind": "poll",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-p04-c1",
+          "text": "In object-oriented programming a program is built from objects. A class is the blueprint, and each object is one instance of a class with its own data. The three main ideas covered here are encapsulation, inheritance, and polymorphism."
+        }
+      ],
+      "question": "Which is one of the three main ideas of object-oriented programming covered here?",
+      "options": {
+        "A": "Recursion",
+        "B": "Inheritance",
+        "C": "Compilation",
+        "D": "Sorting"
+      },
+      "correct_option": "B",
+      "expected": "pass",
+      "shown_wrong": {
+        "A": true,
+        "C": true,
+        "D": true
+      },
+      "note": "A closed list of the three main ideas leaves the other options out. (Stage 12 prep experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "pp-04",
+      "kind": "poll",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-p02-c1",
+          "text": "An abstract data type (ADT) is a description of a kind of data and the operations allowed on it, for example add, remove, and contains. An ADT says what the operations do. It does not say how the data is kept in memory, and it does not depend on a programming language."
+        }
+      ],
+      "question": "What does an abstract data type describe?",
+      "options": {
+        "A": "The data and the operations allowed on it",
+        "B": "How the data is kept in memory",
+        "C": "The programming language it is written in",
+        "D": "How fast each operation runs"
+      },
+      "correct_option": "A",
+      "expected": "fail",
+      "shown_wrong": {
+        "B": true,
+        "C": true,
+        "D": false
+      },
+      "note": "B and C are contradicted, but nothing shows D wrong. (Stage 12 prep experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "pp-05",
+      "kind": "poll",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-p04-c2",
+          "text": "Inheritance lets a new class, the subclass, reuse the fields and methods of an existing class. The subclass can add methods or override inherited ones. A subclass object is also an object of its parent class: a Dog is an Animal."
+        },
+        {
+          "chunk_id": "syn-p04-c1",
+          "text": "In object-oriented programming a program is built from objects. A class is the blueprint, and each object is one instance of a class with its own data. The three main ideas covered here are encapsulation, inheritance, and polymorphism."
+        }
+      ],
+      "question": "Dog is a subclass of Animal. What is a Dog object?",
+      "options": {
+        "A": "Also an Animal object",
+        "B": "Not an Animal object",
+        "C": "An object of no class",
+        "D": "The parent class of Animal"
+      },
+      "correct_option": "A",
+      "expected": "pass",
+      "shown_wrong": {
+        "B": true,
+        "C": true,
+        "D": true
+      },
+      "note": "A subclass object is also an object of its parent; each object is an instance of a class; the subclass is the new class, not the parent. (Stage 12 prep experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "pp-06",
+      "kind": "poll",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-p03-c2",
+          "text": "A bag holds items in no particular order and allows duplicates. A set holds items in no particular order and does not allow duplicates. A list keeps items in a sequence, and each item has a position."
+        }
+      ],
+      "question": "Which collection is the fastest for searching?",
+      "options": {
+        "A": "A set",
+        "B": "A bag",
+        "C": "A list",
+        "D": "A stack"
+      },
+      "correct_option": "A",
+      "expected": "fail",
+      "shown_wrong": {
+        "B": false,
+        "C": false,
+        "D": false
+      },
+      "note": "Speed is in no chunk: the correct option is not supported. (Stage 12 prep experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "pe-01",
+      "kind": "explanation",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-s04-c1",
+          "text": "ADT and Data Structure\n- ADT: the data and its operations\n- Says what, not how\n- Data structure: an implementation in a language"
+        },
+        {
+          "chunk_id": "syn-p02-c1",
+          "text": "An abstract data type (ADT) is a description of a kind of data and the operations allowed on it, for example add, remove, and contains. An ADT says what the operations do. It does not say how the data is kept in memory, and it does not depend on a programming language."
+        },
+        {
+          "chunk_id": "syn-p02-c2",
+          "text": "A data structure is a concrete way to store data in a program, written in a specific language. It implements the operations of an ADT. The same ADT can have several data structures behind it, such as an array-based version and a linked version."
+        }
+      ],
+      "question": "What does an abstract data type describe?",
+      "options": {
+        "A": "The data and the operations allowed on it",
+        "B": "How the data is laid out in memory",
+        "C": "The Java code of each operation",
+        "D": "The order in which items are stored"
+      },
+      "correct_option": "A",
+      "wrong_option": "B",
+      "explanation": "An ADT does not say how the data is kept in memory. It describes the data and the operations allowed on it, such as add, remove, and contains. How the data is stored belongs to the data structure.",
+      "expected": "pass",
+      "note": "Rewording. (Stage 12 prep experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "pe-02",
+      "kind": "explanation",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-s04-c1",
+          "text": "ADT and Data Structure\n- ADT: the data and its operations\n- Says what, not how\n- Data structure: an implementation in a language"
+        },
+        {
+          "chunk_id": "syn-p02-c1",
+          "text": "An abstract data type (ADT) is a description of a kind of data and the operations allowed on it, for example add, remove, and contains. An ADT says what the operations do. It does not say how the data is kept in memory, and it does not depend on a programming language."
+        }
+      ],
+      "question": "What does an abstract data type describe?",
+      "options": {
+        "A": "The data and the operations allowed on it",
+        "B": "How the data is laid out in memory",
+        "C": "The Java code of each operation",
+        "D": "The order in which items are stored"
+      },
+      "correct_option": "A",
+      "wrong_option": "B",
+      "explanation": "An ADT says what the operations do, not how the data is kept in memory. Think of a menu: it lists the dishes, not the kitchen's recipes.",
+      "expected": "pass",
+      "note": "Own comparison tied to the what-not-how idea. (Stage 12 prep experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "pe-03",
+      "kind": "explanation",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-s04-c1",
+          "text": "ADT and Data Structure\n- ADT: the data and its operations\n- Says what, not how\n- Data structure: an implementation in a language"
+        },
+        {
+          "chunk_id": "syn-p02-c1",
+          "text": "An abstract data type (ADT) is a description of a kind of data and the operations allowed on it, for example add, remove, and contains. An ADT says what the operations do. It does not say how the data is kept in memory, and it does not depend on a programming language."
+        }
+      ],
+      "question": "What does an abstract data type describe?",
+      "options": {
+        "A": "The data and the operations allowed on it",
+        "B": "How the data is laid out in memory",
+        "C": "The Java code of each operation",
+        "D": "The order in which items are stored"
+      },
+      "correct_option": "A",
+      "wrong_option": "B",
+      "explanation": "An ADT does not describe memory. Memory layout is handled by the heap and the garbage collector, which is a different topic.",
+      "expected": "fail",
+      "note": "Describes the wrong option's own topic with new facts. (Stage 12 prep experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "pe-04",
+      "kind": "explanation",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-s06-c1",
+          "text": "Object-Oriented Programming\n- Encapsulation\n- Inheritance\n- Polymorphism"
+        },
+        {
+          "chunk_id": "syn-p04-c1",
+          "text": "In object-oriented programming a program is built from objects. A class is the blueprint, and each object is one instance of a class with its own data. The three main ideas covered here are encapsulation, inheritance, and polymorphism."
+        }
+      ],
+      "question": "Which is one of the three main ideas of object-oriented programming covered here?",
+      "options": {
+        "A": "Recursion",
+        "B": "Inheritance",
+        "C": "Compilation",
+        "D": "Sorting"
+      },
+      "correct_option": "B",
+      "wrong_option": "A",
+      "explanation": "Recursion is not one of the three main ideas covered in this lesson. The three main ideas are encapsulation, inheritance, and polymorphism.",
+      "expected": "pass",
+      "note": "Closed list leaves recursion out. (Stage 12 prep experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "pe-05",
+      "kind": "explanation",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-s06-c1",
+          "text": "Object-Oriented Programming\n- Encapsulation\n- Inheritance\n- Polymorphism"
+        },
+        {
+          "chunk_id": "syn-p04-c1",
+          "text": "In object-oriented programming a program is built from objects. A class is the blueprint, and each object is one instance of a class with its own data. The three main ideas covered here are encapsulation, inheritance, and polymorphism."
+        }
+      ],
+      "question": "Which is one of the three main ideas of object-oriented programming covered here?",
+      "options": {
+        "A": "Recursion",
+        "B": "Inheritance",
+        "C": "Compilation",
+        "D": "Sorting"
+      },
+      "correct_option": "B",
+      "wrong_option": "A",
+      "explanation": "Recursion means a method calls itself until it reaches a base case, so it is a programming technique rather than an idea of object-oriented programming.",
+      "expected": "fail",
+      "note": "Explains recursion, which no chunk states. (Stage 12 prep experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "pe-06",
+      "kind": "explanation",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-s05-c1",
+          "text": "Collections\n- Bag\n- Set\n- List\n- Stack\n- Queue\n- Map"
+        },
+        {
+          "chunk_id": "syn-p03-c3",
+          "text": "A stack adds and removes items at the same end, so the last item added is the first removed (LIFO). A queue adds items at the back and removes them from the front, so the first item added is the first removed (FIFO). A map stores pairs of a key and a value and finds a value by its key."
+        }
+      ],
+      "question": "Which collection removes the first item that was added?",
+      "options": {
+        "A": "A stack",
+        "B": "A queue",
+        "C": "A set",
+        "D": "A bag"
+      },
+      "correct_option": "B",
+      "wrong_option": "A",
+      "explanation": "A stack removes the last item added first: last in, first out. The question asks for first in, first out, which is a queue, where items join at the back and leave from the front.",
+      "expected": "pass",
+      "note": "Rewording; does not say the letter. (Stage 12 prep experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "pe-07",
+      "kind": "explanation",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-s05-c1",
+          "text": "Collections\n- Bag\n- Set\n- List\n- Stack\n- Queue\n- Map"
+        },
+        {
+          "chunk_id": "syn-p03-c3",
+          "text": "A stack adds and removes items at the same end, so the last item added is the first removed (LIFO). A queue adds items at the back and removes them from the front, so the first item added is the first removed (FIFO). A map stores pairs of a key and a value and finds a value by its key."
+        }
+      ],
+      "question": "Which collection removes the first item that was added?",
+      "options": {
+        "A": "A stack",
+        "B": "A queue",
+        "C": "A set",
+        "D": "A bag"
+      },
+      "correct_option": "B",
+      "wrong_option": "A",
+      "explanation": "A stack removes the last item added first, like the call stack in Java that stores each method call.",
+      "expected": "fail",
+      "note": "The 'example' brings a new fact (Java call stack). (Stage 12 prep experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "pe-08",
+      "kind": "explanation",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-s05-c1",
+          "text": "Collections\n- Bag\n- Set\n- List\n- Stack\n- Queue\n- Map"
+        },
+        {
+          "chunk_id": "syn-p03-c2",
+          "text": "A bag holds items in no particular order and allows duplicates. A set holds items in no particular order and does not allow duplicates. A list keeps items in a sequence, and each item has a position."
+        }
+      ],
+      "question": "Which collection allows duplicates and keeps no particular order?",
+      "options": {
+        "A": "A set",
+        "B": "A bag",
+        "C": "A list",
+        "D": "A queue"
+      },
+      "correct_option": "B",
+      "wrong_option": "A",
+      "explanation": "A set keeps no order, but it does not allow duplicates, so it cannot hold the same item twice. The collection that keeps no order and allows duplicates is a bag.",
+      "expected": "pass",
+      "note": "Rewording; names the right idea but not the letter. (Stage 12 prep experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "pe-09",
+      "kind": "explanation",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-s05-c1",
+          "text": "Collections\n- Bag\n- Set\n- List\n- Stack\n- Queue\n- Map"
+        },
+        {
+          "chunk_id": "syn-p03-c2",
+          "text": "A bag holds items in no particular order and allows duplicates. A set holds items in no particular order and does not allow duplicates. A list keeps items in a sequence, and each item has a position."
+        }
+      ],
+      "question": "Which collection allows duplicates and keeps no particular order?",
+      "options": {
+        "A": "A set",
+        "B": "A bag",
+        "C": "A list",
+        "D": "A queue"
+      },
+      "correct_option": "B",
+      "wrong_option": "A",
+      "explanation": "A set does not allow duplicates because it uses hashing to check each new item.",
+      "expected": "fail",
+      "note": "Hashing is a new fact. (Stage 12 prep experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "pe-10",
+      "kind": "explanation",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-s04-c1",
+          "text": "ADT and Data Structure\n- ADT: the data and its operations\n- Says what, not how\n- Data structure: an implementation in a language"
+        },
+        {
+          "chunk_id": "syn-p02-c1",
+          "text": "An abstract data type (ADT) is a description of a kind of data and the operations allowed on it, for example add, remove, and contains. An ADT says what the operations do. It does not say how the data is kept in memory, and it does not depend on a programming language."
+        },
+        {
+          "chunk_id": "syn-p02-c2",
+          "text": "A data structure is a concrete way to store data in a program, written in a specific language. It implements the operations of an ADT. The same ADT can have several data structures behind it, such as an array-based version and a linked version."
+        }
+      ],
+      "question": "Which one does not depend on any programming language?",
+      "options": {
+        "A": "An abstract data type",
+        "B": "A data structure",
+        "C": "A Java class",
+        "D": "A compiled program"
+      },
+      "correct_option": "A",
+      "wrong_option": "B",
+      "explanation": "Many of you picked this one, and it is an easy mix-up. A data structure is written in a specific language; it is the abstract data type that does not depend on a language.",
+      "expected": "pass",
+      "note": "Poll reference is not a claim; the rest is supported. (Stage 12 prep experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "pe-11",
+      "kind": "explanation",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-s04-c1",
+          "text": "ADT and Data Structure\n- ADT: the data and its operations\n- Says what, not how\n- Data structure: an implementation in a language"
+        },
+        {
+          "chunk_id": "syn-p02-c2",
+          "text": "A data structure is a concrete way to store data in a program, written in a specific language. It implements the operations of an ADT. The same ADT can have several data structures behind it, such as an array-based version and a linked version."
+        }
+      ],
+      "question": "Which one does not depend on any programming language?",
+      "options": {
+        "A": "An abstract data type",
+        "B": "A data structure",
+        "C": "A Java class",
+        "D": "A compiled program"
+      },
+      "correct_option": "A",
+      "wrong_option": "B",
+      "explanation": "A data structure is written in a specific language. We will see many more data structures, like hash tables, in the next lecture.",
+      "expected": "fail",
+      "note": "Claim about the next lecture is in no chunk. (Stage 12 prep experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "pe-12",
+      "kind": "explanation",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-s04-c1",
+          "text": "ADT and Data Structure\n- ADT: the data and its operations\n- Says what, not how\n- Data structure: an implementation in a language"
+        },
+        {
+          "chunk_id": "syn-p02-c1",
+          "text": "An abstract data type (ADT) is a description of a kind of data and the operations allowed on it, for example add, remove, and contains. An ADT says what the operations do. It does not say how the data is kept in memory, and it does not depend on a programming language."
+        },
+        {
+          "chunk_id": "syn-p02-c2",
+          "text": "A data structure is a concrete way to store data in a program, written in a specific language. It implements the operations of an ADT. The same ADT can have several data structures behind it, such as an array-based version and a linked version."
+        }
+      ],
+      "question": "Which one does not depend on any programming language?",
+      "options": {
+        "A": "An abstract data type",
+        "B": "A data structure",
+        "C": "A Java class",
+        "D": "A compiled program"
+      },
+      "correct_option": "A",
+      "wrong_option": "B",
+      "explanation": "Both an abstract data type and a data structure are independent of any programming language.",
+      "expected": "fail",
+      "note": "Contradicts the chunk. (Stage 12 prep experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "ps-15",
+      "kind": "script",
+      "source": "written",
+      "slide_id": "syn-s02",
+      "chunks": [
+        {
+          "chunk_id": "syn-s02-c1",
+          "text": "Outline\n- Organizing data\n- Object basics"
+        },
+        {
+          "chunk_id": "syn-p04-c1",
+          "text": "In object-oriented programming a program is built from objects. A class is the blueprint, and each object is one instance of a class with its own data. The three main ideas covered here are encapsulation, inheritance, and polymorphism."
+        },
+        {
+          "chunk_id": "syn-p05-c1",
+          "text": "Encapsulation puts an object's data and the methods that use that data together in one class, and keeps the data from being changed directly from outside. In Java the fields are usually declared private, and other code works with the object through public methods."
+        }
+      ],
+      "script": "Here is today's outline. We start with object basics such as encapsulation and inheritance, and after that we look at how data is organized.",
+      "expected": "fail",
+      "note": "The outline puts organizing data first; the script reverses the order and presents later slides' details as this outline. (Stage 12 prep experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "ps-16",
+      "kind": "script",
+      "source": "written",
+      "slide_id": "syn-s02",
+      "chunks": [
+        {
+          "chunk_id": "syn-s02-c1",
+          "text": "Outline\n- Organizing data\n- Object basics"
+        },
+        {
+          "chunk_id": "syn-p04-c1",
+          "text": "In object-oriented programming a program is built from objects. A class is the blueprint, and each object is one instance of a class with its own data. The three main ideas covered here are encapsulation, inheritance, and polymorphism."
+        },
+        {
+          "chunk_id": "syn-p05-c1",
+          "text": "Encapsulation puts an object's data and the methods that use that data together in one class, and keeps the data from being changed directly from outside. In Java the fields are usually declared private, and other code works with the object through public methods."
+        }
+      ],
+      "script": "Here is today's outline. First we look at how data is organized, and then we turn to object basics, such as encapsulation.",
+      "expected": "pass",
+      "note": "Outline order kept; 'such as encapsulation' is tied to a given chunk. (Stage 12 prep experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    }
+  ]
+}

@@ -428,3 +428,12 @@ def test_code_rescues_a_claim_the_guardian_could_not_tie(claim, passed):
 def test_no_rescue_without_the_setting():
     raw = kinds(("An ADT is like a blueprint.", None, None, "example"))
     assert not check_prep_guardian(raw, ["c1"], require_claims=True, chunk_texts=BLUEPRINT).passed
+
+
+def test_quote_matches_a_chunk_with_html_entities():
+    # Stage 12: parsed readings keep HTML entities; the Guardian quotes the plain text.
+    from classpilot.rules.prep import quote_found
+
+    chunk = "the method would have a strict precondition: $x &gt; 0$ (or $x \\geq 0$)."
+    assert quote_found("a strict precondition: $x > 0$", [chunk])
+    assert not quote_found("a strict precondition: $y > 0$", [chunk])  # words only

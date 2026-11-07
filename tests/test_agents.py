@@ -55,6 +55,7 @@ def agents(engine):
 ANALYST_INPUTS = {
     "question_text": "Why keep raw data in Bronze?",
     "objectives": [{"objective_id": "seg-02", "title": "Why Bronze keeps raw data"}],
+    "chunks": [{"chunk_id": "chunk-01", "text": "Bronze keeps raw data."}],
 }
 RESPONDER_INPUTS = {
     "question_text": "Why keep raw data in Bronze?",
@@ -83,7 +84,6 @@ GOOD = {
         GUARDIAN_INPUTS,
         chat_reply(
             claims=[{"claim": "Bronze keeps raw data.", "chunk_id": "chunk-01"}],
-            reveals_graded_work="False",
             verdict="pass",
             reason="Supported.",
         ),
@@ -121,7 +121,6 @@ def test_literal_values_match_contract():
     assert typing.get_args(analyst.output_fields["category"].annotation) == (
         "in_scope",
         "out_of_scope",
-        "assignment_like",
     )
 
 
@@ -148,7 +147,7 @@ def test_none_string_is_normalized():
     raw = call_llm(agents(FakeEngine(reply)), "analyst", ANALYST_INPUTS, timeout_s=5)
     assert raw["objective_id"] is None
     claims = [{"claim": "Gold is fast.", "chunk_id": "null"}]
-    reply = chat_reply(claims=claims, reveals_graded_work="False", verdict="fail", reason="x")
+    reply = chat_reply(claims=claims, verdict="fail", reason="x")
     raw = call_llm(agents(FakeEngine(reply)), "guardian", GUARDIAN_INPUTS, timeout_s=5)
     assert raw["claims"][0]["chunk_id"] is None
 
@@ -183,7 +182,7 @@ def test_prompt_carries_the_formatted_inputs():
     request = engine.requests[0]
     text = (request.system or "") + "".join(m.text for m in request.messages)
     assert "[chunk-01] Bronze keeps raw data." in text
-    assert "Be strict" in text
+    assert "direct conclusion" in text
 
 
 def test_empty_chunks_are_shown_as_none():
@@ -240,4 +239,12 @@ def test_rules_come_first_in_the_system_message():
     call_llm(agents(engine), "guardian", inputs, timeout_s=5)
     system = engine.requests[0].system
     assert system.startswith("You review an answer before a student sees it.")
-    assert system.index("Be strict") < system.index("Your input fields are")
+    assert system.index("direct conclusion") < system.index("Your input fields are")
+
+
+def test_analyst_prompt_shows_the_retrieved_chunks():
+    inputs, reply = GOOD["analyst"]
+    engine = FakeEngine(reply)
+    call_llm(agents(engine), "analyst", inputs, timeout_s=5)
+    text = "".join(m.text for m in engine.requests[0].messages)
+    assert "[chunk-01] Bronze keeps raw data." in text and "seg-02: Why Bronze" in text

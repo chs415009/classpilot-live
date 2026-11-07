@@ -163,14 +163,14 @@ Students can type a question at any time.
 Flow:
 
 ```
-question -> Question Analyst -> retrieval (Cortex Search) -> Grounded Responder
+question -> retrieval (Cortex Search) -> Question Analyst -> Grounded Responder
          -> Guardian -> final validator (rule) -> answer or escalate
 ```
 
 | Step | Type | What it does |
 |---|---|---|
-| Question Analyst | LLM | Classifies the question as in scope, out of scope, or assignment-like; links it to a learning objective |
-| Retrieval | Search | Finds the most relevant knowledge chunks |
+| Retrieval | Search | Finds the most relevant knowledge chunks (slides and readings) |
+| Question Analyst | LLM | Classifies the question as in scope or out of scope from the objectives and the retrieved chunks, by its topic (a question the materials cover only in part is in scope; later steps escalate it); links it to a learning objective |
 | Grounded Responder | LLM | Answers only from the retrieved chunks, cites chunk ids, gives a confidence |
 | Guardian | LLM + rule | Lists each claim in the answer with the retrieved chunk that supports it; a rule fails the answer if any claim is unsupported (a claim whose words code finds in a retrieved chunk counts as supported). Rewording and direct inferences pass; nothing beyond the materials |
 | Final validator | Rule | Makes the final decision: answer or escalate |
@@ -179,8 +179,9 @@ question -> Question Analyst -> retrieval (Cortex Search) -> Grounded Responder
 
 **Escalate:** the student sees a message that the question was saved for the professor.
 Escalated questions are stored in the agent's decision log for the post-class report
-(deferred, section 7). Reasons: out of scope, assignment-like, low confidence,
-unsupported claims, or an LLM error / timeout.
+(deferred, section 7). Reasons: out of scope, low confidence, unsupported claims,
+or an LLM error / timeout. (The course has no assignments in the system: user decision
+2026-11-06, Stage 12.)
 
 Expected wait: a few seconds (v1 measured roughly 4–8 seconds for answered questions).
 The phone shows a waiting state.
@@ -289,7 +290,6 @@ session after the fact.
 ## 9. Out of scope / future work
 
 - Professor review or approval before class.
-- Protected assignment check against a professor-provided list.
 - Spread-out wrong answers (for example 40% / 40% on two wrong options does not trigger).
 - Noticing when many students ask similar questions.
 - Live-generated explanations.

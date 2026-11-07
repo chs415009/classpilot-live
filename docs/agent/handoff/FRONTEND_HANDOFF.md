@@ -147,7 +147,7 @@ Response: always 200 with a `Decision` (unused fields are `null`):
   `l1-pdf-p02` = page 2 of a reading), if you want to show sources.
 - `action: "escalate"`: show a message such as "Good question. It is saved for your
   professor and will be answered after class." `escalation_reason` is one of
-  `out_of_scope`, `assignment_like`, `low_confidence`, `unsupported`, `llm_error`; it
+  `out_of_scope`, `low_confidence`, `unsupported`, `llm_error`; it
   is for the professor, you do not need to show it.
 - An LLM error or timeout is also a 200 `escalate` (`llm_error`), never a 5xx.
 - Timing: about 5 s on average in our Cortex test (escalations by the first step take

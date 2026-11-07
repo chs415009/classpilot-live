@@ -41,10 +41,9 @@ def default_backends(settings: Settings, data_dir: Path) -> Backends:
 
     def live_llm() -> LLMClient:
         if settings.backend == "cortex":
-            from classpilot.adapters.cortex_engine import make_cortex_lm
-            from classpilot.agents.compiled import live_agents
+            from classpilot.agents.compiled import cortex_live_agents
 
-            return live_agents(settings, make_cortex_lm(settings))
+            return cortex_live_agents(settings)
         from classpilot.adapters.llm import MockLLM
 
         return MockLLM()

@@ -1,0 +1,57 @@
+{
+  "program_id": "fixture-compiled-v1",
+  "created_at": "2026-11-06T00:23:36Z",
+  "dspy_version": "3.4.1",
+  "modules": {
+    "analyst": {
+      "traces": [],
+      "train": [],
+      "demos": [
+        {
+          "objectives": "- seg-01: Stacks and queues",
+          "chunks": "[fx-c1] A stack is last in, first out (LIFO).",
+          "question": "Why is a stack called LIFO?",
+          "category": "in_scope",
+          "objective_id": "seg-01",
+          "reason": "Asks about stacks, an objective of this lesson."
+        }
+      ],
+      "signature": {
+        "instructions": "You help run a class session on this lesson.\nDecide whether the student question is about the subject this lesson teaches. Judge\nthe topic of the question, not whether the material answers it in full: later steps\ncheck the answer and save it for the professor when the material does not cover it.\n- in_scope: about the lesson's subject: a concept, example, or programming idea in\n  the objectives or in the lesson material below, or a closely related idea of the\n  same subject, even if the material covers it only in part or not at all.\n- out_of_scope: course logistics (exams, grading, deadlines, schedules, recordings,\n  office hours), other subjects, tools, or languages the lesson is not about, or\n  personal requests and recommendations.\nThe lesson material is the best search match from this lesson's slides and\nreadings; for an off-topic question it can be unrelated. Link an in-scope question\nto the closest objective.",
+        "fields": [
+          {
+            "prefix": "Objectives:",
+            "description": "lesson objectives, one per line as '- <id>: <title>'"
+          },
+          {
+            "prefix": "Chunks:",
+            "description": "lesson material retrieved for the question, one per line as '[<chunk_id>] <text>'"
+          },
+          {
+            "prefix": "Question:",
+            "description": "the student question"
+          },
+          {
+            "prefix": "Category:",
+            "description": "${category}"
+          },
+          {
+            "prefix": "Objective Id:",
+            "description": "id of the linked objective, or null"
+          },
+          {
+            "prefix": "Reason:",
+            "description": "one sentence"
+          }
+        ]
+      },
+      "lm": null
+    }
+  },
+  "meta": {
+    "note": "test fixture, synthetic (Stage 12 Analyst fields)",
+    "trainset": [
+      "fixture-1"
+    ]
+  }
+}

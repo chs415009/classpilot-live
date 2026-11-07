@@ -49,8 +49,6 @@ def check_guardian(
     output = parse_or_none(GuardianOutput, guardian_raw)
     if output is None:
         return GuardianCheck(None, "Guardian output does not match the schema.")
-    if output.reveals_graded_work:
-        return GuardianCheck(False, "Answer gives away graded work.")
     if not output.claims:
         return GuardianCheck(False, "Guardian listed no claims to check.")
     texts = [chunk_texts[i] for i in chunk_ids if chunk_texts and i in chunk_texts]

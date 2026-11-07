@@ -15,13 +15,18 @@ question:
   search_service: LESSON_SEARCH         # v1 fixture lesson; prep lessons: objects.search_service
   guardian_rescue_coverage: 0.8         # claim words in one retrieved chunk that pass a
                                         # claim the Guardian could not tie (Stage 9)
+  guardian_timeout_seconds: 15          # Guardian's own timeout (Stage 12; others: llm.timeout_seconds)
+  deadline_seconds: 30                  # per question; the Guardian gets at most what is left (Q-19)
+  analyst_chunk_chars: 600              # retrieved chunk text shown to the Analyst, per chunk (Stage 12)
+  malformed_retries: 1                  # same call again after an unparseable reply, not a timeout (Stage 12)
+  min_retry_seconds: 5                  # ... only while this much of the deadline is left
 
 llm:
   # Cortex AI_COMPLETE model (reached via cross-region inference from <account region>).
   # Also tested: llama3.3-70b, claude-haiku-4-5. Not used in mock mode.
   model: mistral-large3
   timeout_seconds: 10
-  compiled_program: live-qa-v1   # compiled/<id>.json for Analyst/Responder; null: uncompiled
+  compiled_program: live-qa-v5   # compiled/<id>.json for Analyst/Responder/Guardian; null: uncompiled
 
 parse:
   # Local conversion before upload (prep convert). LibreOffice runs in Docker only:
@@ -56,7 +61,7 @@ prep:
   rescue_coverage: 0.8          # share of a claim's words in one given chunk that
                                 # passes a claim the Guardian could not tie (Stage 9)
   model: null                   # Cortex model for generation; null: llm.model (Stage 7)
-  compiled_program: prep-writers-v5   # compiled/<id>.json for the prep writers; null: uncompiled
+  compiled_program: prep-v6     # compiled/<id>.json for prep writers and Guardians; null: uncompiled
   llm_timeout_seconds: 60
   max_tokens: 1500
   retrieval_top_k: 4

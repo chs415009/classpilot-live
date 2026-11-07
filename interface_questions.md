@@ -40,10 +40,11 @@ Details and history stay in `docs/agent/note.md`.
 
 ## Q-15 Removed decision values
 - **Status:** decided · **Area:** decision output · **Affects:** front end, pipeline (accepted values) · **Raised:** 2026-11-04
-- **Current approach (draft):** `remediation_limit` and `no_mapping` escalation reasons and the decision field `remediation_id` are removed. The 5 remaining reasons are `out_of_scope`, `assignment_like`, `low_confidence`, `unsupported`, `llm_error`.
+- **Current approach (draft):** `remediation_limit` and `no_mapping` escalation reasons and the decision field `remediation_id` are removed. The 5 remaining reasons were `out_of_scope`, `assignment_like`, `low_confidence`, `unsupported`, `llm_error`.
 - **Why change:** Path A no longer escalates.
 - **Suggested direction:** Update dbt `accepted_values` tests and front-end handling.
 - **Decision (agent side, 2026-11-04):** Implemented: `Action` is `explain | reveal | answer | escalate`, and these 5 reasons are the only ones the code produces. The dbt `accepted_values` tests should use these values.
+- **Update (agent side, 2026-11-06, Stage 12): `assignment_like` removed** (user decision: the system has no assignments). The 4 reasons are `out_of_scope`, `low_confidence`, `unsupported`, `llm_error`; nothing else changes. **Sai, Yaksha:** drop `assignment_like` from front-end handling and dbt `accepted_values`.
 
 ## Q-16 What escalation means in class, and where escalated questions go
 - **Status:** decided · **Area:** decision output · **Affects:** front end (Sai), professor · **Raised:** 2026-11-04

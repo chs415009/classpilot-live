@@ -28,6 +28,16 @@ class QuestionSettings(BaseModel):
     # Stage 9: a Guardian claim with no chunk passes if this share of its content words
     # is in one retrieved chunk (no extra negation); None turns the word check off.
     guardian_rescue_coverage: float | None = 0.8
+    # Stage 12: the Guardian gets its own timeout, capped by what is left of the
+    # per-question deadline (the agent answers within about deadline_seconds, Q-19).
+    guardian_timeout_seconds: float = 15
+    deadline_seconds: float = 30
+    # Stage 12: the Analyst sees the retrieved chunks, each cut to this many characters.
+    analyst_chunk_chars: int = 600
+    # Stage 12: a malformed reply is asked again (not timeouts), while at least
+    # min_retry_seconds of the deadline are left.
+    malformed_retries: int = 1
+    min_retry_seconds: float = 5
 
 
 class LLMSettings(BaseModel):

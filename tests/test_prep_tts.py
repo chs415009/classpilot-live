@@ -96,3 +96,39 @@ def test_urls_are_removed_and_flagged():
 
 def test_plain_double_quotes_are_not_a_tts_issue():
     assert tts_issues('The term "queue" means a line.') == []
+
+
+def test_boilerplate_lines_are_not_read_aloud():
+    # Stage 12: L1's title slide fell back to its slide text and read the ISBN line.
+    from classpilot.prep.tts import clean_for_tts, strip_boilerplate
+
+    slide = "\n".join(
+        [
+            "Lecture 2: Lists and Stacks",
+            "Prof. Ada Example, Ph.D.",
+            "Materials are edited by Prof. Example from A Data Book, 3rd edition.",
+            "ISBN-13 978-0-00-000000-0 2019 Example Press, Inc.",
+            "© 2020 Example Press. All rights reserved.",
+        ]
+    )
+    spoken = clean_for_tts(strip_boilerplate(slide))
+    assert spoken.startswith("Lecture 2: Lists and Stacks.")
+    assert "Ada Example" in spoken
+    for gone in ("ISBN", "edited", "Press", "rights"):
+        assert gone not in spoken
+
+
+def test_boilerplate_keeps_ordinary_lines():
+    from classpilot.prep.tts import strip_boilerplate
+
+    text = "A stack is last in, first out.\nIn 2019 the course added a lab."
+    assert strip_boilerplate(text) == text
+
+
+def test_generated_text_loses_brackets_but_keeps_words():
+    from classpilot.prep.tts import generated_text_issues, tidy_generated
+
+    text = tidy_generated("The instructor is Prof. Ada (Jo) Example [PhD], from **NU**.")
+    assert text == "The instructor is Prof. Ada Jo Example PhD, from NU."
+    assert generated_text_issues(text) == []
+    assert generated_text_issues(tidy_generated("Use {{ ref }} here."))  # code stays flagged

@@ -1,17 +1,20 @@
-"""Compile the prep writers and the live Analyst and Responder with DSPy
-BootstrapFewShot (Stage 9).
+"""Compile the prep writers and the live Analyst, Responder, and Guardian with DSPy
+BootstrapFewShot (Stage 9; the Guardian since Stage 12).
 
 Trainsets are synthetic (`eval/prep_train.json`, `eval/questions_train.json`), so the
 demos saved to `compiled/` hold no course content. Each metric is the check the system
 itself makes, so only outputs that pass become demos:
 - writers: structure check, then the uncompiled prep Guardian, then the Guardian rule;
-- analyst: the category matches the label (escalations other than out_of_scope and
-  assignment_like are decided later, so the Analyst should say in_scope);
+- analyst: the category matches the label (escalations other than out_of_scope are
+  decided later, so the Analyst should say in_scope);
 - responder (answer questions only): `rules.check_response`, then the uncompiled live
-  Guardian on the retrieved chunks, then `rules.check_guardian`.
+  Guardian on the retrieved chunks, then `rules.check_guardian`;
+- guardian: `rules.check_guardian` on its output gives the user's label (pass or fail)
+  for a labeled synthetic case (`eval/guardian_cases_train.json`), so only outputs
+  that lead code to the right verdict become demos.
 
-    python -m classpilot.cli compile --side prep --program-id prep-writers-v5
-    python -m classpilot.cli compile --side live --program-id live-qa-v1   # BACKEND=cortex
+    python -m classpilot.cli compile --side prep --program-id <id>   # BACKEND=cortex
+    python -m classpilot.cli compile --side live --program-id <id> [--task guardian]
 
 BootstrapFewShot goes through the items in order and stops after `max_demos` passes.
 """
@@ -36,7 +39,7 @@ from classpilot.agents.signatures import SIGNATURES
 from classpilot.contracts import ResponderOutput
 from classpilot.contracts.prep import ExplanationOutput, ScriptOutput
 from classpilot.eval_sets import TRAIN_SET_PATH, load_question_set
-from classpilot.prep.tts import strip_emphasis
+from classpilot.prep.tts import tidy_generated
 from classpilot.rules.prep import (
     check_prep_guardian,
     explanation_problems,
@@ -133,14 +136,14 @@ def writer_check(
         out = parse_output(ScriptOutput, raw)
         if out is None:
             return ["The output did not match the schema."]
-        out = out.model_copy(update={"script": strip_emphasis(out.script)})
+        out = out.model_copy(update={"script": tidy_generated(out.script)})
         problems = script_problems(out, allowed)
         task, inputs, require = "script_guardian", {"script": out.script}, False
     else:
         out = parse_output(ExplanationOutput, raw)
         if out is None:
             return ["The output did not match the schema."]
-        out = out.model_copy(update={"text": strip_emphasis(out.text)})
+        out = out.model_copy(update={"text": tidy_generated(out.text)})
         chunk_slide = {c["chunk_id"]: c["slide_id"] for c in item.chunks}
         problems = explanation_problems(out, allowed, chunk_slide, item.slide_ids)
         task = "explanation_guardian"
@@ -210,10 +213,12 @@ def bootstrap(signature, trainset: list[dspy.Example], metric, lm: dspy.LM, max_
 
 # ---------- live Analyst and Responder ----------
 
-LIVE_TASKS = ("analyst", "responder")
+LIVE_TASKS = ("analyst", "responder", "guardian")
+GUARDIAN_TRAIN_PATH = PROJECT_ROOT / "eval" / "guardian_cases_train.json"
 # Tried first, so the demos show what the dev baseline got wrong: a question about an
-# example or a sub-topic the objective titles do not name is still in scope.
-ANALYST_FIRST = ("tr-09", "tr-06", "tr-12", "tr-15", "tr-08")
+# example or a sub-topic the objective titles do not name is still in scope (tr-09), so
+# is a course topic the chunks do not cover (tr-17, Stage 12); logistics are not (tr-12).
+ANALYST_FIRST = ("tr-09", "tr-17", "tr-12", "tr-06", "tr-08")
 RESPONDER_FIRST = ("tr-09", "tr-04", "tr-05")
 
 
@@ -222,12 +227,12 @@ class LiveItem:
     task: str
     item_id: str
     inputs: dict  # structured node inputs, as the live graph passes them
-    expected: str | None = None  # analyst: the category to match
-    chunks: list[dict] = field(default_factory=list)  # responder: the retrieved chunks
+    expected: str | None = None  # analyst: the category; guardian: the label (pass/fail)
+    chunks: list[dict] = field(default_factory=list)  # responder, guardian: the chunks
 
 
 def analyst_category(expected_reason: str | None) -> str:
-    return expected_reason if expected_reason in ("out_of_scope", "assignment_like") else "in_scope"
+    return "out_of_scope" if expected_reason == "out_of_scope" else "in_scope"
 
 
 def _first(items: list[LiveItem], ids: tuple[str, ...]) -> list[LiveItem]:
@@ -235,7 +240,9 @@ def _first(items: list[LiveItem], ids: tuple[str, ...]) -> list[LiveItem]:
     return sorted(items, key=lambda i: rank.get(i.item_id, len(ids)))
 
 
-def load_live_trainset(path: Path = TRAIN_SET_PATH, top_k: int = 3) -> dict[str, list[LiveItem]]:
+def load_live_trainset(
+    path: Path = TRAIN_SET_PATH, top_k: int = 3, analyst_chunk_chars: int = 600
+) -> dict[str, list[LiveItem]]:
     qset = load_question_set(path)
     if qset.split != "train":
         raise ValueError(f"{path}: split must be 'train'")
@@ -245,16 +252,18 @@ def load_live_trainset(path: Path = TRAIN_SET_PATH, top_k: int = 3) -> dict[str,
     retriever = MockRetriever(qset.content.chunks)
     analyst, responder = [], []
     for q in qset.questions:
+        # Stage 12: retrieval runs before the Analyst, which sees the chunks (cut short).
+        hits = retriever.search(q.question_text, top_k, qset.content.lesson_id)
+        shown = [{"chunk_id": h.chunk_id, "text": h.text[:analyst_chunk_chars]} for h in hits]
         analyst.append(
             LiveItem(
                 "analyst",
                 q.id,
-                {"question_text": q.question_text, "objectives": objectives},
+                {"question_text": q.question_text, "objectives": objectives, "chunks": shown},
                 expected=analyst_category(q.expected_reason),
             )
         )
         if q.expected_action == "answer":
-            hits = retriever.search(q.question_text, top_k, qset.content.lesson_id)
             chunks = [{"chunk_id": h.chunk_id, "text": h.text, "score": h.score} for h in hits]
             responder.append(
                 LiveItem(
@@ -268,6 +277,39 @@ def load_live_trainset(path: Path = TRAIN_SET_PATH, top_k: int = 3) -> dict[str,
         "analyst": _first(analyst, ANALYST_FIRST),
         "responder": _first(responder, RESPONDER_FIRST),
     }
+
+
+def load_guardian_trainset(path: Path = GUARDIAN_TRAIN_PATH) -> list[LiveItem]:
+    """Labeled live Guardian cases, fail and pass alternating, so the first passing
+    outputs (the demos) show both verdicts."""
+    from classpilot.guardian_cases import load_cases
+
+    cases = [c for c in load_cases(path).cases if c.kind == "live" and c.expected]
+    fails = [c for c in cases if c.expected == "fail"]
+    passes = [c for c in cases if c.expected == "pass"]
+    ordered = [c for pair in zip(fails, passes, strict=False) for c in pair]
+    ordered += fails[len(passes) :] + passes[len(fails) :]
+    items = []
+    for c in ordered:
+        chunks = [{"chunk_id": ch.chunk_id, "text": ch.text} for ch in c.chunks]
+        inputs = {
+            "question_text": c.question_text,
+            "answer_text": c.answer_text,
+            "cited_chunks": chunks,
+        }
+        items.append(LiveItem("guardian", c.id, inputs, expected=c.expected, chunks=chunks))
+    return items
+
+
+def guardian_label_check(item: LiveItem, raw: dict, rescue_coverage: float | None) -> list[str]:
+    """Problems of one Guardian output: the code verdict must match the user's label."""
+    ids = [c["chunk_id"] for c in item.chunks]
+    texts = {c["chunk_id"]: c["text"] for c in item.chunks}
+    check = check_guardian(raw, ids, texts, rescue_coverage)
+    if check.passed is None:
+        return ["The output did not match the schema."]
+    got = "pass" if check.passed else "fail"
+    return [] if got == item.expected else [f"verdict {got}, label {item.expected}"]
 
 
 def responder_check(
@@ -312,7 +354,7 @@ def compile_live(
     confidence_threshold: float = 0.7,
     rescue_coverage: float | None = None,
 ) -> dspy.Predict:
-    """BootstrapFewShot for the live Analyst or Responder (items in the order given)."""
+    """BootstrapFewShot for a live module (items in the order given)."""
     log = log if log is not None else CompileLog()
 
     def metric(example, prediction, trace=None) -> bool:
@@ -321,6 +363,8 @@ def compile_live(
         if task == "analyst":
             got = raw.get("category")
             problems = [] if got == item.expected else [f"category {got}, label {item.expected}"]
+        elif task == "guardian":
+            problems = guardian_label_check(item, raw, rescue_coverage)
         else:
             problems = responder_check(
                 item, raw, guardian, timeout_s, confidence_threshold, rescue_coverage

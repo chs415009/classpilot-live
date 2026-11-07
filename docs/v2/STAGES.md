@@ -15,6 +15,7 @@ decisions log); `Q-nn` are items in `interface_questions.md`.
 | The parse layer is split into local (4) and Snowflake (5). | Local conversion runs without credits and is easy to test. Snowflake parse needs SQL review and live runs. |
 | Generators are split into mock (6) and one live deck run (7). | Content review needs a live run, but the retry and fallback logic does not. |
 | The service API (8) comes after the pipeline runs from the CLI. | The endpoints are thin wrappers. Their shapes are a `[team]` item anyway. |
+| Agent quality (12) runs while Stage 11 waits for the team; the Stage 11 rehearsal comes after it. | Stage 11's first task (interfaces, handoff) is done; integration and rehearsal need Sai and Yaksha. The rehearsal should run the improved programs, and quality work changes no field the teammates read. |
 
 No dates: the plan aims for completeness, not a deadline. You decide when each stage
 runs.
@@ -731,3 +732,178 @@ Done when: teammates have run the demo and signed off on the contracts, and the 
 release check passes.
 Exit gate: stop, report results of the automated checks, list what I need to review,
 and wait for my approval.
+
+## Stage 12: Agent quality (live Q&A, prep generation, DSPy, more lessons)
+Goal: Fewer false escalations and fewer dropped prep items, with no unsupported answer
+let through, measured on lessons the tuning never saw. Live Q&A: the Analyst stops
+judging scope from objective titles alone, the live Guardian passes direct inferences
+(BEHAVIOR 5.3: rewording and direct inferences pass; facts the materials never state
+escalate), and the Guardian no longer times out. Prep: no script fallback that reads
+slide boilerplate, more wrong options explained. Three new lessons (L2, L3, L4)
+give a held-out check.
+Depends on: Stage 10 (dev report as the evaluation tool). Runs before the rest of
+Stage 11 (see "Order and why").
+Constraints:
+- No assignment concept (user, 2026-11-06): the system has no assignments, so the
+  `assignment_like` category and escalation reason, the Guardian's graded-work check,
+  and the assignment questions in the eval sets are removed. This is the one interface
+  change of the stage (Q-15, Q-19, handoff docs; the user approved it).
+- Interfaces stay as handed over otherwise: no field change in Q-13, Q-19, Q-21, Q-22 (decision,
+  question, trace, export, manifest). If a fix needs one, stop and ask the user first.
+  Changes inside the agent (signatures, prompts, rules, settings, node order) are fine;
+  each one that a teammate could notice (for example node order in the trace) is
+  listed at the exit gate.
+- Thresholds and final decisions stay in code. A change that would let an LLM output
+  decide by itself (for example a claim kind that code trusts without a check) is
+  proposed to the user first.
+- The question path still answers within about 30 s (Q-19).
+Data roles (against overfitting):
+- Train (compile only): the synthetic sets in `eval/` (committed).
+- Dev (tuning; may steer changes): L1 `materials/eval/questions_dev.json` (27 after the
+  assignment questions were removed; 31 in Stage 9),
+  L1 `test_questions.json` (12), the labeled Guardian cases (v1, live dev, prep dev).
+- Held-out (not used for tuning): L2, L3, L4 `test_questions.json`, written by the user
+  and Claude from the materials before any change in this stage is measured on them.
+  Run once at the end with both the Stage 10 programs and the new ones (the old
+  program on the same unseen questions is the baseline, so a difference comes from the
+  program, not from the lessons' difficulty). A held-out
+  question that fails is reported, not tuned for; if the user decides to fix it, the
+  lesson becomes dev and the result says so.
+- Every result says which sets steered it. Single runs are labeled exploratory.
+Tasks (in order; each step measures before the next change):
+1. Diagnosis without LLM calls: re-score the stored Stage 9 and Stage 10 replies (live
+   dev, L1 test, prep generation reports) by failure cause (Analyst scope, Guardian on
+   an inference, timeout, Responder addition, explanation of an option the chunks do
+   not cover, writer analogy). Cost reading: queries 1 and 3 of
+   `sql/probes/cost_reading.sql` (no LLM call; user approves first).
+2. Live Guardian timeout. The Guardian gets its own timeout
+   (`question.guardian_timeout_seconds`, about 15 s) capped by a per-question deadline
+   (`question.deadline_seconds`, 30 s: the Guardian gets at most what is left), so the
+   Q-19 promise holds. The Responder is asked for a short answer (2-4 sentences), which
+   also shortens the Guardian's claim list. Measure Guardian latency (avg, max) on the
+   dev set.
+3. Live Guardian on direct inferences. First the instructions: align the live Guardian
+   prompt with the user's bar (rewording and direct inferences pass: a conclusion that
+   follows directly from stated facts names the chunk of those facts; facts the chunks
+   never state still get null). Measure on every labeled live Guardian case (v1 8,
+   live dev 13, synthetic): catch rate must not drop. Only if that is not enough, and
+   after the user agrees: a claim kind (`stated | inference`) whose premises code
+   checks (each premise supported, no content words beyond the premises and the
+   question, no extra negation). The trace claim record keeps its fields.
+4. Analyst scope. Retrieval runs before the Analyst, and the Analyst sees the top
+   retrieved chunks (short) next to the objectives. Instructions: in scope = about the
+   lesson's subject matter as the materials cover it; out of scope = logistics, other
+   courses, personal requests, or a topic the lesson does not touch. A question the
+   lesson touches only partly is in scope (the Responder and Guardian then escalate
+   it as unsupported or low_confidence). The node records keep their fields; the
+   retrieval node now runs before the Analyst and also for blocked questions.
+5. Recompile the live Q&A program (`live-qa-v2`) on the synthetic train set after the
+   signature changes; include the Guardian if steps 3 and 4 leave it weaker than its
+   labeled cases need. Optimizer choice after a [verify] of the current DSPy API:
+   `BootstrapFewShot` as before, random search over candidate demo sets with a
+   synthetic validation split, and optionally a stronger teacher model to bootstrap
+   demos for the mistral-large3 student. Dev run on L1 (27 + 12).
+5b. DSPy experiment on the live Guardian (user, 2026-11-06: before Part B; its result
+   decides how the prep modules are compiled). Question: does a searching optimizer
+   beat hand-written prompts plus first-passing demos (`live-qa-v3`)?
+   - Data: train = synthetic Guardian cases (`eval/guardian_cases_train.json`, 46, user
+     labels; committed); val = labeled L1 live dev cases (13, gitignored) + v1 cases
+     (12, fixture lesson). Only train items can become demos or reach GEPA's
+     reflection, so `compiled/` holds no course content (checked by a test: no `l1-`
+     chunk id or dev text in the saved instructions and demos).
+   - Metric: the code verdict (`check_guardian`) equals the label; GEPA also gets the
+     case note as text feedback. Selection gate as in the exit metrics (v1 at least
+     6/8, live dev 1/1), then fewest false fails.
+   - Optimizers ([verify] done on the installed DSPy 3.4.1): `BootstrapFewShotWithRandomSearch`
+     (about 4 candidate demo sets scored on val) and `GEPA` (instructions rewritten
+     from feedback, `max_metric_calls` caps the budget; reflection LM chosen by the
+     user). Baselines: `uncompiled-v3` and `live-qa-v3`, each run twice on val, since
+     single runs move by about 2 cases.
+   - The winner, if any, runs L1 dev end to end once; its instructions are reviewed
+     by the user before it can become the default.
+6. Prep: script fallback. Code only: the slide-text fallback also drops boilerplate
+   (ISBN, copyright and publisher lines, "materials are edited by"); a title slide
+   falls back to its title and lecturer line. Title slides keep the one-or-two-sentence
+   rule.
+6b. Prep Guardians with random search (user, 2026-11-06, after the task 5b result):
+   labeled synthetic prep cases (`eval/guardian_cases_prep_train.json`, scripts, polls,
+   explanations; user labels) as train, the 21 labeled L1 prep cases (gitignored) as
+   val, one `BootstrapFewShotWithRandomSearch` per Guardian kind
+   (`optimize-guardian --kind script|poll|explanation`), re-checked twice before use.
+7. Prep: wrong-option explanations. The Stage 9 drops are mostly the writer describing
+   the wrong option's own topic (recursion, graphs), which the chunks never state, or
+   an analogy not tied to a cited idea. ExplanationWriter instructions: say why the
+   option is wrong from what the chunks state (the correct concept's definition, or a
+   closed list that leaves the option out); say nothing about the wrong option's own
+   topic beyond the chunks; at most one analogy, tied to a cited idea. PollWriter
+   instructions: prefer wrong options the chunks mention or exclude. Recompile the prep
+   writers (`prep-writers-v6`; the ExplanationWriter had 0 demos). Measure the prep
+   Guardian's consistency (the 21 prep dev cases, 3 runs) and report it; any change to
+   how verdicts are combined is a user decision.
+8. One full L1 run (prep + 12 questions) with the new programs, then the dev set.
+9. New lessons L2, L3, L4 under `materials/lessons/l<n>/` (materials from the user;
+   test questions written with the user, 4 categories × 3, before step 10). Parse and
+   prep each with the new programs.
+10. Held-out run: L2, L3, L4 test questions with the new programs and a baseline. Done
+    first against the Stage 10 code with `live-qa-v1b`, then (user, 2026-11-07, for the
+    demo) against the same code without compiled programs, prep and questions per
+    lesson (results in docs/agent/note.md).
+11. Comparison table in docs/agent/note.md; README updated (new settings, commands);
+    IMPLEMENTATION_NOTES section 13 for decisions.
+Out of scope for this stage:
+- Field changes to any handed-over interface (ask first). Joint compile and MIPRO-style
+  instruction search unless the user approves them with a call estimate. Changing the
+  generation or vision model without a measurement on the labeled cases. The
+  post-class report.
+Automated checks:
+- Standard checks.
+- Unit tests (mock) for each new rule and setting: the Guardian deadline (a slow
+  Guardian escalates as `llm_error` within the deadline), the boilerplate fallback, the
+  Analyst inputs (chunks passed), and any inference check (premises supported,
+  no new content words, negation).
+- Contract tests for Q-19, Q-21, Q-22 unchanged and passing (no field change).
+- Loading compiled programs (`live-qa-v5`, `prep-v6` at the end) is tested with fixtures,
+  and the ids appear as `prompt_version`.
+- No real course content in `compiled/` (train is synthetic).
+- `cli dev` on the fixture deck (mock) still writes a complete report.
+Human review:
+- The diagnosis (task 1) before any change.
+- New prompts and rules (diffs) and the labeled-case results after each.
+- L2, L3, L4 test questions (written together, before the held-out run).
+- The compiled demos (no dev or held-out item).
+- The L1 dev report and the held-out reports; the comparison table.
+- Cost reading and the decision on which programs become the default.
+Exit metrics (exploratory; the gate is the user's review, not these numbers):
+- Hard: 0 unsupported answers let through and every out_of_scope question still
+  escalated as out_of_scope on dev and held-out; Guardian catch rate on the labeled
+  fail cases at least v1 6/8 and live dev 1/1 (user, 2026-11-06: was "not lower than
+  Stage 9's 8/8"; gc-07 and gc-12, true content beyond the chunks, pass under the looser
+  bar of this stage, and no code check separates them).
+- Targets: L1 dev + test action correct above Stage 9/10 (28/31, i.e. 24/27 without the 4
+  assignment questions, which Stage 9 all escalated correctly; 7/12); no Guardian
+  timeout; latency avg about 5 s, max under 20 s; L1 prep 0 boilerplate fallbacks and
+  more than 8 of 15 wrong options explained; held-out action match reported per
+  category for both programs.
+Live Snowflake usage (approved in two parts, each at its start):
+- Part A, live Q&A on L1 (tasks 1-5): Guardian case runs about 3 × 25 = 75; Analyst
+  runs on dev + test about 3 × 43 = 130; compile about 20-40; two dev runs (27 + 12
+  questions) about 2 × 110 = 220. About 450-470 calls.
+- Part B also includes task 6b: per Guardian kind, baselines about 2 x 21, random search
+  about 150, re-checks about 60; about 600 for the three kinds. The user said the budget
+  is ample (2026-11-06): plans are sized for reliable comparisons (repeats) rather than
+  the fewest calls; Part B limit raised to about 2,200.
+- Part B, prep and new lessons (tasks 6-10): prep Guardian consistency about 65; prep
+  compile about 30-60; L1 full run about 155; L2, L3, L4 parse (AI_PARSE_DOCUMENT plus
+  vision on image pages) and prep about 3 × 130 = 390; held-out runs about
+  3 lessons × 12 × 2.5 × 2 programs = 180. About 820-850 calls.
+- Part A2, DSPy experiment (task 5b): baselines about 50; random search about 180;
+  GEPA about 240 (200 Guardian calls + about 40 reflection calls); winner on val twice
+  and L1 dev once about 115. About 585 calls; approval limit about 900.
+- Total about 1,300 calls, roughly 2.5-3.5 credits at the Stage 9 rate (warehouse time
+  is the largest item). Approval limit: 1.5× each part (about 700 for A, about 1,275
+  for B). Beyond that, stop and ask. Part A approved by the user 2026-11-06.
+Done when: the comparison table (Stage 9/10 programs vs Stage 12 programs, on L1 dev
+and on the held-out lessons) is in docs/agent/note.md, the user has decided which
+programs become the default, and the standard checks pass.
+Exit gate: stop, report results of the automated checks, list what I need to review,
+and wait for my approval before the Stage 11 integration and rehearsal.

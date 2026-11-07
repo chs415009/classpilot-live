@@ -9,8 +9,8 @@ the generator's citations, so:
 - the cited chunks are the slide's (or segment's) own chunks plus every chunk the
   Guardian named.
 
-    python scripts/draft_prep_guardian_cases.py --lesson info6205-l1 \
-        --run info6205-l1.run1 --run info6205-l1 --out materials/eval/guardian_cases_prep.json
+    python scripts/draft_prep_guardian_cases.py --lesson l2 \
+        --run l2 --run l2.uncompiled --out materials/eval/guardian_cases_prep_l2.json
 """
 
 import argparse

@@ -5,7 +5,6 @@ into LLMError so the graph can fall back to escalation instead of hanging. The r
 client is `agents.program.DSPyAgents` on the Route B engine (`adapters/cortex_engine.py`).
 """
 
-import re
 import time
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import TimeoutError as FutureTimeout
@@ -52,9 +51,6 @@ def call_llm(client: LLMClient, task: str, inputs: dict, timeout_s: float) -> di
 
 # ---------- mock ----------
 
-ASSIGNMENT_MARKERS = {"assignment", "homework", "hw", "graded", "solution"}
-CODE_PATTERN = re.compile(r"```|\{\{|\bselect\b.+\bfrom\b", re.IGNORECASE)
-
 
 class MockLLM:
     """Deterministic stand-in for Cortex, built from simple word-overlap rules.
@@ -71,16 +67,21 @@ class MockLLM:
         delays: dict[str, float] | None = None,
         errors: dict[str, str] | None = None,
         bad_output: set[str] | None = None,
+        malformed: dict[str, int] | None = None,
     ):
         self.delays = delays or {}
         self.errors = errors or {}
         self.bad_output = bad_output or set()
+        self.malformed = dict(malformed or {})  # task -> unparseable replies before a good one
 
     def complete(self, task: str, inputs: dict) -> dict:
         if task in self.delays:
             time.sleep(self.delays[task])
         if task in self.errors:
             raise LLMError(self.errors[task])
+        if self.malformed.get(task, 0) > 0:
+            self.malformed[task] -= 1
+            raise MalformedReplyError(f"{task}: malformed reply (mock)")
         if task in self.bad_output:
             return {"unexpected": "not the requested schema"}
         handler = {
@@ -93,12 +94,6 @@ class MockLLM:
     @staticmethod
     def _analyst(payload: dict) -> dict:
         words = set(content_words(payload["question_text"]))
-        if words & ASSIGNMENT_MARKERS:
-            return {
-                "category": "assignment_like",
-                "objective_id": None,
-                "reason": "Mentions graded work.",
-            }
         best_id, best_hits = None, 0
         for objective in payload["objectives"]:
             keywords = {w for k in objective["keywords"] for w in content_words(k)}
@@ -175,17 +170,13 @@ class MockLLM:
                 None,
             )
             claims.append({"claim": sentence, "chunk_id": support})
-        reveals = bool(CODE_PATTERN.search(answer))
         unsupported = [c["claim"] for c in claims if c["chunk_id"] is None]
-        if reveals:
-            reason = "Answer contains code that may solve graded work."
-        elif unsupported:
+        if unsupported:
             reason = f"Not supported by cited chunks: {unsupported[0]!r}"
         else:
             reason = "Every sentence is supported by the cited chunks."
         return {
             "claims": claims,
-            "reveals_graded_work": reveals,
-            "verdict": "fail" if reveals or unsupported or not claims else "pass",
+            "verdict": "fail" if unsupported or not claims else "pass",
             "reason": reason,
         }

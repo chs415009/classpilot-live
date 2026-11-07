@@ -1,0 +1,232 @@
+{
+  "program_id": "live-qa-v5",
+  "created_at": "2026-11-07T01:41:13Z",
+  "dspy_version": "3.4.1",
+  "modules": {
+    "analyst": {
+      "traces": [],
+      "train": [],
+      "demos": [
+        {
+          "augmented": true,
+          "objectives": "- seg-01: Recognize how data is organized in everyday situations\n- seg-02: Distinguish an abstract data type from a data structure\n- seg-03: Describe common collections and their rules\n- seg-04: Name the main ideas of object-oriented programming\n- seg-05: Explain encapsulation and access control in a class",
+          "chunks": "[syn-p05-c3] A vending machine is a good picture of encapsulation. Buyers use only the buttons and the coin slot. The coin counter and the motors stay inside the case, and the owner can replace them without changing how buyers use the machine.\n[syn-p04-c1] In object-oriented programming a program is built from objects. A class is the blueprint, and each object is one instance of a class with its own data. The three main ideas covered here are encapsulation, inheritance, and polymorphism.\n[syn-p05-c1] Encapsulation puts an object's data and the methods that use that data together in one class, and keeps the data from being changed directly from outside. In Java the fields are usually declared private, and other code works with the object through public methods.",
+          "question": "How is a vending machine like encapsulation?",
+          "category": "in_scope",
+          "objective_id": "seg-05",
+          "reason": "The question directly relates to the concept of encapsulation, which is explained in objective seg-05 and illustrated in the provided lesson material."
+        },
+        {
+          "augmented": true,
+          "objectives": "- seg-01: Recognize how data is organized in everyday situations\n- seg-02: Distinguish an abstract data type from a data structure\n- seg-03: Describe common collections and their rules\n- seg-04: Name the main ideas of object-oriented programming\n- seg-05: Explain encapsulation and access control in a class",
+          "chunks": "[syn-p05-c1] Encapsulation puts an object's data and the methods that use that data together in one class, and keeps the data from being changed directly from outside. In Java the fields are usually declared private, and other code works with the object through public methods.\n[syn-p02-c1] An abstract data type (ADT) is a description of a kind of data and the operations allowed on it, for example add, remove, and contains. An ADT says what the operations do. It does not say how the data is kept in memory, and it does not depend on a programming language.\n[syn-p04-c1] In object-oriented programming a program is built from objects. A class is the blueprint, and each object is one instance of a class with its own data. The three main ideas covered here are encapsulation, inheritance, and polymorphism.",
+          "question": "What is the difference between an abstract class and an interface in Java?",
+          "category": "in_scope",
+          "objective_id": "seg-04",
+          "reason": "The question is about abstract classes and interfaces in Java, which are closely related to object-oriented programming concepts like encapsulation and class design, aligning with objective seg-04."
+        },
+        {
+          "augmented": true,
+          "objectives": "- seg-01: Recognize how data is organized in everyday situations\n- seg-02: Distinguish an abstract data type from a data structure\n- seg-03: Describe common collections and their rules\n- seg-04: Name the main ideas of object-oriented programming\n- seg-05: Explain encapsulation and access control in a class",
+          "chunks": "[syn-p01-c2] Libraries shelve books by call number, so a reader can walk to the right shelf instead of checking every book. A family tree shows how relatives are connected across generations. A subway map shows stations and the lines that join them.",
+          "question": "Is the second quiz going to be open book?",
+          "category": "out_of_scope",
+          "objective_id": "null",
+          "reason": "The question is about course logistics (quiz format) and not about the subject matter of the lesson."
+        }
+      ],
+      "signature": {
+        "instructions": "You help run a class session on this lesson.\nDecide whether the student question is about the subject this lesson teaches. Judge\nthe topic of the question, not whether the material answers it in full: later steps\ncheck the answer and save it for the professor when the material does not cover it.\n- in_scope: about the lesson's subject: a concept, example, or programming idea in\n  the objectives or in the lesson material below, or a closely related idea of the\n  same subject, even if the material covers it only in part or not at all.\n- out_of_scope: course logistics (exams, grading, deadlines, schedules, recordings,\n  office hours), other subjects, tools, or languages the lesson is not about, or\n  personal requests and recommendations.\nThe lesson material is the best search match from this lesson's slides and\nreadings; for an off-topic question it can be unrelated. Link an in-scope question\nto the closest objective.",
+        "fields": [
+          {
+            "prefix": "Objectives:",
+            "description": "lesson objectives, one per line as '- <id>: <title>'"
+          },
+          {
+            "prefix": "Chunks:",
+            "description": "lesson material retrieved for the question, one per line as '[<chunk_id>] <text>'"
+          },
+          {
+            "prefix": "Question:",
+            "description": "the student question"
+          },
+          {
+            "prefix": "Category:",
+            "description": "${category}"
+          },
+          {
+            "prefix": "Objective Id:",
+            "description": "id of the linked objective, or null"
+          },
+          {
+            "prefix": "Reason:",
+            "description": "one sentence"
+          }
+        ]
+      },
+      "lm": null
+    },
+    "responder": {
+      "traces": [],
+      "train": [],
+      "demos": [
+        {
+          "augmented": true,
+          "chunks": "[syn-p05-c3] A vending machine is a good picture of encapsulation. Buyers use only the buttons and the coin slot. The coin counter and the motors stay inside the case, and the owner can replace them without changing how buyers use the machine.\n[syn-p04-c1] In object-oriented programming a program is built from objects. A class is the blueprint, and each object is one instance of a class with its own data. The three main ideas covered here are encapsulation, inheritance, and polymorphism.\n[syn-p05-c1] Encapsulation puts an object's data and the methods that use that data together in one class, and keeps the data from being changed directly from outside. In Java the fields are usually declared private, and other code works with the object through public methods.",
+          "question": "How is a vending machine like encapsulation?",
+          "answer_text": "A vending machine demonstrates encapsulation by hiding its internal mechanisms (like coin counters and motors) inside the case, exposing only the buttons and coin slot for users to interact with. This mirrors how encapsulation in programming keeps an object's data private and allows access only through public methods.",
+          "citations": [
+            "syn-p05-c3",
+            "syn-p05-c1"
+          ],
+          "confidence": 1.0,
+          "grounded": true
+        },
+        {
+          "augmented": true,
+          "chunks": "[syn-p05-c1] Encapsulation puts an object's data and the methods that use that data together in one class, and keeps the data from being changed directly from outside. In Java the fields are usually declared private, and other code works with the object through public methods.\n[syn-p04-c2] Inheritance lets a new class, the subclass, reuse the fields and methods of an existing class. The subclass can add methods or override inherited ones. A subclass object is also an object of its parent class: a Dog is an Animal.\n[syn-p05-c2] A getter is a public method that returns the value of a private field. A setter is a public method that changes a field, and it can check the new value first, for example rejecting a negative price.",
+          "question": "Why are fields usually declared private in an encapsulated class?",
+          "answer_text": "Fields are declared private in an encapsulated class to prevent direct external modification, ensuring data is accessed or changed only through public methods like getters and setters. This allows validation (e.g., rejecting invalid values) and maintains control over how the data is used. For example, a setter can check that a price isn’t negative before updating the field.",
+          "citations": [
+            "syn-p05-c1",
+            "syn-p05-c2"
+          ],
+          "confidence": 1.0,
+          "grounded": true
+        }
+      ],
+      "signature": {
+        "instructions": "Answer the student question using ONLY the approved lesson chunks below.\nCite the chunk ids you used. If the chunks do not answer the question, say so and\ngive a low confidence. You may add a short example or comparison that\nillustrates an idea the chunks state, but never a new fact. Answer in 2-4 short\nsentences: no extra background, no repetition. Then check your own answer: is\nevery sentence supported by the cited chunks (a short example that illustrates an\nidea they state counts as supported)? Report that as \"grounded\".",
+        "fields": [
+          {
+            "prefix": "Chunks:",
+            "description": "lesson chunks, one per line as '[<chunk_id>] <text>'"
+          },
+          {
+            "prefix": "Question:",
+            "description": "the student question"
+          },
+          {
+            "prefix": "Answer Text:",
+            "description": "${answer_text}"
+          },
+          {
+            "prefix": "Citations:",
+            "description": "chunk ids used in the answer"
+          },
+          {
+            "prefix": "Confidence:",
+            "description": "0.0-1.0"
+          },
+          {
+            "prefix": "Grounded:",
+            "description": "${grounded}"
+          }
+        ]
+      },
+      "lm": null
+    },
+    "guardian": {
+      "traces": [],
+      "train": [],
+      "demos": [
+        {
+          "augmented": true,
+          "chunks": "[syn-p05-c1] Encapsulation puts an object's data and the methods that use that data together in one class, and keeps the data from being changed directly from outside. In Java the fields are usually declared private, and other code works with the object through public methods.",
+          "question": "Why are fields declared private?",
+          "answer": "Encapsulation keeps an object's data from being changed directly from outside, so the fields are declared private and other code uses public methods. Private fields also make the program run faster.",
+          "claims": [
+            {
+              "claim": "Encapsulation keeps an object's data from being changed directly from outside",
+              "chunk_id": "syn-p05-c1"
+            },
+            {
+              "claim": "fields are declared private",
+              "chunk_id": "syn-p05-c1"
+            },
+            {
+              "claim": "other code works with the object through public methods",
+              "chunk_id": "syn-p05-c1"
+            },
+            {
+              "claim": "Private fields also make the program run faster",
+              "chunk_id": null
+            }
+          ],
+          "verdict": "fail",
+          "reason": "The claim \"Private fields also make the program run faster\" is not supported by any chunk."
+        },
+        {
+          "augmented": true,
+          "chunks": "[syn-p03-c2] A bag holds items in no particular order and allows duplicates. A set holds items in no particular order and does not allow duplicates. A list keeps items in a sequence, and each item has a position.",
+          "question": "Which collection fits a list of email addresses where each address may appear only once?",
+          "answer": "A set does not allow duplicates, so a set fits email addresses that may appear only once.",
+          "claims": [
+            {
+              "claim": "A set does not allow duplicates",
+              "chunk_id": "syn-p03-c2"
+            },
+            {
+              "claim": "A set fits email addresses that may appear only once",
+              "chunk_id": "syn-p03-c2"
+            }
+          ],
+          "verdict": "pass",
+          "reason": "Every claim is directly supported by the chunk [syn-p03-c2]."
+        },
+        {
+          "augmented": true,
+          "chunks": "[syn-p03-c2] A bag holds items in no particular order and allows duplicates. A set holds items in no particular order and does not allow duplicates. A list keeps items in a sequence, and each item has a position.",
+          "question": "What does a set do with duplicates?",
+          "answer": "A set does not keep two copies of the same item, and it keeps its items in no particular order.",
+          "claims": [
+            {
+              "claim": "A set does not keep two copies of the same item",
+              "chunk_id": "syn-p03-c2"
+            },
+            {
+              "claim": "A set keeps its items in no particular order",
+              "chunk_id": "syn-p03-c2"
+            }
+          ],
+          "verdict": "pass",
+          "reason": "Every claim in the answer is directly supported by the provided chunk."
+        }
+      ],
+      "signature": {
+        "instructions": "You review an answer before a student sees it. The answer may say only what the\nlesson chunks below state, in any words, plus conclusions that follow directly from\nwhat they state. Use only the chunks, never your own knowledge.\n\n1. List every factual claim in the answer, each once. A sentence can hold more than\n   one claim; list each part, and do not list the whole sentence again after its\n   parts. For each claim, give the id of the chunk that supports it, or null:\n   - Supported: a chunk states it, in the same or in other words.\n   - Supported: a direct conclusion from what the chunks state, adding no new fact\n     (for example, from \"Silver tables hold cleaned data\" and \"Gold tables are built\n     from Silver tables\", the claim \"so Gold tables are built from cleaned data\").\n     Give the id of the chunk the conclusion rests on.\n   - Supported: a short example or comparison that illustrates an idea a chunk\n     states and adds no new fact (for example, \"like a pile of plates\" for \"last\n     in, first out\"). Give the id of the chunk with that idea.\n   - Not supported (null): any fact, detail, number, or reason that no chunk\n     states, even if it is true in general. If you are not sure a chunk supports a\n     claim, give null.\n   - A chunk that only names or lists a term does not support what the term means,\n     does, or checks (for example, a chunk listing \"HashMap and TreeMap\" does not\n     support \"a TreeMap keeps its keys sorted\"): give null.\n   - Sentences that only say what the chunks do not cover are not claims; leave\n     them out.\n2. verdict is \"pass\" only if every claim has a chunk id.",
+        "fields": [
+          {
+            "prefix": "Chunks:",
+            "description": "lesson chunks, one per line as '[<chunk_id>] <text>'"
+          },
+          {
+            "prefix": "Question:",
+            "description": "the student question"
+          },
+          {
+            "prefix": "Answer:",
+            "description": "the answer to review"
+          },
+          {
+            "prefix": "Claims:",
+            "description": "every factual claim once, each with the id of the chunk that supports it, or null"
+          },
+          {
+            "prefix": "Verdict:",
+            "description": "${verdict}"
+          },
+          {
+            "prefix": "Reason:",
+            "description": "one sentence"
+          }
+        ]
+      },
+      "lm": null
+    }
+  },
+  "meta": {
+    "base_program": "live-qa-v4-rs",
+    "note": "Stage 12: live-qa-v4-rs with the Responder recompiled after its self-check counts tied examples as supported."
+  }
+}

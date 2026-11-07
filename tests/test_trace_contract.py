@@ -97,7 +97,7 @@ def test_question_run_writes_every_question_record_type(deps, make_question, tmp
     assert types.count("node") == 5
     calls = [x for x in lines if x["record_type"] == "llm_call"]
     assert [c["node_name"] for c in calls] == ["analyst", "responder", "guardian"]
-    assert all(c["prompt_version"] == PROMPT_VERSION == "uncompiled-v1" for c in calls)
+    assert all(c["prompt_version"] == PROMPT_VERSION == "uncompiled-v4" for c in calls)
     assert all(c["model"] == "mock" and c["retry_count"] == 0 for c in calls)
     retrieval = [x for x in lines if x["record_type"] == "retrieval"]
     assert [r["rank"] for r in retrieval] == list(range(1, len(retrieval) + 1))
@@ -130,7 +130,7 @@ def test_unsupported_claim_is_recorded(deps, make_question):
     [
         (
             "What time is the midterm exam next week?",
-            {"analyst": "block", "retrieval": "skip", "responder": "skip", "guardian": "skip"},
+            {"analyst": "block", "retrieval": "pass", "responder": "skip", "guardian": "skip"},
         ),
         (
             "How does dbt handle snapshots for slowly changing dimensions?",

@@ -3,6 +3,7 @@
 Used by the mock adapters. Cortex Search replaces the mock retrieval in cortex mode.
 """
 
+import html
 import re
 
 STOPWORDS = {
@@ -99,7 +100,8 @@ def normalize(word: str) -> str:
 
 
 def content_words(text: str) -> list[str]:
-    words = re.findall(r"[a-z0-9_]+", text.lower())
+    # Stage 12: parsed readings keep HTML entities ("$x &gt; 0$"); "&gt;" is not a word.
+    words = re.findall(r"[a-z0-9_]+", html.unescape(text).lower())
     return [normalize(w) for w in words if w not in STOPWORDS]
 
 

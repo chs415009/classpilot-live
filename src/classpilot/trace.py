@@ -67,7 +67,8 @@ class RunOutput:
 
     @property
     def llm_calls(self) -> int:
-        return len(self.of_type(LLMCallRecord))
+        # One record per node; a repeat after a malformed reply is its retry_count.
+        return sum(1 + c.retry_count for c in self.of_type(LLMCallRecord))
 
     @property
     def retrieved_chunk_ids(self) -> list[str]:

@@ -5,7 +5,8 @@ Stage 1 findings this follows (docs/agent/note.md):
   through AI_COMPLETE on the connector connection.
 - The connector's per-query `timeout=` does not cancel AI_COMPLETE.
   `ALTER SESSION SET STATEMENT_TIMEOUT_IN_SECONDS` does (error 000630), so the engine
-  sets it once on its connection. `call_llm`'s thread timeout is the backstop.
+  sets it once on its connection; engines with different timeouts get different
+  connections (`llm_connection`, Stage 12). `call_llm`'s thread timeout is the backstop.
 - Live calls use `num_retries=0` and `cache=False`, so one prediction is one call.
 
 The DSPy adapter writes the prompt; the engine flattens it into the single prompt
@@ -39,13 +40,18 @@ def flatten(request: lm15.Request) -> str:
     return "\n\n".join(parts)
 
 
+def statement_seconds(timeout_s: float) -> int:
+    """STATEMENT_TIMEOUT_IN_SECONDS for a timeout (whole seconds, at least 1)."""
+    return max(1, math.ceil(timeout_s))
+
+
 class CortexCompleteEngine:
     """`complete(Request) -> Response` over AI_COMPLETE."""
 
     def __init__(self, connection, timeout_s: float, max_tokens: int = 1024):
         self.connection = connection
         self.sql = COMPLETE_SQL.format(max_tokens=int(max_tokens))
-        seconds = max(1, math.ceil(timeout_s))
+        seconds = statement_seconds(timeout_s)
         cursor = connection.cursor()
         try:
             cursor.execute(f"ALTER SESSION SET STATEMENT_TIMEOUT_IN_SECONDS = {seconds}")
@@ -79,14 +85,18 @@ class CortexCompleteEngine:
         )
 
 
-def make_cortex_lm(settings: Settings, connection=None) -> dspy.LM:
+def make_cortex_lm(settings: Settings, connection=None, timeout_s: float | None = None) -> dspy.LM:
+    """Live LM. `timeout_s` (default `llm.timeout_seconds`) is the server-side statement
+    timeout of its own connection; the Guardian gets one with its longer timeout
+    (Stage 12), since the session setting cannot change per call."""
     if not settings.llm.model:
         raise ValueError("Set llm.model in config/settings.yaml for BACKEND=cortex.")
+    timeout_s = timeout_s or settings.llm.timeout_seconds
     if connection is None:
-        from classpilot.adapters.snowflake import shared_connection
+        from classpilot.adapters.snowflake import llm_connection
 
-        connection = shared_connection()
-    engine = CortexCompleteEngine(connection, settings.llm.timeout_seconds)
+        connection = llm_connection(statement_seconds(timeout_s))
+    engine = CortexCompleteEngine(connection, timeout_s)
     return dspy.LM(settings.llm.model, engine=engine, cache=False, num_retries=0)
 
 
@@ -100,9 +110,9 @@ def make_prep_lm(settings: Settings, connection=None) -> dspy.LM:
     if not model:
         raise ValueError("Set prep.model or llm.model in config/settings.yaml for BACKEND=cortex.")
     if connection is None:
-        from classpilot.adapters.snowflake import shared_connection
+        from classpilot.adapters.snowflake import llm_connection
 
-        connection = shared_connection()
+        connection = llm_connection(statement_seconds(settings.prep.llm_timeout_seconds))
     engine = CortexCompleteEngine(
         connection, settings.prep.llm_timeout_seconds, max_tokens=settings.prep.max_tokens
     )

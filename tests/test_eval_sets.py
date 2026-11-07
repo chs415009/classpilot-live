@@ -40,7 +40,7 @@ def test_train_set_is_valid_and_balanced():
     assert train.split == "train" and train.retrieval == "inline"
     assert 15 <= len(train.questions) <= 30
     reasons = {q.expected_reason for q in train.questions if q.expected_action == "escalate"}
-    assert reasons == {"out_of_scope", "assignment_like", "low_confidence", "unsupported"}
+    assert reasons == {"out_of_scope", "low_confidence", "unsupported"}
     assert any(q.expected_action == "answer" for q in train.questions)
 
 
@@ -94,4 +94,4 @@ def test_run_eval_on_a_set_uses_its_lesson(tmp_path):
     assert result["set_id"] == "t" and result["split"] == "train"
     row = result["rows"][0]
     assert row["action"] == "answer" and row["citations"] == ["x-c1"]
-    assert result["prompt_version"] == "uncompiled-v1"
+    assert result["prompt_version"] == "uncompiled-v4"

@@ -83,7 +83,9 @@ class ScriptWriterSignature(dspy.Signature):
       what the chunks say.
     - If the slide has only a title, a section name, or a short outline, say what it
       shows in one or two sentences (for example "This part of the lecture is the Java
-      review."). Do not explain or preview the topics it names.
+      review."). Name its items in the slide's own order and words, and keep each name
+      for what the slide calls it (a lecture title is not the course name). Do not
+      explain or preview the topics it names, and add no topics from other slides.
     - You may add a short transition (for example "Next, let's look at how data moves")
       that states no facts.
     - Plain spoken English only: no Markdown, bullets, backticks, or code. Spell out
@@ -135,6 +137,10 @@ class PollWriterSignature(dspy.Signature):
     - Each wrong option must be wrong in general, not only within this lesson: do not
       use an idea that other courses or textbooks commonly count as correct (for
       example a fourth item that some sources add to a list the lesson gives).
+    - Prefer wrong options the chunks themselves rule out: another idea a chunk
+      defines, or an item a closed list in a chunk leaves out. Avoid everyday objects
+      or topics the chunks never mention, since the explanation of a wrong option may
+      only use what the chunks state.
     - Ask a positive question, not "Which is NOT ..." or "All of these EXCEPT ...".
     - Test the lesson content, not course logistics (instructor, textbooks, schedule,
       outline).
@@ -168,6 +174,11 @@ class ExplanationWriterSignature(dspy.Signature):
     - To say why the option is wrong, use what the chunks state: a chunk that
       contradicts it, a chunk that defines the idea the option really describes, or a
       closed, complete list in a chunk that leaves it out.
+    - Do not describe the chosen option's own topic beyond what the chunks state. If the
+      chunks say nothing about it (for example an everyday object, or a technique the
+      lesson does not teach), say only that it is not what the lesson describes, then
+      explain the right idea from the chunks.
+    - At most one example or analogy of your own.
     - show_slide is the slide id of one cited slide chunk that best shows the right idea.
     - Do not say the letter of the correct option; it is revealed after you.
     - Plain spoken English only: no Markdown, bullets, backticks, or code. Spell out

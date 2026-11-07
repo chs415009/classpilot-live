@@ -76,7 +76,19 @@ def connect():
 
 @lru_cache(maxsize=1)
 def shared_connection():
-    """One connection per process, shared by the LLM and search adapters."""
+    """One connection per process for search and table access (no statement timeout of
+    its own). LLM engines use `llm_connection`."""
+    connection = connect()
+    atexit.register(connection.close)
+    return connection
+
+
+@lru_cache(maxsize=8)
+def llm_connection(timeout_seconds: int):
+    """One connection per LLM statement timeout. The timeout is a session setting, so
+    engines with different timeouts must not share a session (Stage 12 finding: the
+    live, Guardian, and prep engines all shared one, and the last one built set the
+    timeout for every call)."""
     connection = connect()
     atexit.register(connection.close)
     return connection

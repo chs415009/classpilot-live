@@ -29,7 +29,7 @@ from classpilot.settings import PROJECT_ROOT
 TRAIN_SET_PATH = PROJECT_ROOT / "eval" / "questions_train.json"
 DEV_SET_PATH = PROJECT_ROOT / "materials" / "eval" / "questions_dev.json"
 
-ESCALATION_REASONS = {"out_of_scope", "assignment_like", "low_confidence", "unsupported"}
+ESCALATION_REASONS = {"out_of_scope", "low_confidence", "unsupported"}
 
 
 class EvalQuestion(BaseModel):

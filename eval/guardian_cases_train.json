@@ -46,14 +46,350 @@
           "text": "A bag holds items in no particular order and allows duplicates. A set holds items in no particular order and does not allow duplicates. A list keeps items in a sequence, and each item has a position."
         }
       ],
-      "question_text": "Which collection should I use to store unique student IDs?",
-      "answer_text": "A set does not allow duplicates, so a set is a good fit for storing unique student IDs.",
+      "question_text": "Which collection fits a list of email addresses where each address may appear only once?",
+      "answer_text": "A set does not allow duplicates, so a set fits email addresses that may appear only once.",
       "expected": "pass",
-      "note": "The chunk states a set does not allow duplicates; the recommendation follows directly. (Edge: a supported fact plus a recommendation drawn from it)",
+      "note": "The chunk states a set does not allow duplicates; the recommendation follows directly. (Edge: a supported fact plus a recommendation drawn from it) Reworded 2026-11-06 (Stage 12): the old question was word for word L1 dev item dv-31.",
       "unsupported": []
     },
     {
-      "id": "gs-04",
+      "id": "gs-05",
+      "kind": "live",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-p03-c2",
+          "text": "A bag holds items in no particular order and allows duplicates. A set holds items in no particular order and does not allow duplicates. A list keeps items in a sequence, and each item has a position."
+        }
+      ],
+      "question_text": "What does a set do with duplicates?",
+      "answer_text": "A set does not keep two copies of the same item, and it keeps its items in no particular order.",
+      "expected": "pass",
+      "note": "Rewording of the chunk. (Stage 12, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "gs-06",
+      "kind": "live",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-p03-c3",
+          "text": "A stack adds and removes items at the same end, so the last item added is the first removed (LIFO). A queue adds items at the back and removes them from the front, so the first item added is the first removed (FIFO). A map stores pairs of a key and a value and finds a value by its key."
+        },
+        {
+          "chunk_id": "syn-p01-c1",
+          "text": "People organize information all the time so it is quick to use. A music playlist keeps songs in a chosen order. People waiting at a bus stop board in the order they arrived. The undo button in a text editor removes the most recent change first."
+        }
+      ],
+      "question_text": "Which collection works like the undo button?",
+      "answer_text": "A stack, because the last item added is the first one removed, just as undo removes the most recent change first.",
+      "expected": "pass",
+      "note": "Direct conclusion from two chunks (stack is LIFO; undo removes the most recent change first). (Stage 12, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "gs-07",
+      "kind": "live",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-p02-c3",
+          "text": "Separating the ADT from the data structure lets a programmer change the storage later without changing the code that only uses the operations."
+        },
+        {
+          "chunk_id": "syn-p02-c1",
+          "text": "An abstract data type (ADT) is a description of a kind of data and the operations allowed on it, for example add, remove, and contains. An ADT says what the operations do. It does not say how the data is kept in memory, and it does not depend on a programming language."
+        }
+      ],
+      "question_text": "Can I swap an array-based list for a linked one without changing code that only calls add and remove?",
+      "answer_text": "Yes. Code that only uses the operations does not have to change, because the ADT separates what the operations do from how the data is stored.",
+      "expected": "pass",
+      "note": "Direct conclusion: the chunk says the storage can change without changing code that only uses the operations. (Stage 12, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "gs-08",
+      "kind": "live",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-p03-c3",
+          "text": "A stack adds and removes items at the same end, so the last item added is the first removed (LIFO). A queue adds items at the back and removes them from the front, so the first item added is the first removed (FIFO). A map stores pairs of a key and a value and finds a value by its key."
+        }
+      ],
+      "question_text": "How does a queue decide which item leaves next?",
+      "answer_text": "FIFO means the first item added is the first one removed, as in a queue. It is like a checkout line, where the person who arrived first is served first.",
+      "expected": "pass",
+      "note": "Own example tied to the FIFO idea; no new fact. (Stage 12, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "gs-09",
+      "kind": "live",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-p05-c1",
+          "text": "Encapsulation puts an object's data and the methods that use that data together in one class, and keeps the data from being changed directly from outside. In Java the fields are usually declared private, and other code works with the object through public methods."
+        }
+      ],
+      "question_text": "Why are fields usually private?",
+      "answer_text": "Private fields keep an object's data from being changed directly from outside; other code goes through public methods. It is like a bank counter: you ask the clerk instead of walking into the vault.",
+      "expected": "pass",
+      "note": "Own comparison tied to the encapsulation idea; no new fact. (Stage 12, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "gs-10",
+      "kind": "live",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-p03-c2",
+          "text": "A bag holds items in no particular order and allows duplicates. A set holds items in no particular order and does not allow duplicates. A list keeps items in a sequence, and each item has a position."
+        }
+      ],
+      "question_text": "Can a set be sorted?",
+      "answer_text": "The lesson does not say whether a set can be sorted. It says a set holds items in no particular order and does not allow duplicates.",
+      "expected": "pass",
+      "note": "A sentence about what the lesson does not cover is not a claim; the rest is a rewording. (Stage 12, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "gs-11",
+      "kind": "live",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-p01-c1",
+          "text": "People organize information all the time so it is quick to use. A music playlist keeps songs in a chosen order. People waiting at a bus stop board in the order they arrived. The undo button in a text editor removes the most recent change first."
+        },
+        {
+          "chunk_id": "syn-p03-c2",
+          "text": "A bag holds items in no particular order and allows duplicates. A set holds items in no particular order and does not allow duplicates. A list keeps items in a sequence, and each item has a position."
+        }
+      ],
+      "question_text": "Which collection fits a music playlist?",
+      "answer_text": "A list, because a playlist keeps songs in a chosen order and a list keeps items in a sequence where each item has a position.",
+      "expected": "pass",
+      "note": "Direct conclusion from two chunks (playlist keeps a chosen order; a list keeps a sequence). (Stage 12, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "gs-12",
+      "kind": "live",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-p02-c1",
+          "text": "An abstract data type (ADT) is a description of a kind of data and the operations allowed on it, for example add, remove, and contains. An ADT says what the operations do. It does not say how the data is kept in memory, and it does not depend on a programming language."
+        }
+      ],
+      "question_text": "What does the contains operation return?",
+      "answer_text": "The contains operation returns true if the item is in the collection and false otherwise.",
+      "expected": "fail",
+      "note": "The chunk only names the contains operation; what it returns is new. (Stage 12, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "gs-13",
+      "kind": "live",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-p03-c3",
+          "text": "A stack adds and removes items at the same end, so the last item added is the first removed (LIFO). A queue adds items at the back and removes them from the front, so the first item added is the first removed (FIFO). A map stores pairs of a key and a value and finds a value by its key."
+        }
+      ],
+      "question_text": "Which item does a stack remove first?",
+      "answer_text": "A stack removes the last item added first (LIFO). For example, Java's call stack works this way and throws a StackOverflowError when it grows too deep.",
+      "expected": "fail",
+      "note": "The 'example' brings new facts (call stack, StackOverflowError). (Stage 12, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "gs-14",
+      "kind": "live",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-p03-c2",
+          "text": "A bag holds items in no particular order and allows duplicates. A set holds items in no particular order and does not allow duplicates. A list keeps items in a sequence, and each item has a position."
+        }
+      ],
+      "question_text": "Is a bag faster than a list?",
+      "answer_text": "Yes, a bag is faster than a list because it does not keep its items in order.",
+      "expected": "fail",
+      "note": "Looks like a conclusion but adds a fact (speed) no chunk states. (Stage 12, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "gs-15",
+      "kind": "live",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-p03-c3",
+          "text": "A stack adds and removes items at the same end, so the last item added is the first removed (LIFO). A queue adds items at the back and removes them from the front, so the first item added is the first removed (FIFO). A map stores pairs of a key and a value and finds a value by its key."
+        }
+      ],
+      "question_text": "Does a queue remove the newest item first?",
+      "answer_text": "Yes, a queue removes the newest item first, because items are added at the back.",
+      "expected": "fail",
+      "note": "Wrong: the chunk says a queue removes the first item added. (Stage 12, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "gs-16",
+      "kind": "live",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-p03-c2",
+          "text": "A bag holds items in no particular order and allows duplicates. A set holds items in no particular order and does not allow duplicates. A list keeps items in a sequence, and each item has a position."
+        }
+      ],
+      "question_text": "Which collection should I use for a shopping cart?",
+      "answer_text": "Use a bag, because a shopping cart can hold the same product twice and its order does not matter.",
+      "expected": "fail",
+      "note": "Needs facts the chunks do not state (what a shopping cart needs); not a direct conclusion. (Stage 12, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "gs-17",
+      "kind": "live",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-p04-c2",
+          "text": "Inheritance lets a new class, the subclass, reuse the fields and methods of an existing class. The subclass can add methods or override inherited ones. A subclass object is also an object of its parent class: a Dog is an Animal."
+        }
+      ],
+      "question_text": "How does a subclass relate to its parent class?",
+      "answer_text": "Inheritance lets a subclass reuse the fields and methods of its parent class. Like children inheriting genes, a subclass gets half of its methods from each of its two parents.",
+      "expected": "fail",
+      "note": "The comparison adds wrong facts (two parents, half of the methods). (Stage 12, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "gs-18",
+      "kind": "live",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-p02-c1",
+          "text": "An abstract data type (ADT) is a description of a kind of data and the operations allowed on it, for example add, remove, and contains. An ADT says what the operations do. It does not say how the data is kept in memory, and it does not depend on a programming language."
+        }
+      ],
+      "question_text": "Does an ADT depend on Java?",
+      "answer_text": "No. An ADT does not depend on any programming language; it only describes the data and the operations allowed on it.",
+      "expected": "pass",
+      "note": "Rewording. (Stage 12 DSPy experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "gs-19",
+      "kind": "live",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-p03-c2",
+          "text": "A bag holds items in no particular order and allows duplicates. A set holds items in no particular order and does not allow duplicates. A list keeps items in a sequence, and each item has a position."
+        }
+      ],
+      "question_text": "Could a bag hold the same book twice?",
+      "answer_text": "Yes. A bag allows duplicates, so the same book can appear in it more than once.",
+      "expected": "pass",
+      "note": "Direct conclusion: the stated rule applied to the question's own example. (Stage 12 DSPy experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "gs-20",
+      "kind": "live",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-p04-c2",
+          "text": "Inheritance lets a new class, the subclass, reuse the fields and methods of an existing class. The subclass can add methods or override inherited ones. A subclass object is also an object of its parent class: a Dog is an Animal."
+        }
+      ],
+      "question_text": "If Cat is a subclass of Animal, is a Cat object also an Animal?",
+      "answer_text": "Yes. A subclass object is also an object of its parent class, so a Cat object is an Animal.",
+      "expected": "pass",
+      "note": "Direct conclusion from the stated rule. (Stage 12 DSPy experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "gs-21",
+      "kind": "live",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-p04-c3",
+          "text": "Polymorphism means code written for a parent type works with objects of any of its subclasses. When the code calls a method, the version defined by the actual object's class runs."
+        },
+        {
+          "chunk_id": "syn-p04-c2",
+          "text": "Inheritance lets a new class, the subclass, reuse the fields and methods of an existing class. The subclass can add methods or override inherited ones. A subclass object is also an object of its parent class: a Dog is an Animal."
+        }
+      ],
+      "question_text": "If code calls speak() on an Animal variable that holds a Dog, whose speak() runs?",
+      "answer_text": "The Dog's version runs, because the version defined by the actual object's class runs.",
+      "expected": "pass",
+      "note": "Direct conclusion from the polymorphism chunk. (Stage 12 DSPy experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "gs-22",
+      "kind": "live",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-p03-c3",
+          "text": "A stack adds and removes items at the same end, so the last item added is the first removed (LIFO). A queue adds items at the back and removes them from the front, so the first item added is the first removed (FIFO). A map stores pairs of a key and a value and finds a value by its key."
+        }
+      ],
+      "question_text": "What is a map?",
+      "answer_text": "A map stores pairs of a key and a value and finds a value by its key, like a phone book where you look up a number by a name.",
+      "expected": "pass",
+      "note": "Own comparison tied to the map idea; no new fact. (Stage 12 DSPy experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "gs-23",
+      "kind": "live",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-p02-c3",
+          "text": "Separating the ADT from the data structure lets a programmer change the storage later without changing the code that only uses the operations."
+        }
+      ],
+      "question_text": "Why keep the ADT separate from the data structure?",
+      "answer_text": "So the storage can change later without changing the code that only uses the operations. It is like replacing a car's engine while the steering wheel works the same way.",
+      "expected": "pass",
+      "note": "Own comparison tied to the stated idea; no new fact. (Stage 12 DSPy experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "gs-24",
+      "kind": "live",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-p03-c3",
+          "text": "A stack adds and removes items at the same end, so the last item added is the first removed (LIFO). A queue adds items at the back and removes them from the front, so the first item added is the first removed (FIFO). A map stores pairs of a key and a value and finds a value by its key."
+        }
+      ],
+      "question_text": "Is a queue faster than a stack?",
+      "answer_text": "The lesson does not compare their speed. It says a queue removes the first item added, while a stack removes the last item added.",
+      "expected": "pass",
+      "note": "'Does not compare' is not a claim; the rest is a rewording. (Stage 12 DSPy experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "gs-25",
       "kind": "live",
       "source": "written",
       "chunks": [
@@ -62,10 +398,366 @@
           "text": "A getter is a public method that returns the value of a private field. A setter is a public method that changes a field, and it can check the new value first, for example rejecting a negative price."
         }
       ],
-      "question_text": "For lab 1, what should the setPrice method look like?",
-      "answer_text": "A setter can check the new value first. For lab 1: public void setPrice(double price) { if (price < 0) { throw new IllegalArgumentException(\"negative price\"); } this.price = price; }",
+      "question_text": "Can a setter refuse a value?",
+      "answer_text": "Yes. A setter can check the new value first, for example rejecting a negative price.",
+      "expected": "pass",
+      "note": "Rewording with the chunk's own example. (Stage 12 DSPy experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "gs-26",
+      "kind": "live",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-p03-c1",
+          "text": "A collection is an ADT that holds a group of items. Collections differ in two rules: whether the same item may appear more than once, and whether the items are kept in a particular order."
+        }
+      ],
+      "question_text": "What two questions decide which collection to use?",
+      "answer_text": "Whether the same item may appear more than once, and whether the items are kept in a particular order.",
+      "expected": "pass",
+      "note": "Rewording of the two rules. (Stage 12 DSPy experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "gs-27",
+      "kind": "live",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-p04-c1",
+          "text": "In object-oriented programming a program is built from objects. A class is the blueprint, and each object is one instance of a class with its own data. The three main ideas covered here are encapsulation, inheritance, and polymorphism."
+        }
+      ],
+      "question_text": "What is the difference between a class and an object?",
+      "answer_text": "A class is the blueprint, and an object is one instance of that class with its own data. So many objects can come from one class.",
+      "expected": "pass",
+      "note": "Rewording plus a direct conclusion (each object is one instance of a class). (Stage 12 DSPy experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "gs-28",
+      "kind": "live",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-p01-c2",
+          "text": "Libraries shelve books by call number, so a reader can walk to the right shelf instead of checking every book. A family tree shows how relatives are connected across generations. A subway map shows stations and the lines that join them."
+        }
+      ],
+      "question_text": "How does a library help readers find books quickly?",
+      "answer_text": "Books are shelved by call number, so a reader can walk to the right shelf instead of checking every book.",
+      "expected": "pass",
+      "note": "Rewording. (Stage 12 DSPy experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "gs-29",
+      "kind": "live",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-p03-c3",
+          "text": "A stack adds and removes items at the same end, so the last item added is the first removed (LIFO). A queue adds items at the back and removes them from the front, so the first item added is the first removed (FIFO). A map stores pairs of a key and a value and finds a value by its key."
+        }
+      ],
+      "question_text": "What is LIFO?",
+      "answer_text": "Good question! LIFO means the last item added is the first one removed, which is how a stack works.",
+      "expected": "pass",
+      "note": "'Good question' is framing, not a claim; the rest is supported. (Stage 12 DSPy experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "gs-30",
+      "kind": "live",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-p04-c1",
+          "text": "In object-oriented programming a program is built from objects. A class is the blueprint, and each object is one instance of a class with its own data. The three main ideas covered here are encapsulation, inheritance, and polymorphism."
+        }
+      ],
+      "question_text": "What does encapsulation mean?",
+      "answer_text": "Encapsulation means bundling data with the methods that use it and hiding the data from outside code.",
       "expected": "fail",
-      "note": "Concept supported, but gives finished code for graded lab work. (Edge: concept supported, but finished code for graded work)",
+      "note": "The given chunk only names encapsulation; the explanation is not stated there. (Stage 12 DSPy experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "gs-31",
+      "kind": "live",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-p02-c2",
+          "text": "A data structure is a concrete way to store data in a program, written in a specific language. It implements the operations of an ADT. The same ADT can have several data structures behind it, such as an array-based version and a linked version."
+        }
+      ],
+      "question_text": "How does an array-based list find the item at a position?",
+      "answer_text": "It jumps straight to that index in the array, so finding an item by position is fast.",
+      "expected": "fail",
+      "note": "The chunk only names an array-based version; how it finds items is new. (Stage 12 DSPy experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "gs-32",
+      "kind": "live",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-p03-c2",
+          "text": "A bag holds items in no particular order and allows duplicates. A set holds items in no particular order and does not allow duplicates. A list keeps items in a sequence, and each item has a position."
+        }
+      ],
+      "question_text": "Which collection should I use for the guests at a party?",
+      "answer_text": "Use a set, since each guest should be counted once and the order of the guests does not matter.",
+      "expected": "fail",
+      "note": "Needs facts the chunks do not state (what a guest list needs); not a direct conclusion. (Stage 12 DSPy experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "gs-33",
+      "kind": "live",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-p03-c3",
+          "text": "A stack adds and removes items at the same end, so the last item added is the first removed (LIFO). A queue adds items at the back and removes them from the front, so the first item added is the first removed (FIFO). A map stores pairs of a key and a value and finds a value by its key."
+        }
+      ],
+      "question_text": "Where is a queue used?",
+      "answer_text": "A printer queue works this way: the first document sent is printed first, and the operating system kernel manages the print queue.",
+      "expected": "fail",
+      "note": "The first part is a tied example, but 'the kernel manages the print queue' is a new fact. (Stage 12 DSPy experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "gs-34",
+      "kind": "live",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-p03-c2",
+          "text": "A bag holds items in no particular order and allows duplicates. A set holds items in no particular order and does not allow duplicates. A list keeps items in a sequence, and each item has a position."
+        }
+      ],
+      "question_text": "Does a list allow duplicates?",
+      "answer_text": "No, a list never allows duplicates.",
+      "expected": "fail",
+      "note": "The chunk does not say this (and it is wrong in general). (Stage 12 DSPy experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "gs-35",
+      "kind": "live",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-p05-c1",
+          "text": "Encapsulation puts an object's data and the methods that use that data together in one class, and keeps the data from being changed directly from outside. In Java the fields are usually declared private, and other code works with the object through public methods."
+        }
+      ],
+      "question_text": "Are all fields in Java private?",
+      "answer_text": "Yes, in Java every field must be private.",
+      "expected": "fail",
+      "note": "Overgeneralizes 'usually declared private'. (Stage 12 DSPy experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "gs-36",
+      "kind": "live",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-p02-c3",
+          "text": "Separating the ADT from the data structure lets a programmer change the storage later without changing the code that only uses the operations."
+        }
+      ],
+      "question_text": "Why separate the ADT from the data structure?",
+      "answer_text": "It lets you change the storage later without changing code that uses the operations, and it also makes the program use less memory.",
+      "expected": "fail",
+      "note": "First part supported; 'uses less memory' is new. (Stage 12 DSPy experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "gs-37",
+      "kind": "live",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-p03-c3",
+          "text": "A stack adds and removes items at the same end, so the last item added is the first removed (LIFO). A queue adds items at the back and removes them from the front, so the first item added is the first removed (FIFO). A map stores pairs of a key and a value and finds a value by its key."
+        }
+      ],
+      "question_text": "How many items can a stack hold?",
+      "answer_text": "A stack can hold up to 1,000 items by default.",
+      "expected": "fail",
+      "note": "Number not in the chunk. (Stage 12 DSPy experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "gs-38",
+      "kind": "live",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-p04-c3",
+          "text": "Polymorphism means code written for a parent type works with objects of any of its subclasses. When the code calls a method, the version defined by the actual object's class runs."
+        }
+      ],
+      "question_text": "Does polymorphism make programs faster?",
+      "answer_text": "Yes. Because the right method version runs automatically, the program runs faster.",
+      "expected": "fail",
+      "note": "Looks like a conclusion but adds a fact (speed). (Stage 12 DSPy experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "gs-39",
+      "kind": "live",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-p03-c3",
+          "text": "A stack adds and removes items at the same end, so the last item added is the first removed (LIFO). A queue adds items at the back and removes them from the front, so the first item added is the first removed (FIFO). A map stores pairs of a key and a value and finds a value by its key."
+        }
+      ],
+      "question_text": "What is FIFO like in real life?",
+      "answer_text": "FIFO is like a stack of plates, where you take the top plate first.",
+      "expected": "fail",
+      "note": "The comparison contradicts FIFO (it describes LIFO). (Stage 12 DSPy experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "gs-40",
+      "kind": "live",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-p02-c1",
+          "text": "An abstract data type (ADT) is a description of a kind of data and the operations allowed on it, for example add, remove, and contains. An ADT says what the operations do. It does not say how the data is kept in memory, and it does not depend on a programming language."
+        }
+      ],
+      "question_text": "Does an ADT describe the allowed operations?",
+      "answer_text": "No, an ADT does not describe operations; it only stores data.",
+      "expected": "fail",
+      "note": "Contradicts the chunk. (Stage 12 DSPy experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "gs-41",
+      "kind": "live",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-p05-c2",
+          "text": "A getter is a public method that returns the value of a private field. A setter is a public method that changes a field, and it can check the new value first, for example rejecting a negative price."
+        }
+      ],
+      "question_text": "What is a getter?",
+      "answer_text": "A getter is a public method that returns the value of a private field. In Java its name must start with get, or the compiler reports an error.",
+      "expected": "fail",
+      "note": "Second sentence is a new (and wrong) fact. (Stage 12 DSPy experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "gs-42",
+      "kind": "live",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-p04-c2",
+          "text": "Inheritance lets a new class, the subclass, reuse the fields and methods of an existing class. The subclass can add methods or override inherited ones. A subclass object is also an object of its parent class: a Dog is an Animal."
+        }
+      ],
+      "question_text": "Can a subclass remove a method it inherited?",
+      "answer_text": "Yes, a subclass can remove inherited methods it does not need.",
+      "expected": "fail",
+      "note": "The chunk says add or override, not remove. (Stage 12 DSPy experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "gs-43",
+      "kind": "live",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-p01-c2",
+          "text": "Libraries shelve books by call number, so a reader can walk to the right shelf instead of checking every book. A family tree shows how relatives are connected across generations. A subway map shows stations and the lines that join them."
+        }
+      ],
+      "question_text": "What is a tree data structure?",
+      "answer_text": "A tree is a data structure with a root, where every node except the root has exactly one parent.",
+      "expected": "fail",
+      "note": "The chunk only mentions a family tree; the definition is new. (Stage 12 DSPy experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "gs-44",
+      "kind": "live",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-p03-c2",
+          "text": "A bag holds items in no particular order and allows duplicates. A set holds items in no particular order and does not allow duplicates. A list keeps items in a sequence, and each item has a position."
+        }
+      ],
+      "question_text": "What is a set?",
+      "answer_text": "A set holds items in no particular order and does not allow duplicates. Java's HashSet is the most common set implementation.",
+      "expected": "fail",
+      "note": "First sentence supported; the HashSet claim is new. (Stage 12 DSPy experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "gs-45",
+      "kind": "live",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-p01-c1",
+          "text": "People organize information all the time so it is quick to use. A music playlist keeps songs in a chosen order. People waiting at a bus stop board in the order they arrived. The undo button in a text editor removes the most recent change first."
+        },
+        {
+          "chunk_id": "syn-p03-c3",
+          "text": "A stack adds and removes items at the same end, so the last item added is the first removed (LIFO). A queue adds items at the back and removes them from the front, so the first item added is the first removed (FIFO). A map stores pairs of a key and a value and finds a value by its key."
+        }
+      ],
+      "question_text": "Which collection works like people boarding at a bus stop?",
+      "answer_text": "A queue, since people board in the order they arrived and a queue removes the first item added first.",
+      "expected": "pass",
+      "note": "Direct conclusion from two chunks. (Stage 12 DSPy experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "gs-46",
+      "kind": "live",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-p05-c3",
+          "text": "A vending machine is a good picture of encapsulation. Buyers use only the buttons and the coin slot. The coin counter and the motors stay inside the case, and the owner can replace them without changing how buyers use the machine."
+        }
+      ],
+      "question_text": "Why is a vending machine a good picture of encapsulation?",
+      "answer_text": "Buyers use only the buttons and the coin slot, while the coin counter and the motors stay inside the case, and the owner can replace them without changing how buyers use the machine.",
+      "expected": "pass",
+      "note": "Rewording. (Stage 12 DSPy experiment, labeled by the user 2026-11-06)",
+      "unsupported": []
+    },
+    {
+      "id": "gs-47",
+      "kind": "live",
+      "source": "written",
+      "chunks": [
+        {
+          "chunk_id": "syn-p05-c3",
+          "text": "A vending machine is a good picture of encapsulation. Buyers use only the buttons and the coin slot. The coin counter and the motors stay inside the case, and the owner can replace them without changing how buyers use the machine."
+        }
+      ],
+      "question_text": "What happens if the vending machine's motor breaks?",
+      "answer_text": "The machine refunds the coins automatically, because encapsulation protects the buyer.",
+      "expected": "fail",
+      "note": "New facts; not a conclusion from the chunk. (Stage 12 DSPy experiment, labeled by the user 2026-11-06)",
       "unsupported": []
     }
   ]

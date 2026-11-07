@@ -4,14 +4,15 @@ python -m classpilot.cli run scenarios/01_poll_explain.json
 python -m classpilot.cli run-all
 python -m classpilot.cli eval
 python -m classpilot.cli guardian-eval
-BACKEND=cortex python -m classpilot.cli compile --program-id prep-writers-v1
+BACKEND=cortex python -m classpilot.cli compile --side live --program-id <id>
+BACKEND=cortex python -m classpilot.cli optimize-guardian --method eval --program live-qa-v5
 python -m classpilot.cli prep convert deck.pptx --ref reading.pdf --ref notes.docx
 python -m classpilot.cli prep parse --lesson l1 deck.pptx --ref reading.pdf
 python -m classpilot.cli prep search --lesson l1 "why keep raw data"
 python -m classpilot.cli prep generate --lesson l1 --poll-count 3
 python -m classpilot.cli prep check --lesson l1
 python -m classpilot.cli prep run --backend mock --lesson l1 deck.pptx --ref reading.pdf
-python -m classpilot.cli dev info6205-l1 [--backend cortex] [--skip-prep]
+python -m classpilot.cli dev l1 [--backend cortex] [--skip-prep]
 python -m classpilot.cli dev --list
 python -m classpilot.cli export <session_id> [--data-dir outputs/service]
 """
@@ -275,11 +276,10 @@ def live_adapters(settings, content):
     from classpilot.adapters.retrieval import CortexSearchRetriever, MockRetriever
 
     if settings.backend == "cortex":
-        from classpilot.adapters.cortex_engine import make_cortex_lm
-        from classpilot.agents.compiled import live_agents
+        from classpilot.agents.compiled import cortex_live_agents
 
         retriever = CortexSearchRetriever(settings, service_name=settings.objects.search_service)
-        return live_agents(settings, make_cortex_lm(settings)), retriever
+        return cortex_live_agents(settings), retriever
     from classpilot.adapters.llm import MockLLM
 
     return MockLLM(), MockRetriever(content.chunks)
@@ -474,7 +474,8 @@ def run_guardian_eval_file(path: Path | None, overrides: dict | None) -> None:
     tag = result["backend"] if path is None else f"{path.stem}_{result['backend']}"
     if overrides:
         tag += f"_{overrides['prep']['model']}"
-    out = OUTPUT_DIR / f"guardian_eval_{tag}.json"
+    # Stage 12: the prompt version is in the name, so runs never overwrite each other.
+    out = OUTPUT_DIR / f"guardian_eval_{tag}_{result['prompt_version']}.json"
     out.write_text(json.dumps(result, indent=2))
     for row in result["rows"]:
         if row["verdict"] == row["expected"]:
@@ -492,37 +493,214 @@ def run_guardian_eval_file(path: Path | None, overrides: dict | None) -> None:
 
 
 def run_compile_live(args, settings) -> tuple[dict, dict]:
-    """Analyst and Responder on the synthetic train questions; returns (modules, meta)."""
+    """Analyst and Responder on the synthetic train questions, the Guardian on labeled
+    synthetic cases; returns (modules, meta)."""
     from classpilot.adapters.cortex_engine import make_cortex_lm
     from classpilot.agents.program import DSPyAgents
-    from classpilot.compiling import CompileLog, compile_live, load_live_trainset
+    from classpilot.compiling import (
+        CompileLog,
+        compile_live,
+        load_guardian_trainset,
+        load_live_trainset,
+    )
 
-    items = load_live_trainset(args.train, settings.question.retrieval_top_k)
-    guardian = DSPyAgents(make_cortex_lm(settings))  # uncompiled live Guardian as the metric
+    q = settings.question
+    items = load_live_trainset(args.train, q.retrieval_top_k, q.analyst_chunk_chars)
+    if "guardian" in args.task:
+        items["guardian"] = load_guardian_trainset(args.guardian_train)
+    guardian_lm = make_cortex_lm(settings, timeout_s=q.guardian_timeout_seconds)
+    guardian = DSPyAgents(guardian_lm)  # uncompiled live Guardian as the Responder metric
     log, modules = CompileLog(), {}
     for task in args.task:
         modules[task] = compile_live(
             task,
             items[task],
-            make_cortex_lm(settings),
-            args.analyst_demos if task == "analyst" else args.max_demos,
+            guardian_lm if task == "guardian" else make_cortex_lm(settings),
+            {"analyst": args.analyst_demos, "guardian": args.guardian_demos}.get(
+                task, args.max_demos
+            ),
             log,
             guardian,
-            settings.llm.timeout_seconds,
+            q.guardian_timeout_seconds if task == "guardian" else settings.llm.timeout_seconds,
             settings.question.confidence_threshold,
             settings.question.guardian_rescue_coverage,
         )
         print(f"{task}: {len(modules[task].demos)} demos")
     meta = {
         "trainset": args.train.name,
+        "guardian_trainset": args.guardian_train.name if "guardian" in args.task else None,
         "metric": "analyst: category label; responder: check_response + uncompiled Guardian "
-        "+ check_guardian (retrieved chunks, word rescue)",
+        "+ check_guardian (retrieved chunks, word rescue); guardian: check_guardian verdict "
+        "= the user's label",
         "optimizer": "BootstrapFewShot",
         "max_bootstrapped_demos": args.max_demos,
         "model": settings.llm.model,
         "tried": log.tried,
     }
     return modules, meta
+
+
+class CountingEngine:
+    """Counts the LLM calls of a DSPy custom engine (Stage 12 experiment budget)."""
+
+    def __init__(self, inner):
+        self.inner, self.calls = inner, 0
+
+    def complete(self, request):
+        self.calls += 1
+        return self.inner.complete(request)
+
+
+def run_optimize_guardian(args) -> int:
+    """Stage 12 DSPy experiment on the live Guardian: eval, random search, or GEPA."""
+    import dspy
+
+    from classpilot import optimize as opt
+    from classpilot.adapters.cortex_engine import CortexCompleteEngine, statement_seconds
+    from classpilot.adapters.snowflake import llm_connection
+    from classpilot.agents.compiled import program_path
+    from classpilot.agents.program import RulesFirstChatAdapter
+
+    settings = load_settings()
+    if settings.backend != "cortex":
+        print("optimize-guardian calls the LLM: run it with BACKEND=cortex (after approval)")
+        return 2
+    q, stamp = settings.question, time.strftime("%Y%m%d-%H%M%S")
+    out_dir = OUTPUT_DIR / "optimize"
+    rescue = q.guardian_rescue_coverage
+
+    def counted_lm(model: str, timeout_s: float, max_tokens: int = 1024):
+        conn = llm_connection(statement_seconds(timeout_s))
+        engine = CountingEngine(CortexCompleteEngine(conn, timeout_s, max_tokens=max_tokens))
+        return dspy.LM(model, engine=engine, cache=False, num_retries=0), engine
+
+    adapter = RulesFirstChatAdapter(use_json_adapter_fallback=False)
+    live = args.kind == "live"
+    if live:
+        lm, engine = counted_lm(settings.llm.model, q.guardian_timeout_seconds)
+        train = [opt.to_example(i) for i in opt.load_items(opt.TRAIN_PATH)]
+        val = [opt.to_example(i) for p in opt.VAL_PATHS for i in opt.load_items(p)]
+    else:
+        from classpilot.rules.prep import prep_rule_options
+
+        prep, prep_rules = settings.prep, prep_rule_options(settings.prep)
+        lm, engine = counted_lm(
+            prep.model or settings.llm.model, prep.llm_timeout_seconds, prep.max_tokens
+        )
+        train = opt.prep_examples(opt.PREP_TRAIN_PATH, args.kind)
+        val = opt.prep_examples(opt.PREP_VAL_PATH, args.kind)
+
+    def program_for(program_id: str | None) -> dspy.Module:
+        if live:
+            return opt.GuardianProgram(opt.guardian_predict(program_id))
+        return opt.PrepGuardianProgram(opt.prep_guardian_predict(program_id, args.kind))
+
+    def score(program: dspy.Module) -> dict:
+        with dspy.context(lm=lm, adapter=adapter):
+            if live:
+                return opt.evaluate(program, val, rescue)
+            return opt.evaluate_prep(program, val, prep_rules)
+
+    if args.method == "eval":
+        for program_id in args.program:
+            for run in range(1, args.runs + 1):
+                result = score(program_for(None if program_id == "uncompiled" else program_id))
+                result |= {"program": program_id, "kind": args.kind, "run": run}
+                result["llm_calls"] = engine.calls
+                name = f"eval_{args.kind}_{program_id}_run{run}_{stamp}"
+                path = opt.write_result(name, result, out_dir)
+                print(f"{program_id} run {run}: {json.dumps(result['summary'])}")
+                print(f"  wrote {path}")
+        print(f"LLM calls: {engine.calls}")
+        return 0
+
+    if program_path(args.program_id).exists() and not args.overwrite:
+        print(f"{program_path(args.program_id)} exists; pass --overwrite to replace it")
+        return 2
+    start, extra = time.perf_counter(), {}
+    if args.method == "rs":
+        from dspy.teleprompt import BootstrapFewShotWithRandomSearch
+
+        student = program_for(None)
+        optimizer = BootstrapFewShotWithRandomSearch(
+            metric=opt.make_metric(rescue) if live else opt.make_prep_metric(prep_rules),
+            max_bootstrapped_demos=args.max_demos,
+            max_labeled_demos=0,
+            num_candidate_programs=args.candidates,
+            num_threads=1,
+        )
+        # Seeds: -1 = first-passing demos (like plain BootstrapFewShot), 0.. = shuffled demo sets.
+        # -3/-2 (zero-shot, labeled-only) are skipped: the uncompiled baseline covers them.
+        restrict = list(range(-1, args.candidates))
+        with dspy.context(lm=lm, adapter=adapter):
+            best = optimizer.compile(student, trainset=train, valset=val, restrict=restrict)
+        extra["candidate_scores"] = [
+            {"score": c.get("score"), "demos": len(c["program"].guardian.demos)}
+            for c in getattr(best, "candidate_programs", [])
+        ]
+        meta = {"optimizer": "BootstrapFewShotWithRandomSearch", "candidates": args.candidates}
+    else:  # gepa
+        from dspy.teleprompt import GEPA
+
+        if not live:
+            print("GEPA is wired for the live Guardian only")
+            return 2
+
+        reflection_lm, reflection_engine = counted_lm(args.reflection_model, 120, 4000)
+        student = opt.GuardianProgram(opt.guardian_predict(args.base))
+        optimizer = GEPA(
+            metric=opt.make_feedback_metric(rescue),
+            max_metric_calls=args.max_metric_calls,
+            reflection_lm=reflection_lm,
+            num_threads=1,
+            track_stats=True,
+            seed=0,
+            log_dir=str(out_dir / f"gepa_{stamp}"),
+        )
+        with dspy.context(lm=lm, adapter=adapter):
+            best = optimizer.compile(student, trainset=train, valset=val)
+        extra["reflection_calls"] = reflection_engine.calls
+        details = getattr(best, "detailed_results", None)
+        if details is not None:
+            extra["val_aggregate_scores"] = list(getattr(details, "val_aggregate_scores", []))
+        meta = {"optimizer": "GEPA", "max_metric_calls": args.max_metric_calls}
+        meta["reflection_model"] = args.reflection_model
+        meta["start_program"] = args.base
+    meta |= {
+        "kind": args.kind,
+        "trainset": (opt.TRAIN_PATH if live else opt.PREP_TRAIN_PATH).name,
+        "valset": [p.name for p in opt.VAL_PATHS] if live else [opt.PREP_VAL_PATH.name],
+        "metric": "check_guardian verdict = label" if live else "check_prep_guardian = label",
+        "model": settings.llm.model if live else (settings.prep.model or settings.llm.model),
+    }
+    if live:
+        path = opt.save_live_program(args.program_id, args.base, best.guardian, meta)
+        forbidden = opt.dev_texts(opt.VAL_PATHS)
+    else:
+        from classpilot.guardian_cases import PREP_TASKS
+
+        task = PREP_TASKS[args.kind]
+        path = opt.save_prep_program(args.program_id, args.base, {task: best.guardian}, meta)
+        forbidden = [str(v) for e in val for k, v in e.inputs().items() if k != "chunks"]
+    leaks = opt.leak_problems(path, forbidden)
+    seconds = round(time.perf_counter() - start, 1)
+    result = {
+        "method": args.method,
+        "program_id": args.program_id,
+        "seconds": seconds,
+        "guardian_calls": engine.calls,
+        "leaks": leaks,
+        "instructions": best.guardian.signature.instructions,
+        "demos": len(best.guardian.demos),
+        **extra,
+    }
+    out = opt.write_result(f"{args.method}_{args.program_id}_{stamp}", result, out_dir)
+    print(json.dumps({k: v for k, v in result.items() if k != "instructions"}, indent=2))
+    print(f"wrote {path} and {out}")
+    if leaks:
+        print("LEAK: course content in the saved program; do not commit it")
+        return 1
+    return 0
 
 
 def run_compile(args) -> int:
@@ -611,6 +789,28 @@ def main(argv: list[str] | None = None) -> None:
     )
     sheet_cmd.add_argument("cases", type=Path)
 
+    opt_cmd = sub.add_parser(
+        "optimize-guardian", help="Stage 12 DSPy experiment on the live Guardian (cortex)"
+    )
+    opt_cmd.add_argument("--method", choices=["eval", "rs", "gepa"], required=True)
+    opt_cmd.add_argument(
+        "--kind", choices=["live", "script", "poll", "explanation"], default="live"
+    )
+    opt_cmd.add_argument(
+        "--program", action="append", default=[], help="eval: program id or 'uncompiled'"
+    )
+    opt_cmd.add_argument("--runs", type=int, default=1, help="eval: runs per program")
+    opt_cmd.add_argument("--program-id", help="rs/gepa: compiled/<id>.json to write")
+    opt_cmd.add_argument(
+        "--base",
+        help="program the new Guardian joins (live default: live-qa-v5; prep: e.g. prep-v6)",
+    )
+    opt_cmd.add_argument("--candidates", type=int, default=4, help="rs: shuffled demo sets")
+    opt_cmd.add_argument("--max-demos", type=int, default=3)
+    opt_cmd.add_argument("--max-metric-calls", type=int, default=200, help="gepa budget")
+    opt_cmd.add_argument("--reflection-model", default="claude-sonnet-4-5")
+    opt_cmd.add_argument("--overwrite", action="store_true")
+
     compile_cmd = sub.add_parser(
         "compile", help="compile prep writers or live agents on a synthetic trainset (cortex)"
     )
@@ -619,7 +819,7 @@ def main(argv: list[str] | None = None) -> None:
     compile_cmd.add_argument(
         "--task",
         action="append",
-        choices=["script_writer", "explanation_writer", "analyst", "responder"],
+        choices=["script_writer", "explanation_writer", "analyst", "responder", "guardian"],
         help="module to compile; repeat for several (default: both of the side)",
     )
     compile_cmd.add_argument(
@@ -627,7 +827,16 @@ def main(argv: list[str] | None = None) -> None:
         type=Path,
         help="trainset (default: eval/prep_train.json or eval/questions_train.json)",
     )
+    compile_cmd.add_argument(
+        "--guardian-train",
+        type=Path,
+        default=Path("eval/guardian_cases_train.json"),
+        help="live: labeled Guardian cases for --task guardian",
+    )
     compile_cmd.add_argument("--max-demos", type=int, default=2)
+    compile_cmd.add_argument(
+        "--guardian-demos", type=int, default=3, help="live: demos for the Guardian (fail and pass)"
+    )
     compile_cmd.add_argument(
         "--analyst-demos", type=int, default=3, help="live: demos for the short Analyst prompt"
     )
@@ -711,6 +920,14 @@ def main(argv: list[str] | None = None) -> None:
         if not args.lesson:
             parser.error("dev needs a lesson (or --list)")
         raise SystemExit(run_dev(args))
+    if args.command == "optimize-guardian":
+        if args.base is None and args.kind == "live":
+            args.base = "live-qa-v5"
+        if args.method == "eval" and not args.program:
+            parser.error("--method eval needs --program")
+        if args.method != "eval" and not args.program_id:
+            parser.error(f"--method {args.method} needs --program-id")
+        raise SystemExit(run_optimize_guardian(args))
     if args.command == "compile":
         defaults = {
             "prep": (["script_writer", "explanation_writer"], "eval/prep_train.json"),
@@ -718,6 +935,8 @@ def main(argv: list[str] | None = None) -> None:
         }
         tasks, train = defaults[args.side]
         args.task = args.task or tasks
+        if args.side == "live":
+            tasks = [*tasks, "guardian"]  # the Guardian only on request (Stage 12)
         args.train = args.train or Path(train)
         if not set(args.task) <= set(tasks):
             parser.error(f"--side {args.side} compiles {', '.join(tasks)}")
@@ -742,12 +961,15 @@ def main(argv: list[str] | None = None) -> None:
         for path in scenario_files():
             print_scenario(run_scenario(path))
     elif args.command == "eval":
-        backend = load_settings().backend
-        tag = backend if args.set is None else f"{args.set.stem}_{backend}"
+        from classpilot.contracts.trace import PROMPT_VERSION
+
+        settings = load_settings()
+        tag = settings.backend if args.set is None else f"{args.set.stem}_{settings.backend}"
         overrides = None
         if args.compiled_program:
-            tag = f"{tag}_{args.compiled_program}"
             overrides = {"llm": {"compiled_program": args.compiled_program}}
+        # Stage 12: always name the program, so runs never overwrite each other.
+        tag = f"{tag}_{args.compiled_program or settings.llm.compiled_program or PROMPT_VERSION}"
         result = run_eval(
             OUTPUT_DIR / f"eval_traces_{tag}.jsonl",
             OUTPUT_DIR / f"eval_decision_log_{tag}.jsonl",

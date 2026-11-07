@@ -4,7 +4,7 @@ Objectives come from a prep manifest's segments, chunks from a stored parse
 (`outputs/parse/<lesson>.json`). The snapshot keeps the eval labels valid when a later
 prep run changes the segments. Real lessons go under `materials/eval/` (gitignored).
 
-    python scripts/eval_lesson_snapshot.py --lesson info6205-l1 \
+    python scripts/eval_lesson_snapshot.py --lesson l1 \
         --out materials/eval/questions_dev.json
 
 An existing file keeps its questions; only the lesson block is replaced.

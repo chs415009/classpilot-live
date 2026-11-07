@@ -136,7 +136,7 @@ class DSPyPrepAgents:
     """The prep generators and Guardians as `dspy.Predict` modules (compiled ones are
     loaded by `agents.compiled.prep_agents`)."""
 
-    prompt_version = "uncompiled-v1"
+    prompt_version = "uncompiled-v2"  # prep prompts; v2: Stage 12 PollWriter and ExplanationWriter
 
     def __init__(self, lm: dspy.LM, adapter: dspy.Adapter | None = None):
         self.lm = lm

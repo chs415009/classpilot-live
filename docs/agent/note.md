@@ -479,3 +479,219 @@ is no longer updated)
   session export zip plus `cli export` (new Q-22). Open for them: Sai's origin and
   bundle needs; Yaksha's loading method and whether prep data goes into the model.
 
+
+## Stage 12: Agent quality (live Q&A, prep generation, DSPy, more lessons)
+
+- 2026-11-06 [decision] User: Stage 12 runs before the Stage 11 integration and rehearsal;
+  handed-over interface fields (Q-13, Q-19, Q-21, Q-22) do not change. Held-out lessons
+  L2-L4 (`materials/lessons/l2..l4`), run at the end with live-qa-v1 and the new
+  program. Part A (live Q&A, about 470 calls) approved.
+- 2026-11-06 [decision] User: retrieval runs before the Analyst, and the Analyst sees the
+  retrieved chunks. Before, it saw only the segment objective titles, and readings never
+  reached it (tq-02 polymorphism is defined only in the reading). Internal change; node
+  order in the trace changes, fields do not.
+- 2026-11-06 [finding] The service user cannot read `SNOWFLAKE.ACCOUNT_USAGE` (no
+  ACCOUNTADMIN, 003013; own role 002003): cost readings run in Snowsight by the user.
+- 2026-11-06 [finding] Diagnosis of stored replies (0 calls). Live, live-qa-v1 dev + L1
+  test: scope from titles 5 (dv-10, dv-24, dv-25, tq-02, tq-08; dv-24/25/tq-08 should
+  reach the Responder and escalate there); Guardian on an inference or summary 3 (dv-09,
+  tq-04, tq-06); Responder addition 1 (dv-12, correct block); timeout 1 (tq-05, the
+  longest answer, 699 chars; other Guardian calls 1.4-7.2 s). Prep, L1 v5 run: of 21
+  failed explanation attempts, 15 describe the wrong option's own topic (laundry pile,
+  recursion, graphs, tree branches), 4 add an untied analogy, 2 state an inference.
+- 2026-11-06 [finding] Prep false fail caused by code: the Guardian splits a sentence
+  into supported claims, then lists the whole sentence again as an untied "example"
+  with a pass verdict; the word rescue misses it at 11/14 = 0.79 (p01; p07 similar).
+- 2026-11-06 [decision] User: the system has no assignments; the concept is removed
+  everywhere, interface included (`assignment_like` reason gone from Q-15/Q-19 and the
+  handoff docs: 4 reasons). Analyst: in_scope / out_of_scope; Guardian: no
+  `reveals_graded_work`. Removed: scenario 03b, train tr-13..15, gs-04, v1 eval tq-07/08,
+  L1 dev dv-20..23 (dev set 31 -> 27; Stage 9 numbers were on 31). `live-qa-v1` is
+  replaced by `live-qa-v1b` (quiz-question Analyst demo dropped, instructions updated,
+  no recompile); it is the default and the held-out baseline.
+- 2026-11-06 [result] Stage 9 cost, complete (user ran `sql/probes/stage9_cost_reading.sql`
+  in Snowsight): AI_COMPLETE mistral-large3 729 calls 0.5193 credits (0.00071 per call),
+  claude-sonnet-4-5 21 calls 0.1534, claude-haiku-4-5 21 calls 0.0483; warehouse 1.23;
+  Cortex Search serving 0.0000 for the day. About 1.95 credits for about 780 calls; the
+  warehouse is about 63%.
+- 2026-11-06 [change] Tasks 2-4 (mock): retrieval runs before the Analyst, which sees
+  the retrieved chunks; new Analyst, Responder (2-4 sentences), and Guardian prompts
+  (direct conclusions pass; each claim once); Guardian timeout 15 s on its own Cortex
+  connection, capped by a 30 s per-question deadline. Live uncompiled prompt version is
+  now `uncompiled-v2`.
+- 2026-11-06 [finding] DSPy `Signature.load_state` maps saved field labels by position, so
+  a program compiled before the Analyst gained `chunks` would mislabel its fields;
+  `apply_program` now refuses a field-count mismatch. `live-qa-v1b` therefore runs only
+  on the pre-Stage-12 graph; `llm.compiled_program` is null until `live-qa-v2`.
+- 2026-11-06 [finding] `shared_connection()` is cached, so every Cortex LM in a process
+  shared one session and the last LM built set the statement timeout for all of them
+  (in the service: live 10 s and prep 60 s). The first Stage 12 dev run hit it (dv-08:
+  Guardian cut at 10 s). Fix: `llm_connection(seconds)`, one session per timeout.
+- 2026-11-06 [result] Part A run 1 (uncompiled-v2, 121 calls): L1 dev 25/27 actions
+  (Stage 9 live-qa-v1: 24/27), recall 1.0, 0 let through; L1 test 10/12 (Stage 10:
+  7/12; fixed tq-02, tq-04, tq-05, tq-08; tq-03 and tq-06 now blocked for Responder
+  additions: "organizational charts", "e.g., add, remove"). Analyst: dv-10, dv-25, tq-02,
+  tq-08 now in scope; dv-24 Big-O still out_of_scope. Guardian cases: v1 6/8 caught
+  (Stage 9: 8/8; missed gc-07 "names a term only" and gc-12, the old graded-work case),
+  0 false fails; live dev 1/1, 3 false fails (lc-03, lc-05 inferences; lc-11 a claim the
+  Guardian made up about an image, not in the answer); synthetic 1/1, 1 false fail.
+  Latency avg 4.8 s, max 13.2 s (the 10 s bug). Guardian-eval outputs overwrote the
+  Stage 9 files (names lack the prompt version); Stage 9 eval files kept in `outputs/stage9/`.
+- 2026-11-06 [decision] User: live answers follow the prep bar for examples too: a short
+  example or comparison that illustrates an idea a chunk states passes (no new fact).
+  Responder and Guardian prompts say so; the Guardian prompt also gives a non-lesson
+  example for "a chunk that only names a term" (gc-07).
+- 2026-11-06 [finding] Rejected rule: ignoring a null Guardian claim whose words are
+  mostly not in the answer. On the 56 stored null claims it would drop gc-11's real
+  unsupported claim (the Guardian restates a SQL answer in words), a let-through risk.
+- 2026-11-06 [result] Guardian cases with the example and names-only prompt
+  (`uncompiled-v3`, 28 calls): v1 6/8 (gc-07, gc-12 still missed), 0 false fails; live
+  dev 1/1, 2 false fails (lc-01, lc-02; run 1 had lc-03, lc-05, lc-11); synthetic 1/1,
+  gs-01 false fail. Prompt changes alone do not converge (mistral-large3 varies per run),
+  so the Guardian gets compiled. Part A so far about 150 calls.
+- 2026-11-06 [decision] User: gc-12 stays fail; reason relabeled to "needs facts the
+  chunks do not state" (the graded-work reason is gone). Guardian compile on labeled
+  synthetic cases instead of an inference claim kind (the code check would not pass the
+  real inference cases, and trusting the label would let the LLM decide).
+- 2026-11-06 [change] `compile --side live --task guardian` (metric: `check_guardian`
+  verdict = label, cases fail/pass alternating) and 13 new synthetic Guardian cases
+  gs-05..gs-17 (proposed labels, for the user to confirm). Eval and guardian-eval
+  output names now carry the prompt version.
+- 2026-11-06 [result] live-qa-v2 (compiled on synthetic sets: Analyst 3 demos, Responder 2,
+  Guardian 2, both fail cases gs-02/gs-12; gs-03 reworded first, its question was word
+  for word dev dv-31): v1 Guardian cases 7/8 (gc-07 caught, gc-12 missed), 0 false fails;
+  live dev 1/1, 2 false fails; L1 test 12/12; L1 dev 24/27, recall 1.0, 0 let through,
+  latency avg 4.5 s, max 10.3 s, no timeout. Dev misses: dv-01 malformed Guardian reply
+  ("[["), dv-08 and dv-10 Responder additions blocked ("efficient", "add or override");
+  dv-24 Big-O and dv-25 overloading judged out_of_scope (both escalate either way).
+  Single runs move by about 2 questions. Part A so far about 285 calls.
+- 2026-11-06 [change] Live: a malformed reply is asked again once (`question.malformed_retries`)
+  while at least `question.min_retry_seconds` (5) of the deadline is left; never after a
+  timeout. The trace row's `retry_count` counts it (Q-21 field, now non-zero).
+- 2026-11-06 [result] live-qa-v3 (Analyst demos tr-09, tr-17 uncovered course topic, tr-12;
+  Guardian 3 demos fail/pass/fail): L1 dev 26/27 actions, 25/27 with the reason group
+  (dv-24 Big-O still out_of_scope; dv-10 Responder addition blocked), 0 let through;
+  L1 test 11/12 (tq-06 Guardian false fail); v1 Guardian cases 6/8 (gc-07, gc-12 missed),
+  live dev 1/1, 2 false fails; latency avg 4.7 s, max 13.1 s; no timeout. Part A so far
+  about 420 calls.
+- 2026-11-06 [finding] Across Stage 12 runs the v1 catch rate is 6-7/8 (Stage 9: 8/8 with
+  the strict "directly states" prompt): gc-07 (explains tests a chunk only names) and
+  gc-12 (applies listed tests to an unstated key) pass under the looser bar. A code
+  check on the word coverage of tied claims does not separate them (gc-07 claims 0.62-0.67;
+  71 of 384 pass-case claims are below 0.6). 0 unsupported answers let through on L1 dev
+  and test in all Stage 12 runs.
+- 2026-11-06 [decision] User (option A): the Guardian gate becomes "v1 cases at least 6/8,
+  0 let through on dev and held-out"; gc-07 and gc-12 are the accepted cost of the looser
+  bar. No Guardian ensemble or model change. Part A closed at about 420 calls;
+  `live-qa-v3` is the working program (the default decision stays at the exit gate).
+- 2026-11-06 [change] Part B code (mock): slide-text fallback drops ISBN, copyright,
+  publisher, and "materials are edited by" lines (L1 p03 now reads the university,
+  title, lecturer, college); PollWriter prefers wrong options the chunks rule out;
+  ExplanationWriter must not describe the chosen option's own topic beyond the chunks,
+  at most one own example. Prep uncompiled prompt version `uncompiled-v2`.
+- 2026-11-06 [finding] Rescuing untied explanation claims with the poll's own text would
+  pass 2 of 80 stored claims (one a negated option statement): not added.
+- 2026-11-06 [decision] User: run a DSPy experiment on the live Guardian before Part B
+  (STAGES task 5b): random search and GEPA against `uncompiled-v3` and `live-qa-v3`.
+  So far DSPy gave structure and first-passing demos; the Stage 12 gains came from
+  hand changes, and compiled vs uncompiled is within run-to-run noise.
+- 2026-11-06 [finding] [verify] Installed DSPy 3.4.1 has `BootstrapFewShotWithRandomSearch`
+  (`num_candidate_programs`, `valset`), `MIPROv2` (`auto` light/medium/heavy), and
+  `GEPA` (experimental; feedback metric `(gold, pred, trace, pred_name, pred_trace)`,
+  `max_metric_calls`, `reflection_lm`); the `gepa` package (0.1.4) is already installed
+  as a dspy dependency, so nothing new is added.
+- 2026-11-06 [result] DSPy experiment (task 5b, about 556 calls): val = v1 cases 12 + L1 live
+  dev 13. Correct of 25 per run: uncompiled-v3 21, 22; live-qa-v3 21, 22 (v1 6/8 each);
+  random search `live-qa-v4-rs` 24 at selection, then 24, 23 (v1 8/8 in all three runs,
+  gc-07 and gc-12 caught); GEPA `live-qa-v4-gepa` 24 at selection, then 22, 22 (v1 7/8).
+  v4-rs on L1 dev end to end: 27/27 actions, 0 let through, latency avg 4.5 s, max 11.3 s.
+  Random search picked the unshuffled candidate with 3 demos (gs-02 fail, gs-03 pass,
+  gs-05 pass); shuffled candidates had 1-2 demos and scored 84-92%. GEPA (claude-sonnet-4-5,
+  5 reflection calls) only strengthened the names-only rule. The val cases chose the
+  winner, so the val numbers are optimistic; held-out L2-L4 is the real check.
+- 2026-11-06 [decision] User: `live-qa-v4-rs` is the working live program (default decided at
+  the exit gate); `live-qa-v4-gepa` deleted; prep Guardians get the same random-search
+  method in Part B (task 6b, 32 synthetic prep cases for the user to label). User: the
+  credit budget is ample; size experiments for reliable results. Part B approved, limit
+  about 2,200 calls.
+- 2026-11-06 [finding] Prep Guardian baselines (uncompiled, L1 prep dev cases, 3 runs, 63
+  calls): script 5-7/10 (pc-07 caught 1 of 3 runs, pc-08 never; false fails pc-02, pc-09,
+  once pc-01); poll 6/6 every run; explanation 4/5 every run (pc-19 missed). pc-08 (an
+  outline script with other slides' topics in the wrong order) passes because the
+  Guardian sees every chunk the writer was given (Stage 9), so each claim is tied; added
+  synthetic pair ps-15 (fail) / ps-16 (pass). Stage 9's 8/8 was measured before that change.
+- 2026-11-06 [result] L2-L4 parsed on Cortex (3 AI_PARSE_DOCUMENT calls for the readings,
+  33 vision pages): chunks l2 27, l3 28, l4 35. Slides 18/18/17 pages. Part B so far
+  about 100 calls.
+- 2026-11-06 [change] Held-out test questions drafted for L2, L3, L4
+  (`materials/lessons/l<n>/test_questions.json`, 4 categories x 3) from the parsed
+  chunks; waiting for the user's review. Not used for tuning.
+- 2026-11-06 [decision] User labeled the 34 synthetic prep cases as proposed (pp-01 pass:
+  "no order" shows set and bag wrong for a FIFO question; ps-15 fail for a reversed
+  outline order, ps-16 pass) and approved the L2-L4 test questions as drafted.
+- 2026-11-06 [result] Prep Guardians with random search (task 6b; val = L1 prep dev cases,
+  3 runs each after selection): script 5/6/7 -> 6/8/8 of 10 (fewer false fails; pc-07 and
+  pc-08 still mostly missed), explanation 4/4/4 -> 4/5/5 of 5 (pc-19 caught 2 of 3), poll
+  6/6/6 -> 5/6/6 (no gain; poll Guardian stays uncompiled). Selection scores (9/10, 5/5)
+  were optimistic, as expected with val sets of 5-10.
+- 2026-11-06 [change] ScriptWriter: title and outline slides name their items in the
+  slide's own order and words, keep each name (a lecture title is not the course name),
+  and add no topics from other slides (pc-07/pc-08 come from the writer). `prep-v6` =
+  writers compiled with BootstrapFewShot (script 2 demos, explanation 2) + the random-search
+  script and explanation Guardians.
+- 2026-11-06 [change] L1 renamed `l1` (parse reused by hash; chunk ids unchanged; the dev
+  set still searches `info6205-l1`, same chunks). Search refresh while the service is
+  suspended still indexes: L2-L4 were searchable after resume.
+- 2026-11-06 [result] L1 full run with prep-v6 (97 calls, 313 s; Stage 9: 125 calls, 413 s):
+  scripts 14/14, 0 fallback (title slide p03 reads course, instructor, textbook; outline
+  p04/p05 keep the slide's two topics); 4 polls live, 1 dropped (wrong options not shown
+  wrong); 12 of 12 wrong options explained (Stage 9: 8 of 15).
+- 2026-11-06 [change] Responder self-check counted its own tied example as ungrounded
+  (tq-02 escalated with grounded=false); it now counts a short example of a stated idea
+  as supported. `live-qa-v5` = live-qa-v4-rs with the Responder recompiled; live
+  uncompiled prompt version `uncompiled-v4`.
+- 2026-11-06 [result] live-qa-v5: L1 test 12/12, L1 dev 26/27 (dv-10: Responder added
+  "override", correctly blocked), 0 let through, latency avg 4.5 s, max 9.7 s. Part B so
+  far about 570 calls.
+- 2026-11-07 [result] Held-out L2-L4 (prep-v6 + live-qa-v5 vs Stage 10 code at 0ff4101 +
+  live-qa-v1b on the same manifests; 2 runs each, 36 questions per run): v5 32 and 31,
+  baseline 30 and 31. Let through: v5 1 (L2 tq-09 run 2: "java -ea MyClass" for the
+  command line, tied by the Guardian to the Eclipse -ea chunk), baseline 0. Reason group
+  wrong (out_of_scope for a partial): v5 L2 tq-09 once, L4 tq-07 twice; baseline L2 tq-08
+  twice, L4 tq-07 twice. False escalations: v5 5 (L3 tq-02 x2, L4 tq-05 x2, L2 tq-04),
+  baseline 7 (L4 tq-02, tq-05 x2, tq-06 x2, L3 tq-01, L4 tq-03 llm_error).
+- 2026-11-07 [result] Held-out prep with prep-v6: scripts fallback L2 5/18, L3 0/18, L4 3/17;
+  polls live 5/5/5; wrong options explained L2 11/15, L3 11/15, L4 7/15 (L1: 12/12).
+  Causes seen: L2 title script failed the TTS lint on "(Jones)"; four L2 quote checks
+  failed where the reading has HTML entities and LaTeX (`$x &gt; 0$`); L4 explanations
+  about diagram facts the vision text does not state. Not fixed: held-out findings wait
+  for the user's decision. Part B so far about 1,300 calls.
+- 2026-11-07 [decision] User: accept the L2 tq-09 let through (option a: a correct `-ea`
+  answer beyond the materials, same kind as gc-07); fix the two code bugs found on L2
+  (L2 prep results after the fix are no longer held-out); demo baseline = the same code
+  without compiled programs (B: `uncompiled-v4` live, `uncompiled-v2` prep), to show what
+  DSPy adds.
+- 2026-11-07 [change] Code fixes from L2: quotes and word checks decode HTML entities
+  (`&gt;`) before matching; generated scripts and explanations lose round and square
+  brackets (no words change) instead of failing the TTS lint. L2 after the fixes: script
+  fallbacks 5 -> 1.
+- 2026-11-07 [result] DSPy vs no DSPy, same Stage 12 code, one full run per lesson (prep +
+  12 questions; ~2,080 Part B calls in all):
+
+  | Lesson | Questions (DSPy / none) | Let through | Script fallbacks | Wrong options explained |
+  |---|---|---|---|---|
+  | L1 (dev) | 12 / 8 | 0 / 1 | 0 / 2 of 14 | 12/12 / 7/12 |
+  | L2 | 11 / 11 | 0 / 0 | 1 / 1 of 18 | 10/15 / 10/15 |
+  | L3 | 11 / 11 | 0 / 0 | 0 / 8 of 18 | 11/15 / 5/15 |
+  | L4 | 10 / 9 | 0 / 0 | 3 / 3 of 17 | 7/15 / 6/15 |
+  | Total | 44 / 39 of 48 | 0 / 1 | 4 / 14 of 67 | 40/57 / 28/57 |
+
+  Single runs (about +-2 questions per lesson between runs); L1 steered the tuning. The
+  v5 let through on L2 tq-09 happened in a second questions-only run. Latency avg
+  4.1-4.6 s both.
+- 2026-11-07 [change] Cleanup before the push: removed `scripts/probes/` (Stage 1), the
+  per-stage SQL probes (one `sql/probes/cost_reading.sql` remains),
+  `scripts/stage9_comparison.py`, and compiled programs other than `live-qa-v5` and
+  `prep-v6`. Local `outputs/` keeps the 8 comparison runs (`dev/l1-l4`, prep `l<n>` and
+  `l<n>.uncompiled`), parses and conversions of L1-L4, the v5 dev-set eval, and the
+  Guardian baselines in `optimize/`.

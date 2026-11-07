@@ -48,7 +48,7 @@ Where v1 and v2 conflict, v2 wins. Where the v2 docs are unclear, ask; do not gu
 
 ```
 PREP (before class)                       LIVE (in class)                     REPORT (deferred)
-upload -> convert (local) -> stage ->     question -> Analyst -> retrieval     decision log
+upload -> convert (local) -> stage ->     question -> retrieval -> Analyst     decision log
 parse (AI_PARSE_DOCUMENT; vision only     -> Responder -> Guardian ->          + traces + poll
 for image pages) -> chunks ->             validator (rule) -> answer/escalate  evidence +
 LESSON_CHUNKS_V2 -> search service ->     poll result -> rule (code) ->        manifest status
@@ -133,7 +133,7 @@ Student question (v1 fields plus `lesson_id` for the retrieval filter; Q-19):
 ```
 
 Decision: `action` is `explain | reveal | answer | escalate`; `escalation_reason` is
-`out_of_scope | assignment_like | low_confidence | unsupported | llm_error`. Explain
+`out_of_scope | low_confidence | unsupported | llm_error`. Explain
 carries the option, the misconception and remediation ids, the remediation text, and
 `show_slide`; explain and reveal carry `correct_option`. Unused fields are `null`.
 ```json
@@ -186,7 +186,7 @@ classpilot-live/
                              #   layout, the rest moves there stage by stage
   content/ scenarios/ eval/  # fixture lessons + manifest (v1 lesson), scenarios, eval sets
   tests/
-  compiled/                  # saved DSPy programs (from Stage 9)
+  compiled/                  # saved DSPy programs (live-qa-v5, prep-v6)
   materials/                 # gitignored: real course content; lessons/<id>/ holds
                              #   slides/, refs/, test_questions.json (Stage 10)
   outputs/                   # gitignored: traces, eval results, dev reports
@@ -208,8 +208,9 @@ classpilot-live/
 | 9 | Eval expansion, DSPy compile, baseline comparison |
 | 10 | Dev report (prep output and live test questions) |
 | 11 | Integration, rehearsal, handoff |
+| 12 | Agent quality (live Q&A, prep, DSPy, more lessons) |
 
-**Current stage: Stage 11 (not started).** Stages 0-2 accepted 2026-11-04, Stages 3-8 on 2026-11-05, Stages 9-10 on 2026-11-06. Every stage ends at its exit gate: run the
+**Current stage: Stage 12 (at its exit gate; the rest of Stage 11 follows it).** Stages 0-2 accepted 2026-11-04, Stages 3-8 on 2026-11-05, Stages 9-10 on 2026-11-06. Every stage ends at its exit gate: run the
 automated checks, report the results, list what the user must review, and wait for
 approval before the next stage. Details are in `docs/v2/STAGES.md`.
 
@@ -231,6 +232,7 @@ approval before the next stage. Details are in `docs/v2/STAGES.md`.
   - tests: `pytest`
   - lint / format: `ruff check .` and `ruff format --check .` (`ruff format .` to fix)
   - scenarios: `python -m classpilot.cli run-all`
+  - DSPy experiments: `python -m classpilot.cli optimize-guardian --method eval|rs|gepa --kind live|script|poll|explanation`
   - eval: `python -m classpilot.cli eval`; Guardian-only: `python -m classpilot.cli guardian-eval`
   - secret check: `scripts/check_secrets.sh` (add `--history` before a push)
 
